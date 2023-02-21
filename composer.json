@@ -1,0 +1,14 @@
+{
+  "name": "@eppo/php-sdk",
+  "description": "Eppo PHP SDK",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Pavlo Khrebto",
+      "email": "pavel@fluxon.com"
+    }
+  ],
+  "minimum-stability": "stable",
+  "version": "1.0.0"
+}
