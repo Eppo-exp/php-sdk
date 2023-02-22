@@ -80,7 +80,7 @@ final class RuleEvaluator
                         return $a < $b;
                     });
                 case 'MATCHES':
-                    return preg_match('/' . $condition->value . '/i', $value) === 1;
+                    return preg_match('/' . $condition->value . '/i', (string) $value) === 1;
                 case 'ONE_OF':
                     return self::isOneOf($value, $condition->value);
                 case 'NOT_ONE_OF':
@@ -97,6 +97,9 @@ final class RuleEvaluator
      */
     private static function isOneOf($attributeValue, $conditionValue): bool
     {
+        if (is_bool($attributeValue)) {
+            $attributeValue = $attributeValue ? 'true' : 'false';
+        }
         return count(self::getMatchingStringValues(strval($attributeValue), $conditionValue)) > 0;
     }
 
@@ -107,6 +110,9 @@ final class RuleEvaluator
      */
     private static function isNotOneOf($attributeValue, $conditionValue): bool
     {
+        if (is_bool($attributeValue)) {
+            $attributeValue = $attributeValue ? 'true' : 'false';
+        }
         return count(self::getMatchingStringValues(strval($attributeValue), $conditionValue)) === 0;
     }
 
