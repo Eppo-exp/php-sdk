@@ -5,6 +5,9 @@ namespace Eppo;
 use Eppo\Config\SDKData;
 use Eppo\Exception\InvalidArgumentException;
 use Eppo\Exception\InvalidApiKeyException;
+use GuzzleHttp\Exception\GuzzleException;
+use Sarahman\SimpleCache\FileSystemCache;
+use Psr\SimpleCache\InvalidArgumentException as SimpleCacheInvalidArgumentException;
 
 class EppoClient
 {
@@ -45,8 +48,9 @@ class EppoClient
         if (self::$instance === null) {
             $sdkData = new SDKData();
 
+            $cache = new FileSystemCache();
             $httpClient = new HttpClient($baseUrl, $apiKey, $sdkData);
-            $configStore = new ConfigurationStore();
+            $configStore = new ConfigurationStore($cache);
             $configRequester = new ExperimentConfigurationRequester($httpClient, $configStore);
 
             self::$instance = new self($configRequester);
@@ -59,17 +63,21 @@ class EppoClient
      * @param $subjectKey
      * @param $experimentKey
      * @param $subjectAttributes
-     *
-     * @return string
-     *
-     * @throws InvalidArgumentException|InvalidApiKeyException
+     * @return string|null
+     * @throws Exception\HttpRequestException
+     * @throws InvalidApiKeyException
+     * @throws InvalidArgumentException
+     * @throws GuzzleException
+     * @throws SimpleCacheInvalidArgumentException
      */
-    public function getAssignment($subjectKey, $experimentKey, $subjectAttributes = []): string
+    public function getAssignment($subjectKey, $experimentKey, $subjectAttributes = [])
     {
         Validator::validateNotBlank($subjectKey, 'Invalid argument: subjectKey cannot be blank');
         Validator::validateNotBlank($experimentKey, 'Invalid argument: experimentKey cannot be blank');
 
         $experimentConfig = $this->configurationRequester->getConfiguration($experimentKey);
+
+        if (!$experimentConfig->isEnabled()) return null;
 
         return '';
     }
