@@ -29,7 +29,9 @@
   },
   "require": {
     "php": "^7.3.31 || ^8.0",
-    "guzzlehttp/guzzle": "^7.0"
+    "guzzlehttp/guzzle": "^7.0",
+    "ext-apcu": "*",
+    "ext-json": "*"
   },
   "require-dev": {
     "phpunit/phpunit": "^9.6"

@@ -2,6 +2,7 @@
 
 namespace Eppo;
 
+use Eppo\Config\SDKData;
 use Eppo\Exception\HttpRequestException;
 use Exception;
 use GuzzleHttp\Client;
@@ -25,20 +26,19 @@ class HttpClient
     /**
      * @param string $baseUrl
      * @param string $apiKey
-     * @param string $sdkName
-     * @param string $sdkVersion
+     * @param SDKData $SDKData
      */
-    public function __construct(string $baseUrl, string $apiKey, string $sdkName, string $sdkVersion)
+    public function __construct(string $baseUrl, string $apiKey, SDKData $SDKData)
     {
         if (!$baseUrl) {
-            $baseUrl = 'https://eppo.cloud/api';
+            $baseUrl = 'https://eppo.cloud';
         }
-        $this->client = new Client(['baseUrl' => $baseUrl]);
+        $this->client = new Client(['base_uri' => $baseUrl]);
 
         $this->sdkParams = [
             'apiKey' => $apiKey,
-            'sdkName' => $sdkName,
-            'sdkVersion' => $sdkVersion
+            'sdkName' => $SDKData->getSdkName(),
+            'sdkVersion' => $SDKData->getSdkVersion(),
         ];
     }
 

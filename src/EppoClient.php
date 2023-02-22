@@ -2,6 +2,10 @@
 
 namespace Eppo;
 
+use Eppo\Config\SDKData;
+use Eppo\Exception\InvalidArgumentException;
+use Eppo\Exception\InvalidApiKeyException;
+
 class EppoClient
 {
     /**
@@ -18,14 +22,17 @@ class EppoClient
      * The Singleton's constructor should always be private to prevent direct
      * construction calls with the `new` operator.
      */
-    protected function __construct(ExperimentConfigurationRequester $configurationRequester) {
+    protected function __construct(ExperimentConfigurationRequester $configurationRequester)
+    {
         $this->configurationRequester = $configurationRequester;
     }
 
     /**
      * Singletons should not be cloneable.
      */
-    protected function __clone() { }
+    protected function __clone()
+    {
+    }
 
     /**
      * @param string $apiKey
@@ -33,9 +40,14 @@ class EppoClient
      *
      * @return EppoClient
      */
-    public static function init($apiKey, $baseUrl = ''): EppoClient {
+    public static function init($apiKey, $baseUrl = ''): EppoClient
+    {
         if (self::$instance === null) {
-            $configRequester = new ExperimentConfigurationRequester();
+            $sdkData = new SDKData();
+
+            $httpClient = new HttpClient($baseUrl, $apiKey, $sdkData);
+            $configStore = new ConfigurationStore();
+            $configRequester = new ExperimentConfigurationRequester($httpClient, $configStore);
 
             self::$instance = new self($configRequester);
         }
@@ -43,7 +55,22 @@ class EppoClient
         return self::$instance;
     }
 
-    public function getAssignment($subjectKey, $experimentKey, $subjectAttributes): string {
+    /**
+     * @param $subjectKey
+     * @param $experimentKey
+     * @param $subjectAttributes
+     *
+     * @return string
+     *
+     * @throws InvalidArgumentException|InvalidApiKeyException
+     */
+    public function getAssignment($subjectKey, $experimentKey, $subjectAttributes = []): string
+    {
+        Validator::validateNotBlank($subjectKey, 'Invalid argument: subjectKey cannot be blank');
+        Validator::validateNotBlank($experimentKey, 'Invalid argument: experimentKey cannot be blank');
+
+        $experimentConfig = $this->configurationRequester->getConfiguration($experimentKey);
+
         return '';
     }
 }
