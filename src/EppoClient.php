@@ -41,7 +41,7 @@ class EppoClient
      * @param string $baseUrl
      * @return EppoClient
      */
-    public static function init($apiKey, $baseUrl = ''): EppoClient
+    public static function init(string $apiKey, string $baseUrl = ''): EppoClient
     {
         if (self::$instance === null) {
             $sdkData = new SDKData();

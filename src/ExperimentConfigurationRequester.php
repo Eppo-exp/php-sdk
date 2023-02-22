@@ -46,7 +46,7 @@ class ExperimentConfigurationRequester
         $configuration = $this->configurationStore->getConfiguration($experiment);
 
         if (!$configuration) {
-            $configuration = $this->fetchAndStoreConfigurations();
+            $configuration = $this->fetchAndStoreConfigurations()[$experiment];
         }
 
         return $this->mapArrayToExperimentConfiguration($configuration);

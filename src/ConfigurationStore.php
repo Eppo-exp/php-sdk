@@ -34,7 +34,7 @@ class ConfigurationStore
      */
     public function setConfigurations(array $configs) {
         foreach ($configs as $key => $value) {
-            $this->cache->set($key, json_encode($value));
+            $this->cache->set($key, json_encode($value), 200);
         }
     }
 }
