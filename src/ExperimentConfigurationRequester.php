@@ -91,7 +91,7 @@ class ExperimentConfigurationRequester
         $experimentConfiguration->setRules($rules);
 
         $allocations = [];
-        foreach ($configuration['allocations'] as $configAllocation) {
+        foreach ($configuration['allocations'] as $configAllocationName => $configAllocation) {
             $allocation = new Allocation();
             $allocation->percentExposure = $configAllocation['percentExposure'];
 
@@ -106,7 +106,7 @@ class ExperimentConfigurationRequester
                 $allocation->variations[] = $variation;
             }
 
-            $allocations[] = $allocation;
+            $allocations[$configAllocationName] = $allocation;
         }
 
         $experimentConfiguration->setAllocations($allocations);
