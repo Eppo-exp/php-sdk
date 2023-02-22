@@ -60,7 +60,7 @@ class EppoClient
     /**
      * @param $subjectKey
      * @param $experimentKey
-     * @param $subjectAttributes
+     * @param array $subjectAttributes
      * @return string|null
      * @throws Exception\HttpRequestException
      * @throws InvalidApiKeyException
@@ -68,12 +68,16 @@ class EppoClient
      * @throws GuzzleException
      * @throws SimpleCacheInvalidArgumentException
      */
-    public function getAssignment($subjectKey, $experimentKey, $subjectAttributes = []): ?string
+    public function getAssignment($subjectKey, $experimentKey, array $subjectAttributes = []): ?string
     {
         Validator::validateNotBlank($subjectKey, 'Invalid argument: subjectKey cannot be blank');
         Validator::validateNotBlank($experimentKey, 'Invalid argument: experimentKey cannot be blank');
 
         $experimentConfig = $this->configurationRequester->getConfiguration($experimentKey);
+        $allowListOverride = $this->getSubjectVariationOverride($subjectKey, $experimentConfig);
+        if ($allowListOverride) {
+            return $allowListOverride;
+        }
 
         // Check for disabled flag.
         if (!$experimentConfig->isEnabled()) {
@@ -135,11 +139,22 @@ class EppoClient
         string $experimentKey,
         ExperimentConfiguration $experimentConfiguration,
         Allocation $allocation
-    ) {
+    ): bool {
         $subjectShards = $experimentConfiguration->getSubjectShards();
         $percentExposure = $allocation->percentExposure;
         $shard = Shard::getShard('exposure-' . $subjectKey . '-' . $experimentKey, $subjectShards);
 
         return $shard <= $percentExposure * $subjectShards;
+    }
+
+    private function getSubjectVariationOverride(string $subjectKey, ExperimentConfiguration $experimentConfig): ?string
+    {
+        $subjectHash = md5($subjectKey);
+        $overrides = $experimentConfig->getOverrides();
+        if (count($overrides) > 0) {
+            return $experimentConfig->getOverrides()[$subjectHash];
+        }
+
+        return null;
     }
 }

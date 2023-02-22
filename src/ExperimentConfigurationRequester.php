@@ -108,8 +108,8 @@ class ExperimentConfigurationRequester
 
             $allocations[$configAllocationName] = $allocation;
         }
-
         $experimentConfiguration->setAllocations($allocations);
+        $experimentConfiguration->setOverrides($configuration['overrides']);
 
         return $experimentConfiguration;
     }
