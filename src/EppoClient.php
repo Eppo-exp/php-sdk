@@ -83,19 +83,6 @@ class EppoClient
     }
 
     /**
-     * @param ExperimentConfigurationRequester $experimentConfigurationRequester
-     * @param LoggerInterface|null $logger
-     *
-     * @return EppoClient
-     */
-    public static function contructTestClient(
-        ExperimentConfigurationRequester $experimentConfigurationRequester,
-        ?LoggerInterface $logger = null
-    ): EppoClient {
-        return new EppoClient($experimentConfigurationRequester, $logger);
-    }
-
-    /**
      * @param string $subjectKey
      * @param string $experimentKey
      * @param array $subjectAttributes
@@ -147,7 +134,6 @@ class EppoClient
 
         $shard = Shard::getShard('assignment-' . $subjectKey . '-' . $experimentKey, $subjectShards);
 
-
         $assignedVariation = null;
 
         /** @var Variation $variation */
@@ -173,6 +159,19 @@ class EppoClient
         }
 
         return $assignedVariation;
+    }
+
+    /**
+     * @param ExperimentConfigurationRequester $experimentConfigurationRequester
+     * @param LoggerInterface|null $logger
+     *
+     * @return EppoClient
+     */
+    public static function createTestClient(
+        ExperimentConfigurationRequester $experimentConfigurationRequester,
+        ?LoggerInterface $logger = null
+    ): EppoClient {
+        return new EppoClient($experimentConfigurationRequester, $logger);
     }
 
     /**

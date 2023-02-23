@@ -115,7 +115,7 @@ class EppoClientTest extends TestCase
 
         $mock = $this->getExperimentConfigurationRequesterMock($mockedResponse);
 
-        $client = EppoClient::contructTestClient($mock);
+        $client = EppoClient::createTestClient($mock);
         $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME);
 
         $this->assertEquals('variant-2', $assignment);
@@ -128,7 +128,7 @@ class EppoClientTest extends TestCase
 
         $mock = $this->getExperimentConfigurationRequesterMock($mockedResponse);
 
-        $client = EppoClient::contructTestClient($mock);
+        $client = EppoClient::createTestClient($mock);
         $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME);
         $this->assertEquals('variant-2', $assignment);
     }
@@ -137,7 +137,7 @@ class EppoClientTest extends TestCase
     {
         $mock = $this->getExperimentConfigurationRequesterMock([]);
 
-        $client = EppoClient::contructTestClient($mock);
+        $client = EppoClient::createTestClient($mock);
         $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME);
         $this->assertNull($assignment);
     }
@@ -182,7 +182,7 @@ class EppoClientTest extends TestCase
         ];
 
         $mock = $this->getExperimentConfigurationRequesterMock($mockedResponse);
-        $client = EppoClient::contructTestClient($mock);
+        $client = EppoClient::createTestClient($mock);
         $this->assertNull(
             $client->getAssignment('subject-10', self::EXPERIMENT_NAME, ['appVersion' => 9])
         );
@@ -202,7 +202,7 @@ class EppoClientTest extends TestCase
         $mockLogger->expects($this->once())->method('logAssignment')->with('mock-experiment', 'control', 'subject-10');
         $subjectAttributes = [['foo' => 3]];
 
-        $client = EppoClient::contructTestClient($mockConfigRequester, $mockLogger);
+        $client = EppoClient::createTestClient($mockConfigRequester, $mockLogger);
         $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
 
         $this->assertEquals('control', $assignment);
@@ -218,7 +218,7 @@ class EppoClientTest extends TestCase
             ->willThrowException(new Exception('logger error'));
         $subjectAttributes = [['foo' => 3]];
 
-        $client = EppoClient::contructTestClient($mockConfigRequester, $mockLogger);
+        $client = EppoClient::createTestClient($mockConfigRequester, $mockLogger);
         $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
 
         $this->assertEquals('control', $assignment);
