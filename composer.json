@@ -35,6 +35,8 @@
     "sarahman/simple-filesystem-cache": "^1.0"
   },
   "require-dev": {
-    "phpunit/phpunit": "^9.6"
+    "phpunit/phpunit": "^9.6",
+    "google/cloud-storage": "^1.30",
+    "donatj/mock-webserver": "^2.6"
   }
 }
