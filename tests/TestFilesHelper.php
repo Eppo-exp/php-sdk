@@ -27,7 +27,7 @@ class TestFilesHelper
 
     public function __construct($bucketName)
     {
-        $this->storage = new StorageClient();
+        $this->storage = new StorageClient(['suppressKeyFileNotice' => true]);
         $this->bucket = $this->storage->bucket($bucketName);
 
         if (!file_exists(self::TEST_DATA_DIR)) {

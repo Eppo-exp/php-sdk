@@ -2,14 +2,19 @@
 
 namespace Eppo\Tests;
 
+use Eppo\Config\SDKData;
+use Eppo\ConfigurationStore;
 use Eppo\EppoClient;
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
 use Eppo\Exception\InvalidArgumentException;
+use Eppo\ExperimentConfigurationRequester;
+use Eppo\HttpClient;
 use Eppo\Tests\WebServer\MockWebServer;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use PHPUnit\Framework\TestCase;
+use Sarahman\SimpleCache\FileSystemCache;
 
 class EppoClientTest extends TestCase
 {
@@ -102,6 +107,19 @@ class EppoClientTest extends TestCase
         }
     }
 
+    public function testAssignsSubjectFromOverridesWhenExperimentIsEnabled()
+    {
+        $mockedResponse = self::MOCK_EXPERIMENT_CONFIG;
+        $mockedResponse['overrides'] = ['1b50f33aef8f681a13f623963da967ed' => 'variant-2'];
+
+        $mock = $this->getExperimentConfigurationRequesterMock($mockedResponse);
+
+        $client = EppoClient::contructTestClient($mock);
+        $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME);
+
+        $this->assertEquals('variant-2', $assignment);
+    }
+
     /**
      * @param array $subjects
      * @param string $experiment
@@ -144,5 +162,18 @@ class EppoClientTest extends TestCase
         return $assignments;
     }
 
+    private function getExperimentConfigurationRequesterMock(array $mockedResponse): ExperimentConfigurationRequester
+    {
+        $cache = new FileSystemCache();
+        $sdkData = new SDKData();
+        $httpClient = new HttpClient('', 'dummy', $sdkData);
 
+        $configStoreMock = $this->getMockBuilder(ConfigurationStore::class)->setConstructorArgs([$cache])->getMock();
+        $configStoreMock->expects($this->once())
+            ->method('getConfiguration')
+            ->with(self::EXPERIMENT_NAME)
+            ->willReturn($mockedResponse);
+
+        return new ExperimentConfigurationRequester($httpClient, $configStoreMock);
+    }
 }
