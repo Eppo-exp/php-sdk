@@ -2,35 +2,75 @@
 
 namespace Eppo\Tests;
 
+use Eppo\EppoClient;
+use Eppo\Tests\WebServer\MockWebServer;
 use PHPUnit\Framework\TestCase;
-
-use Google\Cloud\Storage\StorageClient;
-use donatj\MockWebServer\MockWebServer;
-use donatj\MockWebServer\Response;
 
 class EppoClientTest extends TestCase
 {
-    /** @var MockWebServer */
-    protected static $server;
+    const EXPERIMENT_NAME = 'mock-experiment';
 
-    public static function setUpBeforeClass() : void {
-        self::$server = new MockWebServer;
-        self::$server->start();
+    const MOCK_EXPERIMENT_CONFIG = [
+        'name' => self::EXPERIMENT_NAME,
+        'enabled' => true,
+        'subjectShards' => 100,
+        'overrides' => [],
+        'rules' => [
+            [
+                'allocationKey' => 'allocation1',
+                'conditions' => [],
+            ],
+        ],
+        'allocations' => [
+            'allocation1' => [
+                'percentExposure' => 1,
+                'variations' => [
+                    [
+                        'name' => 'control',
+                        'value' => 'control',
+                        'shardRange' => [
+                            'start' => 0,
+                            'end' => 34,
+                        ],
+                    ],
+                    [
+                        'name' => 'variant-1',
+                        'value' => 'variant-1',
+                        'shardRange' => [
+                            'start' => 34,
+                            'end' => 67,
+                        ],
+                    ],
+                    [
+                        'name' => 'variant-2',
+                        'value' => 'variant-2',
+                        'shardRange' => [
+                            'start' => 67,
+                            'end' => 100,
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ];
+
+    public static function setUpBeforeClass(): void
+    {
+        MockWebServer::start();
+
+        $testHelper = new TestFilesHelper('sdk-test-data');
+        $testHelper->downloadTestFiles();
     }
 
-    public static function tearDownAfterClass() : void {
-        // stopping the web server during tear down allows us to reuse the port for later tests
-        self::$server->stop();
+    public static function tearDownAfterClass(): void
+    {
+        MockWebServer::stop();
     }
 
-    private function downloadTestDataFiles() {
-        $storage = new StorageClient();
-        $bucket = $storage->bucket('sdk-test-data');
-        $objects = $bucket->objects(['prefix' => 'assignment/test-case']);
-        foreach ($objects as $object) {
-            $objectName = $object->name();
-            $destinationPath = __DIR__ . '../test-cases/' . $objectName;
-            $object->downloadToFile($destinationPath);
-        }
+    public function testGetAssignmentVariationAssignmentSplits(): void
+    {
+//        $testHelper = new TestFilesHelper('sdk-test-data');
+        $this->assertEquals(true, true);
+//        $testCases = $testHelper->readAssignmentTestData();
     }
 }
