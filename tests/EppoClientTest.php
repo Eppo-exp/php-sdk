@@ -10,6 +10,7 @@ use Eppo\Exception\InvalidApiKeyException;
 use Eppo\Exception\InvalidArgumentException;
 use Eppo\ExperimentConfigurationRequester;
 use Eppo\HttpClient;
+use Eppo\Logger\LoggerInterface;
 use Eppo\Tests\WebServer\MockWebServer;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
@@ -192,6 +193,35 @@ class EppoClientTest extends TestCase
             $client->getAssignment('subject-10', self::EXPERIMENT_NAME, ['appVersion' => 11]),
             'control'
         );
+    }
+
+    public function testLogsVariationAssignment()
+    {
+        $mockConfigRequester = $this->getExperimentConfigurationRequesterMock(self::MOCK_EXPERIMENT_CONFIG);
+        $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
+        $mockLogger->expects($this->once())->method('logAssignment')->with('mock-experiment', 'control', 'subject-10');
+        $subjectAttributes = [['foo' => 3]];
+
+        $client = EppoClient::contructTestClient($mockConfigRequester, $mockLogger);
+        $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
+
+        $this->assertEquals('control', $assignment);
+    }
+
+    public function testHandlesLoggingException()
+    {
+        $mockConfigRequester = $this->getExperimentConfigurationRequesterMock(self::MOCK_EXPERIMENT_CONFIG);
+        $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
+        $mockLogger->expects($this->once())
+            ->method('logAssignment')
+            ->with('mock-experiment', 'control', 'subject-10')
+            ->willThrowException(new Exception('logger error'));
+        $subjectAttributes = [['foo' => 3]];
+
+        $client = EppoClient::contructTestClient($mockConfigRequester, $mockLogger);
+        $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
+
+        $this->assertEquals('control', $assignment);
     }
 
     /**

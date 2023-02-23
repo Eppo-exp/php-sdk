@@ -6,8 +6,10 @@ use Eppo\Config\SDKData;
 use Eppo\DTO\Allocation;
 use Eppo\DTO\ExperimentConfiguration;
 use Eppo\DTO\Variation;
+use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidArgumentException;
 use Eppo\Exception\InvalidApiKeyException;
+use Eppo\Logger\LoggerInterface;
 use GuzzleHttp\Exception\GuzzleException;
 use Sarahman\SimpleCache\FileSystemCache;
 use Psr\SimpleCache\InvalidArgumentException as SimpleCacheInvalidArgumentException;
@@ -20,13 +22,19 @@ class EppoClient
     /** @var ExperimentConfigurationRequester */
     private $configurationRequester;
 
+    /** @var LoggerInterface */
+    private $assignmentLogger;
+
     /**
-     * The Singleton's constructor should always be private to prevent direct
-     * construction calls with the `new` operator.
+     * @param ExperimentConfigurationRequester $configurationRequester
+     * @param LoggerInterface|null $assignmentLogger optional assignment logger. Please check Eppo/LoggerLoggerInterface
      */
-    protected function __construct(ExperimentConfigurationRequester $configurationRequester)
-    {
+    protected function __construct(
+        ExperimentConfigurationRequester $configurationRequester,
+        ?LoggerInterface $assignmentLogger = null
+    ) {
         $this->configurationRequester = $configurationRequester;
+        $this->assignmentLogger = $assignmentLogger;
     }
 
     /**
@@ -39,10 +47,14 @@ class EppoClient
     /**
      * @param string $apiKey
      * @param string $baseUrl
+     * @param LoggerInterface|null $assignmentLogger optional assignment logger. Please check Eppo/LoggerLoggerInterface
      * @return EppoClient
      */
-    public static function init(string $apiKey, string $baseUrl = ''): EppoClient
-    {
+    public static function init(
+        string $apiKey,
+        string $baseUrl = '',
+        LoggerInterface $assignmentLogger = null
+    ): EppoClient {
         if (self::$instance === null) {
             $sdkData = new SDKData();
             $cache = new FileSystemCache();
@@ -50,21 +62,23 @@ class EppoClient
             $configStore = new ConfigurationStore($cache);
             $configRequester = new ExperimentConfigurationRequester($httpClient, $configStore);
 
-            self::$instance = new self($configRequester);
+            self::$instance = new self($configRequester, $assignmentLogger);
         }
 
         return self::$instance;
     }
 
     /**
-     * Only used for tests
-     *
      * @param ExperimentConfigurationRequester $experimentConfigurationRequester
+     * @param LoggerInterface|null $logger
+     *
      * @return EppoClient
      */
-    public static function contructTestClient(ExperimentConfigurationRequester $experimentConfigurationRequester): EppoClient
-    {
-        return new EppoClient($experimentConfigurationRequester);
+    public static function contructTestClient(
+        ExperimentConfigurationRequester $experimentConfigurationRequester,
+        ?LoggerInterface $logger = null
+    ): EppoClient {
+        return new EppoClient($experimentConfigurationRequester, $logger);
     }
 
     public static function getInstance(): EppoClient
@@ -73,14 +87,14 @@ class EppoClient
     }
 
     /**
-     * @param $subjectKey
-     * @param $experimentKey
+     * @param string $subjectKey
+     * @param string $experimentKey
      * @param array $subjectAttributes
      * @return string|null
-     * @throws Exception\HttpRequestException
+     * @throws HttpRequestException
+     * @throws GuzzleException
      * @throws InvalidApiKeyException
      * @throws InvalidArgumentException
-     * @throws GuzzleException
      * @throws SimpleCacheInvalidArgumentException
      */
     public function getAssignment(string $subjectKey, string $experimentKey, array $subjectAttributes = []): ?string
@@ -133,10 +147,18 @@ class EppoClient
             }
         }
 
-        try {
-            // $assignmentLogger->logAssignment();
-        } catch (\Exception $exception) {
-            error_log('[Eppo SDK] Error logging assignment event: ' . $exception->getMessage());
+        if ($this->assignmentLogger) {
+            try {
+                $this->assignmentLogger->logAssignment(
+                    $experimentKey,
+                    $assignedVariation,
+                    $subjectKey,
+                    time(),
+                    $subjectAttributes
+                );
+            } catch (\Exception $exception) {
+                error_log('[Eppo SDK] Error logging assignment event: ' . $exception->getMessage());
+            }
         }
 
         return $assignedVariation;
