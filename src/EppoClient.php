@@ -56,6 +56,17 @@ class EppoClient
         return self::$instance;
     }
 
+    /**
+     * Only used for tests
+     *
+     * @param ExperimentConfigurationRequester $experimentConfigurationRequester
+     * @return EppoClient
+     */
+    public static function contructTestClient(ExperimentConfigurationRequester $experimentConfigurationRequester): EppoClient
+    {
+        return new EppoClient($experimentConfigurationRequester);
+    }
+
     public static function getInstance(): EppoClient
     {
         return self::$instance;
@@ -72,7 +83,7 @@ class EppoClient
      * @throws GuzzleException
      * @throws SimpleCacheInvalidArgumentException
      */
-    public function getAssignment($subjectKey, $experimentKey, array $subjectAttributes = []): ?string
+    public function getAssignment(string $subjectKey, string $experimentKey, array $subjectAttributes = []): ?string
     {
         Validator::validateNotBlank($subjectKey, 'Invalid argument: subjectKey cannot be blank');
         Validator::validateNotBlank($experimentKey, 'Invalid argument: experimentKey cannot be blank');
@@ -153,7 +164,7 @@ class EppoClient
 
     private function getSubjectVariationOverride(string $subjectKey, ExperimentConfiguration $experimentConfig): ?string
     {
-        $subjectHash = md5($subjectKey);
+        $subjectHash = hash('md5', $subjectKey);
         $overrides = $experimentConfig->getOverrides();
         if (count($overrides) > 0) {
             return $experimentConfig->getOverrides()[$subjectHash];
