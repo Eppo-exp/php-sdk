@@ -120,6 +120,27 @@ class EppoClientTest extends TestCase
         $this->assertEquals('variant-2', $assignment);
     }
 
+    public function testAssignsSubjectFromOverridesWhenExperimentIsNotEnabled()
+    {
+        $mockedResponse = self::MOCK_EXPERIMENT_CONFIG;
+        $mockedResponse['overrides'] = ['1b50f33aef8f681a13f623963da967ed' => 'variant-2'];
+
+        $mock = $this->getExperimentConfigurationRequesterMock($mockedResponse);
+
+        $client = EppoClient::contructTestClient($mock);
+        $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME);
+        $this->assertEquals('variant-2', $assignment);
+    }
+
+    public function testReturnsNullWhenExperimentConfigIsAbsent()
+    {
+        $mock = $this->getExperimentConfigurationRequesterMock([]);
+
+        $client = EppoClient::contructTestClient($mock);
+        $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME);
+        $this->assertNull($assignment);
+    }
+
     /**
      * @param array $subjects
      * @param string $experiment
@@ -166,7 +187,11 @@ class EppoClientTest extends TestCase
     {
         $cache = new FileSystemCache();
         $sdkData = new SDKData();
-        $httpClient = new HttpClient('', 'dummy', $sdkData);
+
+        $httpClientMock = $this->getMockBuilder(HttpClient::class)->setConstructorArgs(['', 'dummy', $sdkData])->getMock();
+        $httpClientMock->expects($this->any())
+            ->method('get')
+            ->willReturn('');
 
         $configStoreMock = $this->getMockBuilder(ConfigurationStore::class)->setConstructorArgs([$cache])->getMock();
         $configStoreMock->expects($this->once())
@@ -174,6 +199,6 @@ class EppoClientTest extends TestCase
             ->with(self::EXPERIMENT_NAME)
             ->willReturn($mockedResponse);
 
-        return new ExperimentConfigurationRequester($httpClient, $configStoreMock);
+        return new ExperimentConfigurationRequester($httpClientMock, $configStoreMock);
     }
 }

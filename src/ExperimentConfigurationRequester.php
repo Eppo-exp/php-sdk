@@ -37,7 +37,7 @@ class ExperimentConfigurationRequester
      * @throws InvalidApiKeyException
      * @throws InvalidArgumentException
      */
-    public function getConfiguration(string $experiment): ExperimentConfiguration
+    public function getConfiguration(string $experiment): ?ExperimentConfiguration
     {
         if ($this->httpClient->isUnauthorized) {
             throw new InvalidApiKeyException();
@@ -46,6 +46,11 @@ class ExperimentConfigurationRequester
         $configuration = $this->configurationStore->getConfiguration($experiment);
 
         if (!$configuration) {
+            $configurations = $this->fetchAndStoreConfigurations();
+            if (!$configurations || !count($configurations)) {
+                return null;
+            }
+
             $configuration = $this->fetchAndStoreConfigurations()[$experiment];
         }
 
@@ -61,6 +66,10 @@ class ExperimentConfigurationRequester
     public function fetchAndStoreConfigurations(): array
     {
         $responseData = json_decode($this->httpClient->get(self::RAC_ENDPOINT), true);
+        if (!$responseData) {
+            return [];
+        }
+
         $this->configurationStore->setConfigurations($responseData['flags']);
         return $responseData['flags'];
     }

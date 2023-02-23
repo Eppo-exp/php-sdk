@@ -89,6 +89,10 @@ class EppoClient
         Validator::validateNotBlank($experimentKey, 'Invalid argument: experimentKey cannot be blank');
 
         $experimentConfig = $this->configurationRequester->getConfiguration($experimentKey);
+        if (!$experimentConfig) {
+            return null;
+        }
+
         $allowListOverride = $this->getSubjectVariationOverride($subjectKey, $experimentConfig);
         if ($allowListOverride) {
             return $allowListOverride;
