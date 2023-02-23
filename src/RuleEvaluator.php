@@ -106,6 +106,7 @@ final class RuleEvaluator
     /**
      * @param $attributeValue
      * @param $conditionValue
+     *
      * @return bool
      */
     private static function isNotOneOf($attributeValue, $conditionValue): bool

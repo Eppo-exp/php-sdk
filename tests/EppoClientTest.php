@@ -266,6 +266,10 @@ class EppoClientTest extends TestCase
         return $assignments;
     }
 
+    /**
+     * @param array $mockedResponse
+     * @return ExperimentConfigurationRequester
+     */
     private function getExperimentConfigurationRequesterMock(array $mockedResponse): ExperimentConfigurationRequester
     {
         $cache = new FileSystemCache();

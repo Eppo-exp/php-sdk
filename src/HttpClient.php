@@ -4,16 +4,13 @@ namespace Eppo;
 
 use Eppo\Config\SDKData;
 use Eppo\Exception\HttpRequestException;
-use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
-use Psr\Http\Message\StreamInterface;
 
 class HttpClient
 {
     /**
-     * @internal
      * @var Client
      */
     protected $client;
@@ -75,6 +72,7 @@ class HttpClient
 
     /**
      * @param int $status
+     *
      * @return bool
      */
     private function isHttpErrorRecoverable(int $status): bool

@@ -22,6 +22,52 @@ class ExperimentConfiguration
     /** @var array */
     private $rules = [];
 
+    public function __construct(array $configuration)
+    {
+        $this->setEnabled($configuration['enabled']);
+        $this->setSubjectShards($configuration['subjectShards']);
+
+        $rules = [];
+        foreach ($configuration['rules'] as $configRule) {
+            $rule = new Rule();
+            $rule->allocationKey = $configRule['allocationKey'];
+
+            foreach ($configRule['conditions'] as $configCondition) {
+                $condition = new Condition();
+                $condition->value = $configCondition['value'];
+                $condition->operator = $configCondition['operator'];
+                $condition->attribute = $configCondition['attribute'];
+
+                $rule->conditions[] = $condition;
+            }
+
+            $rules[] = $rule;
+        }
+        $this->setRules($rules);
+
+        $allocations = [];
+        foreach ($configuration['allocations'] as $configAllocationName => $configAllocation) {
+            $allocation = new Allocation();
+            $allocation->percentExposure = $configAllocation['percentExposure'];
+
+            foreach ($configAllocation['variations'] as $configVariation) {
+                $variation = new Variation();
+                $variation->shardRange = new ShardRange();
+                $variation->name = $configVariation['name'];
+                $variation->value = $configVariation['value'];
+                $variation->shardRange->start = $configVariation['shardRange']['start'];
+                $variation->shardRange->end = $configVariation['shardRange']['end'];
+
+                $allocation->variations[] = $variation;
+            }
+
+            $allocations[$configAllocationName] = $allocation;
+        }
+        $this->setAllocations($allocations);
+
+        $this->setOverrides($configuration['overrides']);
+    }
+
     /**
      * @return string
      */

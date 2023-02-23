@@ -16,6 +16,7 @@ interface LoggerInterface extends PSRLoggerInterface
      * @param string $subject
      * @param string $timestamp
      * @param array $subjectAttributes
+     *
      * @return void
      */
     public function logAssignment(

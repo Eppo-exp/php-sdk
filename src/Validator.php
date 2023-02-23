@@ -14,7 +14,8 @@ class Validator
      *
      * @throws InvalidArgumentException
      */
-    public static function validateNotBlank(string $value, string $errorMessage) {
+    public static function validateNotBlank(string $value, string $errorMessage)
+    {
         if (!$value || strlen($value) === 0) {
             throw new InvalidArgumentException($errorMessage);
         }

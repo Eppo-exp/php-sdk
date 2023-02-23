@@ -45,9 +45,12 @@ class EppoClient
     }
 
     /**
+     * Initializes EppoClient singleton instance.
+     *
      * @param string $apiKey
      * @param string $baseUrl
      * @param LoggerInterface|null $assignmentLogger optional assignment logger. Please check Eppo/LoggerLoggerInterface
+     *
      * @return EppoClient
      */
     public static function init(
@@ -69,6 +72,17 @@ class EppoClient
     }
 
     /**
+     * Gets singleton instance of the EppoClient.
+     * Run EppoClient->init before using this.
+     *
+     * @return EppoClient
+     */
+    public static function getInstance(): EppoClient
+    {
+        return self::$instance;
+    }
+
+    /**
      * @param ExperimentConfigurationRequester $experimentConfigurationRequester
      * @param LoggerInterface|null $logger
      *
@@ -81,16 +95,13 @@ class EppoClient
         return new EppoClient($experimentConfigurationRequester, $logger);
     }
 
-    public static function getInstance(): EppoClient
-    {
-        return self::$instance;
-    }
-
     /**
      * @param string $subjectKey
      * @param string $experimentKey
      * @param array $subjectAttributes
+     *
      * @return string|null
+     *
      * @throws HttpRequestException
      * @throws GuzzleException
      * @throws InvalidApiKeyException
@@ -173,6 +184,7 @@ class EppoClient
      * @param string $experimentKey
      * @param ExperimentConfiguration $experimentConfiguration
      * @param Allocation $allocation
+     *
      * @return bool
      */
     private function isInExperimentSample(
@@ -188,6 +200,12 @@ class EppoClient
         return $shard <= $percentExposure * $subjectShards;
     }
 
+    /**
+     * @param string $subjectKey
+     * @param ExperimentConfiguration $experimentConfig
+     *
+     * @return string|null
+     */
     private function getSubjectVariationOverride(string $subjectKey, ExperimentConfiguration $experimentConfig): ?string
     {
         $subjectHash = hash('md5', $subjectKey);
