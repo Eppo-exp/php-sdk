@@ -45,7 +45,6 @@ class EppoClient
     {
         if (self::$instance === null) {
             $sdkData = new SDKData();
-
             $cache = new FileSystemCache();
             $httpClient = new HttpClient($baseUrl, $apiKey, $sdkData);
             $configStore = new ConfigurationStore($cache);
@@ -54,6 +53,11 @@ class EppoClient
             self::$instance = new self($configRequester);
         }
 
+        return self::$instance;
+    }
+
+    public static function getInstance(): EppoClient
+    {
         return self::$instance;
     }
 

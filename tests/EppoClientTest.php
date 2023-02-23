@@ -3,7 +3,12 @@
 namespace Eppo\Tests;
 
 use Eppo\EppoClient;
+use Eppo\Exception\HttpRequestException;
+use Eppo\Exception\InvalidApiKeyException;
+use Eppo\Exception\InvalidArgumentException;
 use Eppo\Tests\WebServer\MockWebServer;
+use Exception;
+use GuzzleHttp\Exception\GuzzleException;
 use PHPUnit\Framework\TestCase;
 
 class EppoClientTest extends TestCase
@@ -54,12 +59,15 @@ class EppoClientTest extends TestCase
         ],
     ];
 
+    private static $testFilesHelper;
+
     public static function setUpBeforeClass(): void
     {
-        MockWebServer::start();
+        self::$testFilesHelper = new TestFilesHelper('sdk-test-data');
+        self::$testFilesHelper->downloadTestFiles();
 
-        $testHelper = new TestFilesHelper('sdk-test-data');
-        $testHelper->downloadTestFiles();
+        MockWebServer::start();
+        EppoClient::init('dummy', 'http://localhost:4000');
     }
 
     public static function tearDownAfterClass(): void
@@ -69,8 +77,72 @@ class EppoClientTest extends TestCase
 
     public function testGetAssignmentVariationAssignmentSplits(): void
     {
-//        $testHelper = new TestFilesHelper('sdk-test-data');
-        $this->assertEquals(true, true);
-//        $testCases = $testHelper->readAssignmentTestData();
+        $assignmentsTestData = self::$testFilesHelper->readAssignmentTestData();
+
+        foreach ($assignmentsTestData as $assignmentTestData) {
+            $experiment = $assignmentTestData['experiment'];
+            $subjects = array_key_exists('subjects', $assignmentTestData)
+                ? $assignmentTestData['subjects']
+                : null;
+            $subjectsWithAttributes = array_key_exists('subjectsWithAttributes', $assignmentTestData)
+                ? $assignmentTestData['subjectsWithAttributes']
+                : null;
+
+            $expectedAssignments = $assignmentTestData['expectedAssignments'];
+
+            try {
+                $assignments = !!$subjectsWithAttributes
+                    ? $this->getAssignmentsWithSubjectAttributes($subjectsWithAttributes, $experiment)
+                    : $this->getAssignments($subjects, $experiment);
+            } catch (Exception $exception) {
+                $this->fail('Test failed');
+            }
+
+            $this->assertEquals($expectedAssignments, $assignments);
+        }
     }
+
+    /**
+     * @param array $subjects
+     * @param string $experiment
+     * @return array
+     * @throws HttpRequestException
+     * @throws InvalidApiKeyException
+     * @throws InvalidArgumentException
+     * @throws GuzzleException
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    private function getAssignments(array $subjects, string $experiment): array
+    {
+        $client = EppoClient::getInstance();
+        $assignments = [];
+        foreach ($subjects as $subjectKey) {
+            $assignments[] = $client->getAssignment($subjectKey, $experiment);
+        }
+
+        return $assignments;
+    }
+
+    /**
+     * @param array $subjectsWithAttributes
+     * @param string $experiment
+     * @return array
+     * @throws GuzzleException
+     * @throws HttpRequestException
+     * @throws InvalidApiKeyException
+     * @throws InvalidArgumentException
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    private function getAssignmentsWithSubjectAttributes(array $subjectsWithAttributes, string $experiment): array
+    {
+        $client = EppoClient::getInstance();
+        $assignments = [];
+        foreach ($subjectsWithAttributes as $subject) {
+            $assignment = $client->getAssignment($subject['subjectKey'], $experiment, $subject['subjectAttributes']);
+            $assignments[] = $assignment;
+        }
+        return $assignments;
+    }
+
+
 }
