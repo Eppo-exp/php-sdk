@@ -141,6 +141,59 @@ class EppoClientTest extends TestCase
         $this->assertNull($assignment);
     }
 
+    public function testOnlyReturnsVariationIfSubjectMatchesRules()
+    {
+        $mockedResponse = self::MOCK_EXPERIMENT_CONFIG;
+        $mockedResponse['rules'] = [
+            [
+                'allocationKey' => 'allocation1',
+                'conditions' => [
+                    [
+                        'operator' => 'GT',
+                        'attribute' => 'appVersion',
+                        'value' => 10
+                    ]
+                ]
+            ]
+        ];
+        $mockedResponse['allocations'] = [
+            'allocation1' => [
+                'percentExposure' => 1,
+                'variations' => [
+                    [
+                        'name' => 'control',
+                        'value' => 'control',
+                        'shardRange' => [
+                            'start' => 0,
+                            'end' => 50
+                        ]
+                    ],
+                    [
+                        'name' => 'treatment',
+                        'value' => 'treatment',
+                        'shardRange' => [
+                            'start' => 50,
+                            'end' => 100
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        $mock = $this->getExperimentConfigurationRequesterMock($mockedResponse);
+        $client = EppoClient::contructTestClient($mock);
+        $this->assertNull(
+            $client->getAssignment('subject-10', self::EXPERIMENT_NAME, ['appVersion' => 9])
+        );
+        $this->assertNull(
+            $client->getAssignment('subject-10', self::EXPERIMENT_NAME)
+        );
+        $this->assertEquals(
+            $client->getAssignment('subject-10', self::EXPERIMENT_NAME, ['appVersion' => 11]),
+            'control'
+        );
+    }
+
     /**
      * @param array $subjects
      * @param string $experiment
@@ -188,13 +241,17 @@ class EppoClientTest extends TestCase
         $cache = new FileSystemCache();
         $sdkData = new SDKData();
 
-        $httpClientMock = $this->getMockBuilder(HttpClient::class)->setConstructorArgs(['', 'dummy', $sdkData])->getMock();
+        $httpClientMock = $this->getMockBuilder(HttpClient::class)->setConstructorArgs([
+            '',
+            'dummy',
+            $sdkData
+        ])->getMock();
         $httpClientMock->expects($this->any())
             ->method('get')
             ->willReturn('');
 
         $configStoreMock = $this->getMockBuilder(ConfigurationStore::class)->setConstructorArgs([$cache])->getMock();
-        $configStoreMock->expects($this->once())
+        $configStoreMock->expects($this->any())
             ->method('getConfiguration')
             ->with(self::EXPERIMENT_NAME)
             ->willReturn($mockedResponse);
