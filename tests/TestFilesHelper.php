@@ -25,7 +25,10 @@ class TestFilesHelper
     /** @var Bucket */
     private $bucket;
 
-    public function __construct($bucketName)
+    /**
+     * @param string $bucketName
+     */
+    public function __construct(string $bucketName)
     {
         $this->storage = new StorageClient(['suppressKeyFileNotice' => true]);
         $this->bucket = $this->storage->bucket($bucketName);
