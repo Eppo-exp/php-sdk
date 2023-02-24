@@ -25,7 +25,6 @@
   "require": {
     "php": "^7.3.31 || ^8.0",
     "guzzlehttp/guzzle": "^7.0",
-    "ext-apcu": "*",
     "ext-json": "*",
     "sarahman/simple-filesystem-cache": "^1.0"
   },
