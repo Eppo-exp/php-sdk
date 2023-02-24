@@ -17,6 +17,11 @@ class Poller implements PollerInterface {
     /** @var callable */
     private $callback;
 
+    /**
+     * @param int $interval (milliseconds)
+     * @param int $jitterMillis
+     * @param callable $callback
+     */
     public function __construct(int $interval, int $jitterMillis, callable $callback) {
         $this->interval = $interval;
         $this->jitterMillis = $jitterMillis;
