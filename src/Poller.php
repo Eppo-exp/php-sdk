@@ -2,7 +2,53 @@
 
 namespace Eppo;
 
-class Poller
-{
+use Eppo\Exception\HttpRequestException;
 
+class Poller implements IPoller {
+    /** @var bool */
+    private $stopped = false;
+
+    /** @var int */
+    private $interval;
+
+    /** @var int */
+    private $jitterMillis;
+
+    /** @var callable */
+    private $callback;
+
+    public function __construct(int $interval, int $jitterMillis, callable $callback) {
+        $this->interval = $interval;
+        $this->jitterMillis = $jitterMillis;
+        $this->callback = $callback;
+    }
+
+    public function start(): void {
+        $this->stopped = false;
+        $this->poll();
+    }
+
+    public function stop(): void {
+        $this->stopped = true;
+    }
+
+    private function poll(): void {
+        if ($this->stopped) {
+            return;
+        }
+
+        try {
+            call_user_func($this->callback);
+        } catch (HttpRequestException $error) {
+            if (!$error->isRecoverable) {
+                $this->stop();
+            }
+            error_log("Error polling configurations: " . $error->getMessage());
+        }
+
+        $intervalWithJitter = $this->interval - mt_rand(0, $this->jitterMillis);
+        usleep($intervalWithJitter * 1000);
+
+        $this->poll();
+    }
 }

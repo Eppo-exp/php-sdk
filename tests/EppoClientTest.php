@@ -10,6 +10,7 @@ use Eppo\Exception\InvalidApiKeyException;
 use Eppo\Exception\InvalidArgumentException;
 use Eppo\ExperimentConfigurationRequester;
 use Eppo\HttpClient;
+use Eppo\IPoller;
 use Eppo\Logger\LoggerInterface;
 use Eppo\Tests\WebServer\MockWebServer;
 use Exception;
@@ -72,8 +73,17 @@ class EppoClientTest extends TestCase
         self::$testFilesHelper = new TestFilesHelper('sdk-test-data');
         self::$testFilesHelper->downloadTestFiles();
 
-        MockWebServer::start();
-        EppoClient::init('dummy', 'http://localhost:4000');
+        try {
+            MockWebServer::start();
+        } catch (Exception $exception) {
+            self::fail('Failed to start mocked web server: ' . $exception->getMessage());
+        }
+
+        try {
+            EppoClient::init('dummy', 'http://localhost:4000');
+        } catch (Exception $exception) {
+            self::fail('Failed to initialize EppoClient: ' . $exception->getMessage());
+        }
     }
 
     public static function tearDownAfterClass(): void
@@ -100,7 +110,7 @@ class EppoClientTest extends TestCase
                 $assignments = !!$subjectsWithAttributes
                     ? $this->getAssignmentsWithSubjectAttributes($subjectsWithAttributes, $experiment)
                     : $this->getAssignments($subjects, $experiment);
-            } catch (Exception $exception) {
+            } catch (Exception|GuzzleException|\Psr\SimpleCache\InvalidArgumentException $exception) {
                 $this->fail('Test failed');
             }
 
@@ -113,9 +123,10 @@ class EppoClientTest extends TestCase
         $mockedResponse = self::MOCK_EXPERIMENT_CONFIG;
         $mockedResponse['overrides'] = ['1b50f33aef8f681a13f623963da967ed' => 'variant-2'];
 
-        $mock = $this->getExperimentConfigurationRequesterMock($mockedResponse);
+        $experimentConfigRequesterMock = $this->getExperimentConfigurationRequesterMock($mockedResponse);
+        $pollerMock = $this->getPollerMock();
 
-        $client = EppoClient::createTestClient($mock);
+        $client = EppoClient::createTestClient($experimentConfigRequesterMock, $pollerMock);
         $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME);
 
         $this->assertEquals('variant-2', $assignment);
@@ -126,18 +137,20 @@ class EppoClientTest extends TestCase
         $mockedResponse = self::MOCK_EXPERIMENT_CONFIG;
         $mockedResponse['overrides'] = ['1b50f33aef8f681a13f623963da967ed' => 'variant-2'];
 
-        $mock = $this->getExperimentConfigurationRequesterMock($mockedResponse);
+        $experimentConfigRequesterMock = $this->getExperimentConfigurationRequesterMock($mockedResponse);
+        $pollerMock = $this->getPollerMock();
 
-        $client = EppoClient::createTestClient($mock);
+        $client = EppoClient::createTestClient($experimentConfigRequesterMock, $pollerMock);
         $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME);
         $this->assertEquals('variant-2', $assignment);
     }
 
     public function testReturnsNullWhenExperimentConfigIsAbsent()
     {
-        $mock = $this->getExperimentConfigurationRequesterMock([]);
+        $experimentConfigRequesterMock = $this->getExperimentConfigurationRequesterMock([]);
+        $pollerMock = $this->getPollerMock();
 
-        $client = EppoClient::createTestClient($mock);
+        $client = EppoClient::createTestClient($experimentConfigRequesterMock, $pollerMock);
         $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME);
         $this->assertNull($assignment);
     }
@@ -181,8 +194,10 @@ class EppoClientTest extends TestCase
             ]
         ];
 
-        $mock = $this->getExperimentConfigurationRequesterMock($mockedResponse);
-        $client = EppoClient::createTestClient($mock);
+        $experimentConfigRequesterMock = $this->getExperimentConfigurationRequesterMock($mockedResponse);
+        $pollerMock = $this->getPollerMock();
+        $client = EppoClient::createTestClient($experimentConfigRequesterMock, $pollerMock);
+
         $this->assertNull(
             $client->getAssignment('subject-10', self::EXPERIMENT_NAME, ['appVersion' => 9])
         );
@@ -197,12 +212,13 @@ class EppoClientTest extends TestCase
 
     public function testLogsVariationAssignment()
     {
+        $pollerMock = $this->getPollerMock();
         $mockConfigRequester = $this->getExperimentConfigurationRequesterMock(self::MOCK_EXPERIMENT_CONFIG);
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
         $mockLogger->expects($this->once())->method('logAssignment')->with('mock-experiment', 'control', 'subject-10');
         $subjectAttributes = [['foo' => 3]];
 
-        $client = EppoClient::createTestClient($mockConfigRequester, $mockLogger);
+        $client = EppoClient::createTestClient($mockConfigRequester, $pollerMock, $mockLogger);
         $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
 
         $this->assertEquals('control', $assignment);
@@ -210,6 +226,7 @@ class EppoClientTest extends TestCase
 
     public function testHandlesLoggingException()
     {
+        $pollerMock = $this->getPollerMock();
         $mockConfigRequester = $this->getExperimentConfigurationRequesterMock(self::MOCK_EXPERIMENT_CONFIG);
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
         $mockLogger->expects($this->once())
@@ -218,7 +235,7 @@ class EppoClientTest extends TestCase
             ->willThrowException(new Exception('logger error'));
         $subjectAttributes = [['foo' => 3]];
 
-        $client = EppoClient::createTestClient($mockConfigRequester, $mockLogger);
+        $client = EppoClient::createTestClient($mockConfigRequester, $pollerMock, $mockLogger);
         $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
 
         $this->assertEquals('control', $assignment);
@@ -291,5 +308,10 @@ class EppoClientTest extends TestCase
             ->willReturn($mockedResponse);
 
         return new ExperimentConfigurationRequester($httpClientMock, $configStoreMock);
+    }
+
+    private function getPollerMock()
+    {
+        return $this->getMockBuilder(IPoller::class)->getMock();
     }
 }

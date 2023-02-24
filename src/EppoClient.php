@@ -18,6 +18,11 @@ use Psr\SimpleCache\InvalidArgumentException as SimpleCacheInvalidArgumentExcept
 
 class EppoClient
 {
+    const SECOND_MILLIS = 1000;
+    const MINUTE_MILLIS = 60 * self::SECOND_MILLIS;
+    const POLL_INTERVAL_MILLIS = 5 * self::MINUTE_MILLIS;
+    const JITTER_MILLIS = 30 * self::SECOND_MILLIS;
+
     /** @var EppoClient */
     private static $instance;
 
@@ -27,23 +32,22 @@ class EppoClient
     /** @var LoggerInterface */
     private $assignmentLogger;
 
+    /** @var IPoller */
+    private $poller;
+
     /**
      * @param ExperimentConfigurationRequester $configurationRequester
+     * @param IPoller $poller
      * @param LoggerInterface|null $assignmentLogger optional assignment logger. Please check Eppo/LoggerLoggerInterface
      */
     protected function __construct(
         ExperimentConfigurationRequester $configurationRequester,
+        IPoller $poller,
         ?LoggerInterface $assignmentLogger = null
     ) {
         $this->configurationRequester = $configurationRequester;
         $this->assignmentLogger = $assignmentLogger;
-    }
-
-    /**
-     * Singletons should not be cloneable.
-     */
-    protected function __clone()
-    {
+        $this->poller = $poller;
     }
 
     /**
@@ -71,8 +75,15 @@ class EppoClient
             $httpClient = new HttpClient($baseUrl, $apiKey, $sdkData);
             $configStore = new ConfigurationStore($cache);
             $configRequester = new ExperimentConfigurationRequester($httpClient, $configStore);
+            $poller = new Poller(
+                self::POLL_INTERVAL_MILLIS,
+                self::JITTER_MILLIS,
+                function () use ($configRequester) {
+                    $configRequester->fetchAndStoreConfigurations();
+                }
+            );
 
-            self::$instance = new self($configRequester, $assignmentLogger);
+            self::$instance = new self($configRequester, $poller, $assignmentLogger);
         }
 
         return self::$instance;
@@ -169,16 +180,38 @@ class EppoClient
     }
 
     /**
+     * Only used for unit-tests.
+     * For production use please use only singleton instance.
+     *
      * @param ExperimentConfigurationRequester $experimentConfigurationRequester
+     * @param IPoller $poller
      * @param LoggerInterface|null $logger
      *
      * @return EppoClient
      */
     public static function createTestClient(
         ExperimentConfigurationRequester $experimentConfigurationRequester,
+        IPoller $poller,
         ?LoggerInterface $logger = null
     ): EppoClient {
-        return new EppoClient($experimentConfigurationRequester, $logger);
+        return new EppoClient($experimentConfigurationRequester, $poller, $logger);
+    }
+
+    public function startPolling()
+    {
+        $this->poller->start();
+    }
+
+    public function stopPolling()
+    {
+        $this->poller->stop();
+    }
+
+    /**
+     * Singletons should not be cloneable.
+     */
+    protected function __clone()
+    {
     }
 
     /**
