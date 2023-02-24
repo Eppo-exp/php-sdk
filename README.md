@@ -28,8 +28,8 @@ require __DIR__ . '/vendor/autoload.php';
 $eppoClient = EppoClient::init(
    "<your_api_key>",
    "<base_url>", // optional, default https://eppo.cloud/api
-   $assignmentLogger, // optional, must be an instance of Eppo\LoggerInterface
-   $cache // optional, must be an instance of PSR-6 CacheInterface. If not passed, FileSystem cache will be used
+   $assignmentLogger, // optional, must be an instance of Eppo\Logger\LoggerInterface
+   $cache // optional, must be an instance of PSR-16 CacheInterface. If not passed, FileSystem cache will be used
 );
 
 $subjectAttributes = [];
