@@ -10,7 +10,9 @@ use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidArgumentException;
 use Eppo\Exception\InvalidApiKeyException;
 use Eppo\Logger\LoggerInterface;
+use Exception;
 use GuzzleHttp\Exception\GuzzleException;
+use Psr\SimpleCache\CacheInterface;
 use Sarahman\SimpleCache\FileSystemCache;
 use Psr\SimpleCache\InvalidArgumentException as SimpleCacheInvalidArgumentException;
 
@@ -49,18 +51,23 @@ class EppoClient
      *
      * @param string $apiKey
      * @param string $baseUrl
-     * @param LoggerInterface|null $assignmentLogger optional assignment logger. Please check Eppo/LoggerLoggerInterface
+     * @param LoggerInterface|null $assignmentLogger optional assignment logger. Please check Eppo/LoggerLoggerInterface.
+     * @param CacheInterface|null $cache optional cache instance. Compatible with psr-16 simple cache. By default, (if nothing passed) EppoClient will use FileSystem cache.
      *
      * @return EppoClient
+     * @throws Exception
      */
     public static function init(
         string $apiKey,
         string $baseUrl = '',
-        LoggerInterface $assignmentLogger = null
+        LoggerInterface $assignmentLogger = null,
+        CacheInterface $cache = null
     ): EppoClient {
         if (self::$instance === null) {
             $sdkData = new SDKData();
-            $cache = new FileSystemCache(__DIR__ . '/../cache');
+            if (!$cache) {
+                $cache = new FileSystemCache(__DIR__ . '/../cache');
+            }
             $httpClient = new HttpClient($baseUrl, $apiKey, $sdkData);
             $configStore = new ConfigurationStore($cache);
             $configRequester = new ExperimentConfigurationRequester($httpClient, $configStore);
@@ -153,7 +160,7 @@ class EppoClient
                     time(),
                     $subjectAttributes
                 );
-            } catch (\Exception $exception) {
+            } catch (Exception $exception) {
                 error_log('[Eppo SDK] Error logging assignment event: ' . $exception->getMessage());
             }
         }
