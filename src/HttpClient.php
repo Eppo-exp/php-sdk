@@ -10,14 +10,13 @@ use GuzzleHttp\Exception\RequestException;
 
 class HttpClient
 {
-    /**
-     * @var Client
-     */
+    /** @var Client */
     protected $client;
 
     /** @var bool */
     public $isUnauthorized = false;
 
+    /** @var array */
     private $sdkParams = [];
 
     /**

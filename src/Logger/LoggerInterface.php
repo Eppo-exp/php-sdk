@@ -4,8 +4,10 @@ namespace Eppo\Logger;
 
 use Psr\Log\LoggerInterface as PSRLoggerInterface;
 
-interface LoggerInterface extends PSRLoggerInterface
+interface LoggerInterface
 {
+    public function __construct(PSRLoggerInterface $logger);
+
     /**
      * Method used by EppoClient to log assignments.
      * Will pass to this method all the assignment information, and, based on implementation,

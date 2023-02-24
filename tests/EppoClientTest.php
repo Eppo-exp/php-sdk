@@ -214,8 +214,8 @@ class EppoClientTest extends TestCase
     {
         $pollerMock = $this->getPollerMock();
         $mockConfigRequester = $this->getExperimentConfigurationRequesterMock(self::MOCK_EXPERIMENT_CONFIG);
-        $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
-        $mockLogger->expects($this->once())->method('logAssignment')->with('mock-experiment', 'control', 'subject-10');
+        $mockLogger = $this->getLoggerMock();
+
         $subjectAttributes = [['foo' => 3]];
 
         $client = EppoClient::createTestClient($mockConfigRequester, $pollerMock, $mockLogger);
@@ -228,7 +228,7 @@ class EppoClientTest extends TestCase
     {
         $pollerMock = $this->getPollerMock();
         $mockConfigRequester = $this->getExperimentConfigurationRequesterMock(self::MOCK_EXPERIMENT_CONFIG);
-        $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
+        $mockLogger = $this->getLoggerMock();
         $mockLogger->expects($this->once())
             ->method('logAssignment')
             ->with('mock-experiment', 'control', 'subject-10')
@@ -313,5 +313,14 @@ class EppoClientTest extends TestCase
     private function getPollerMock()
     {
         return $this->getMockBuilder(PollerInterface::class)->getMock();
+    }
+
+    private function getLoggerMock()
+    {
+        $psrLoggerMock = $this->getMockBuilder(\Psr\Log\LoggerInterface::class)->getMock();
+        $mockLogger = $this->getMockBuilder(LoggerInterface::class)->setConstructorArgs([$psrLoggerMock])->getMock();
+        $mockLogger->expects($this->once())->method('logAssignment')->with('mock-experiment', 'control', 'subject-10');
+
+        return $mockLogger;
     }
 }
