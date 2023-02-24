@@ -7,6 +7,7 @@ use Eppo\Exception\HttpRequestException;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
+use Teapot\StatusCode;
 
 class HttpClient
 {
@@ -76,8 +77,8 @@ class HttpClient
      */
     private function isHttpErrorRecoverable(int $status): bool
     {
-        if ($status >= 400 && $status < 500) {
-            return $status === 429 || $status === 408;
+        if ($status >= StatusCode::BAD_REQUEST && $status < StatusCode::INTERNAL_SERVER_ERROR) {
+            return $status === StatusCode::CONFLICT || $status === StatusCode::REQUEST_TIMEOUT;
         }
         return true;
     }
