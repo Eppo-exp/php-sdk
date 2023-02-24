@@ -20,8 +20,10 @@ use Sarahman\SimpleCache\FileSystemCache;
 
 class EppoClientTest extends TestCase
 {
+    /** @var string */
     const EXPERIMENT_NAME = 'mock-experiment';
 
+    /** @var array */
     const MOCK_EXPERIMENT_CONFIG = [
         'name' => self::EXPERIMENT_NAME,
         'enabled' => true,
@@ -66,6 +68,7 @@ class EppoClientTest extends TestCase
         ],
     ];
 
+    /** @var TestFilesHelper */
     private static $testFilesHelper;
 
     public static function setUpBeforeClass(): void
