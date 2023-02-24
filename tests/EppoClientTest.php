@@ -320,8 +320,7 @@ class EppoClientTest extends TestCase
 
     private function getLoggerMock()
     {
-        $psrLoggerMock = $this->getMockBuilder(\Psr\Log\LoggerInterface::class)->getMock();
-        $mockLogger = $this->getMockBuilder(LoggerInterface::class)->setConstructorArgs([$psrLoggerMock])->getMock();
+        $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
         $mockLogger->expects($this->once())->method('logAssignment')->with('mock-experiment', 'control', 'subject-10');
 
         return $mockLogger;
