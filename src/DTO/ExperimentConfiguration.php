@@ -22,6 +22,9 @@ class ExperimentConfiguration
     /** @var array */
     private $rules = [];
 
+    /**
+     * @param array $configuration
+     */
     public function __construct(array $configuration)
     {
         $this->setEnabled($configuration['enabled']);

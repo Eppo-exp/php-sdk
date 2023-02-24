@@ -12,11 +12,6 @@
   ],
   "minimum-stability": "stable",
   "version": "1.0.0",
-  "config": {
-    "platform": {
-      "php": "7.3.31"
-    }
-  },
   "autoload": {
     "psr-4": {
       "Eppo\\": "src/"
