@@ -32,17 +32,17 @@ class EppoClient
     /** @var LoggerInterface */
     private $assignmentLogger;
 
-    /** @var IPoller */
+    /** @var PollerInterface */
     private $poller;
 
     /**
      * @param ExperimentConfigurationRequester $configurationRequester
-     * @param IPoller $poller
+     * @param PollerInterface $poller
      * @param LoggerInterface|null $assignmentLogger optional assignment logger. Please check Eppo/LoggerLoggerInterface
      */
     protected function __construct(
         ExperimentConfigurationRequester $configurationRequester,
-        IPoller $poller,
+        PollerInterface $poller,
         ?LoggerInterface $assignmentLogger = null
     ) {
         $this->configurationRequester = $configurationRequester;
@@ -184,14 +184,14 @@ class EppoClient
      * For production use please use only singleton instance.
      *
      * @param ExperimentConfigurationRequester $experimentConfigurationRequester
-     * @param IPoller $poller
+     * @param PollerInterface $poller
      * @param LoggerInterface|null $logger
      *
      * @return EppoClient
      */
     public static function createTestClient(
         ExperimentConfigurationRequester $experimentConfigurationRequester,
-        IPoller $poller,
+        PollerInterface $poller,
         ?LoggerInterface $logger = null
     ): EppoClient {
         return new EppoClient($experimentConfigurationRequester, $poller, $logger);

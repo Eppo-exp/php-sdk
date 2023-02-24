@@ -2,7 +2,7 @@
 
 namespace Eppo;
 
-interface IPoller
+interface PollerInterface
 {
     public function start(): void;
 

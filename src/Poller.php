@@ -4,7 +4,7 @@ namespace Eppo;
 
 use Eppo\Exception\HttpRequestException;
 
-class Poller implements IPoller {
+class Poller implements PollerInterface {
     /** @var bool */
     private $stopped = false;
 

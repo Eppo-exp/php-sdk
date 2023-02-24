@@ -10,8 +10,8 @@ use Eppo\Exception\InvalidApiKeyException;
 use Eppo\Exception\InvalidArgumentException;
 use Eppo\ExperimentConfigurationRequester;
 use Eppo\HttpClient;
-use Eppo\IPoller;
 use Eppo\Logger\LoggerInterface;
+use Eppo\PollerInterface;
 use Eppo\Tests\WebServer\MockWebServer;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
@@ -312,6 +312,6 @@ class EppoClientTest extends TestCase
 
     private function getPollerMock()
     {
-        return $this->getMockBuilder(IPoller::class)->getMock();
+        return $this->getMockBuilder(PollerInterface::class)->getMock();
     }
 }
