@@ -60,7 +60,7 @@ class EppoClient
     ): EppoClient {
         if (self::$instance === null) {
             $sdkData = new SDKData();
-            $cache = new FileSystemCache();
+            $cache = new FileSystemCache(__DIR__ . '/../cache');
             $httpClient = new HttpClient($baseUrl, $apiKey, $sdkData);
             $configStore = new ConfigurationStore($cache);
             $configRequester = new ExperimentConfigurationRequester($httpClient, $configStore);
