@@ -114,7 +114,7 @@ class EppoClientTest extends TestCase
                     ? $this->getAssignmentsWithSubjectAttributes($subjectsWithAttributes, $experiment)
                     : $this->getAssignments($subjects, $experiment);
             } catch (Exception|GuzzleException|\Psr\SimpleCache\InvalidArgumentException $exception) {
-                $this->fail('Test failed');
+                $this->fail('Test failed: ' . $exception->getMessage());
             }
 
             $this->assertEquals($expectedAssignments, $assignments);
