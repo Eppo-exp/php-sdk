@@ -30,7 +30,7 @@ class HttpClient
         if (!$baseUrl) {
             $baseUrl = 'https://eppo.cloud';
         }
-        $this->client = new Client(['base_uri' => $baseUrl]);
+        $this->client = new Client(['base_uri' => $baseUrl, 'timeout' => 5]);
 
         $this->sdkParams = [
             'apiKey' => $apiKey,
