@@ -1,1 +1,4 @@
 .idea
+vendor
+tests/data
+cache
