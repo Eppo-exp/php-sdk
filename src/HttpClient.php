@@ -11,6 +11,9 @@ use Teapot\StatusCode;
 
 class HttpClient
 {
+    /** @var int */
+    const REQUEST_TIMEOUT = 5;
+
     /** @var Client */
     protected $client;
 
@@ -30,7 +33,7 @@ class HttpClient
         if (!$baseUrl) {
             $baseUrl = 'https://eppo.cloud';
         }
-        $this->client = new Client(['base_uri' => $baseUrl, 'timeout' => 5]);
+        $this->client = new Client(['base_uri' => $baseUrl, 'timeout' => self::REQUEST_TIMEOUT]);
 
         $this->sdkParams = [
             'apiKey' => $apiKey,
