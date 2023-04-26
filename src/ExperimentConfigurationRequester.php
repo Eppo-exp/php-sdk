@@ -11,7 +11,7 @@ use Psr\SimpleCache\InvalidArgumentException;
 class ExperimentConfigurationRequester
 {
     /** @var string */
-    const RAC_ENDPOINT = '/api/randomized_assignment/v2/config';
+    const RAC_ENDPOINT = '/api/randomized_assignment/v3/config';
 
     /** @var HttpClient */
     private $httpClient;

@@ -31,7 +31,7 @@ class HttpClient
     public function __construct(string $baseUrl, string $apiKey, SDKData $SDKData)
     {
         if (!$baseUrl) {
-            $baseUrl = 'https://eppo.cloud';
+            $baseUrl = 'https://fscdn.eppo.cloud';
         }
         $this->client = new Client(['base_uri' => $baseUrl, 'timeout' => self::REQUEST_TIMEOUT]);
 
