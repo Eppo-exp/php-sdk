@@ -5,7 +5,7 @@ It is used to retrieve the experiments data and put it to in-memory cache, and t
 
 ## Getting Started
 
-Refer to our [SDK documentation](https://docs.geteppo.com/feature-flags/sdks/server-sdks/) for how to install and use the SDK.
+Refer to our [SDK documentation](https://docs.geteppo.com/feature-flags/sdks/php) for how to install and use the SDK.
 
 ## Supported PHP Versions
 This version of the SDK is compatible with PHP 7.3 and above.
