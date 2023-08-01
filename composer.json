@@ -1,5 +1,5 @@
 {
-  "name": "eppo/php-sdk",
+  "name": "eppo/php-sdk-legacy-guzzle",
   "description": "Eppo PHP SDK",
   "type": "library",
   "license": "MIT",
@@ -24,7 +24,7 @@
   },
   "require": {
     "php": "^7.3.31 || ^8.0",
-    "guzzlehttp/guzzle": "^7.4.5",
+    "guzzlehttp/guzzle": "^6.5.7",
     "ext-json": "*",
     "sarahman/simple-filesystem-cache": "^1.0",
     "shrikeh/teapot": "^2.3"
