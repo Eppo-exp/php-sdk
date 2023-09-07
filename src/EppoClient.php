@@ -118,8 +118,7 @@ class EppoClient
      */
     public function getStringAssignment(string $subjectKey, string $experimentKey, array $subjectAttributes = []): ?string {
         $assignmentVariation = $this->getAssignmentVariation($subjectKey, $experimentKey, $subjectAttributes, self::VARIANT_TYPE_STRING);
-        $assignment = $assignmentVariation && $assignmentVariation->typedValue;
-        return $assignment !== null ? strval($assignment) : null;
+        return  $assignmentVariation ? strval($assignmentVariation->typedValue) : null;
     }
 
     /**
@@ -132,10 +131,9 @@ class EppoClient
      * @throws InvalidArgumentException
      * @throws SimpleCacheInvalidArgumentException
      */
-    public function getBoolAssignment(string $subjectKey, string $experimentKey, array $subjectAttributes = []): ?bool {
+    public function getBooleanAssignment(string $subjectKey, string $experimentKey, array $subjectAttributes = []): ?bool {
         $assignmentVariation = $this->getAssignmentVariation($subjectKey, $experimentKey, $subjectAttributes, self::VARIANT_TYPE_BOOLEAN);
-        $assignment = $assignmentVariation && $assignmentVariation->typedValue;
-        return $assignment !== null ? boolval($assignment) : null;
+        return $assignmentVariation ? boolval($assignmentVariation->typedValue) : null;
     }
 
     /**
@@ -150,15 +148,14 @@ class EppoClient
      */
     public function getNumericAssignment(string $subjectKey, string $experimentKey, array $subjectAttributes = []): ?float {
         $assignmentVariation = $this->getAssignmentVariation($subjectKey, $experimentKey, $subjectAttributes, self::VARIANT_TYPE_NUMERIC);
-        $assignment = $assignmentVariation && $assignmentVariation->typedValue;
-        return $assignment !== null ? boolval($assignment) : null;
+        return $assignmentVariation ? doubleval($assignmentVariation->typedValue) : null;
     }
 
      /**
      * Get's the assigned JSON variation, as parsed by PHP's json_decode, for the given subject and experiment. 
      * If there is an issue retrieving the variation or the retrieved variation is not valid JSON, null wil be returned.
      *
-     * @return object|array|string|float|int|null the parsed variation JSON
+     * @return mixed the parsed variation JSON
      *
      * @throws HttpRequestException
      * @throws GuzzleException
@@ -166,10 +163,26 @@ class EppoClient
      * @throws InvalidArgumentException
      * @throws SimpleCacheInvalidArgumentException
      */
-    public function getJSONAssignment(string $subjectKey, string $experimentKey, array $subjectAttributes = []): mixed {
+    public function getParsedJSONAssignment(string $subjectKey, string $experimentKey, array $subjectAttributes = []): mixed {
         $assignmentVariation = $this->getAssignmentVariation($subjectKey, $experimentKey, $subjectAttributes, self::VARIANT_TYPE_JSON);
-        $assignment = $assignmentVariation && $assignmentVariation->typedValue;
-        return $assignment !== null ? json_decode($assignment) : null;
+        return $assignmentVariation ? $assignmentVariation->typedValue : null;
+    }
+
+    /**
+     * Get's the assigned JSON variation, represented as JSON string, for the given subject and experiment. 
+     * If there is an issue retrieving the variation or the retrieved variation is not valid JSON, null wil be returned.
+     *
+     * @return string|null the parsed variation JSON as a string
+     *
+     * @throws HttpRequestException
+     * @throws GuzzleException
+     * @throws InvalidApiKeyException
+     * @throws InvalidArgumentException
+     * @throws SimpleCacheInvalidArgumentException
+     */
+    public function getJSONStringAssignment(string $subjectKey, string $experimentKey, array $subjectAttributes = []): string {
+        $parsedJsonValue = $this->getParsedJSONAssignment($subjectKey, $experimentKey, $subjectAttributes);
+        return isset($parsedJsonValue) ? json_encode($parsedJsonValue) : null;
     }
 
     /**
@@ -186,8 +199,8 @@ class EppoClient
      */
     public function getAssignment(string $subjectKey, string $experimentKey, array $subjectAttributes = []): ?string
     {        
-        $assignedVariationConfiguration = $this->getAssignmentVariation($subjectKey, $experimentKey, $subjectAttributes);
-        return $assignedVariationConfiguration && $assignedVariationConfiguration->value;
+        $assignmentVariation = $this->getAssignmentVariation($subjectKey, $experimentKey, $subjectAttributes);
+        return $assignmentVariation ? $assignmentVariation->value : null;
     }
 
     /**
@@ -221,11 +234,10 @@ class EppoClient
 
         $resultVariation = $overrideVariation ?: $assignedVariation;
 
-        print(">>>> resultVariation");
-        print_r($resultVariation);
-        
-        $variationValueToLog = $resultVariation->value;
-        
+        // Default to logging the untyped string variation value
+        // If a typed request is made, we'll adjust to log an appropriate string version of the typed value
+        $variationValueToLog = $resultVariation ? $resultVariation->value : null;
+                
         // If we have an expected type, then we will perform a type check
         // If the type check does not pass, we'll consider it an invalid assignment and return null
         // We'll also come up with the string value to log for the various types
@@ -242,11 +254,8 @@ class EppoClient
                 $typeMatchesExpected = gettype($resultVariation->typedValue) === "boolean";
                 $variationValueToLog = $resultVariation->typedValue ? "true" : "false";
             } else if ($expectedVariationType === self::VARIANT_TYPE_JSON) {
-                // The typed value for JSON types are the string representation of the JSON
-                // To check, we'll ensure it can parse successfully
-                json_decode($resultVariation->typedValue);
-                $typeMatchesExpected = json_last_error() === JSON_ERROR_NONE;
-                $variationValueToLog = $resultVariation->typedValue;
+                $typeMatchesExpected = true; // If the variation was constructed, then the JSON parsed successfully
+                $variationValueToLog = json_encode($resultVariation->typedValue);
             }
         }
 
@@ -283,23 +292,14 @@ class EppoClient
         $overrides = $experimentConfig->getOverrides();
         $typedOverrides = $experimentConfig->getTypedOverrides();
 
-        print_r($experimentConfig ?? ">>>> no config\n");
-        print("HASH IS $subjectHash\n");
-        
         $overrideVariation = null;
-
-        print('>>>>> OVERRIDES\n');
-        print_r($overrides);
 
         if (isset($overrides[$subjectHash]) || isset($typedOverrides[$subjectHash])) {
             // We have an override for this subject
-            print(">>> OVERRIDE\n");
             $overrideVariation = new Variation();
-            $overrideVariation->value = $overrides[$subjectHash];
-            $overrideVariation->typedValue = $typedOverrides[$subjectHash];
+            $overrideVariation->value = $overrides[$subjectHash] ?? null;
+            $overrideVariation->typedValue = $typedOverrides[$subjectHash] ?? null;
         }
-
-        print_r($overrideVariation ?? ">>>> No override variation\n");
       
         return $overrideVariation;
     }

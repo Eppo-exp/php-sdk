@@ -29,6 +29,7 @@ class EppoClientTest extends TestCase
         'enabled' => true,
         'subjectShards' => 100,
         'overrides' => [],
+        'typedOverrides' => [],
         'rules' => [
             [
                 'allocationKey' => 'allocation1',
@@ -42,6 +43,7 @@ class EppoClientTest extends TestCase
                     [
                         'name' => 'control',
                         'value' => 'control',
+                        'typedValue' => 'control',
                         'shardRange' => [
                             'start' => 0,
                             'end' => 34,
@@ -50,6 +52,7 @@ class EppoClientTest extends TestCase
                     [
                         'name' => 'variant-1',
                         'value' => 'variant-1',
+                        'typedValue' => 'variant-1',
                         'shardRange' => [
                             'start' => 34,
                             'end' => 67,
@@ -58,6 +61,7 @@ class EppoClientTest extends TestCase
                     [
                         'name' => 'variant-2',
                         'value' => 'variant-2',
+                        'typedValue' => 'variant-2',
                         'shardRange' => [
                             'start' => 67,
                             'end' => 100,
@@ -96,22 +100,43 @@ class EppoClientTest extends TestCase
 
     public function testGetAssignmentVariationAssignmentSplits(): void
     {
+        $client = EppoClient::getInstance();
         $assignmentsTestData = self::$testFilesHelper->readAssignmentTestData();
 
         foreach ($assignmentsTestData as $assignmentTestData) {
             $experiment = $assignmentTestData['experiment'];
-            $subjects = array_key_exists('subjects', $assignmentTestData)
-                ? $assignmentTestData['subjects']
-                : null;
-            $subjectsWithAttributes = array_key_exists('subjectsWithAttributes', $assignmentTestData)
-                ? $assignmentTestData['subjectsWithAttributes']
-                : null;
+            
+            // Some test case have only subject keys, others have keys and attributes. Either way we'll, put them into a
+            // single array with the subject keys to attributes (if any) 
+            $subjectsWithAttributes = $assignmentTestData['subjectsWithAttributes'] ?? [];
+            foreach($assignmentTestData["subjects"] ?? [] as $subjectKey) {
+                $subjectsWithAttributes[] = ["subjectKey" => $subjectKey, "subjectAttributes" => []];
+            }
+
+            // Use the hint from the test to determine what typed assignment function we should use
+            $testValueType = $assignmentTestData["valueType"];
+
+            // For each subject, retrieve the typed assignment
+            $assignments = array_map(function($subjectWithAttributes) use ($client, $testValueType, $experiment) {
+                
+                $subjectKey = $subjectWithAttributes["subjectKey"];
+                $subjectAttributes = $subjectWithAttributes["subjectAttributes"];
+
+                switch ($testValueType) {
+                    case EppoClient::VARIANT_TYPE_STRING:
+                        return $client->getStringAssignment($subjectKey, $experiment, $subjectAttributes);
+                    case EppoClient::VARIANT_TYPE_NUMERIC:
+                        return $client->getNumericAssignment($subjectKey, $experiment, $subjectAttributes);
+                    case EppoClient::VARIANT_TYPE_BOOLEAN:
+                        return $client->getBooleanAssignment($subjectKey, $experiment, $subjectAttributes);
+                    case EppoClient::VARIANT_TYPE_JSON:
+                        return $client->getJSONStringAssignment($subjectKey, $experiment, $subjectAttributes);
+                    default:
+                        throw new InvalidArgumentException("Unexpected test value type $testValueType");
+                }   
+            }, $subjectsWithAttributes);
 
             $expectedAssignments = $assignmentTestData['expectedAssignments'];
-
-            $assignments = !!$subjectsWithAttributes
-                ? $this->getAssignmentsWithSubjectAttributes($subjectsWithAttributes, $experiment)
-                : $this->getAssignments($subjects, $experiment);
 
             $this->assertEquals($expectedAssignments, $assignments);
         }
@@ -176,6 +201,7 @@ class EppoClientTest extends TestCase
                     [
                         'name' => 'control',
                         'value' => 'control',
+                        'typedValue' => 'control',
                         'shardRange' => [
                             'start' => 0,
                             'end' => 50
@@ -184,6 +210,7 @@ class EppoClientTest extends TestCase
                     [
                         'name' => 'treatment',
                         'value' => 'treatment',
+                        'typedValue' => 'treatment',
                         'shardRange' => [
                             'start' => 50,
                             'end' => 100
@@ -238,48 +265,6 @@ class EppoClientTest extends TestCase
         $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
 
         $this->assertEquals('control', $assignment);
-    }
-
-    /**
-     * @param array $subjects
-     * @param string $experiment
-     * @return array
-     * @throws HttpRequestException
-     * @throws InvalidApiKeyException
-     * @throws InvalidArgumentException
-     * @throws GuzzleException
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     */
-    private function getAssignments(array $subjects, string $experiment): array
-    {
-        $client = EppoClient::getInstance();
-        $assignments = [];
-        foreach ($subjects as $subjectKey) {
-            $assignments[] = $client->getAssignment($subjectKey, $experiment);
-        }
-
-        return $assignments;
-    }
-
-    /**
-     * @param array $subjectsWithAttributes
-     * @param string $experiment
-     * @return array
-     * @throws GuzzleException
-     * @throws HttpRequestException
-     * @throws InvalidApiKeyException
-     * @throws InvalidArgumentException
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     */
-    private function getAssignmentsWithSubjectAttributes(array $subjectsWithAttributes, string $experiment): array
-    {
-        $client = EppoClient::getInstance();
-        $assignments = [];
-        foreach ($subjectsWithAttributes as $subject) {
-            $assignment = $client->getAssignment($subject['subjectKey'], $experiment, $subject['subjectAttributes']);
-            $assignments[] = $assignment;
-        }
-        return $assignments;
     }
 
     /**

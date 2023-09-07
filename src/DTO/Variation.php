@@ -10,7 +10,7 @@ class Variation
     /** @var string */
     public $value;
 
-    /** @var string|float|int|bool|null */
+    /** @var mixed */
     public $typedValue;
 
     /** @var ShardRange */
