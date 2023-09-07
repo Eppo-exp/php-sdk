@@ -23,6 +23,12 @@ class EppoClient
     const POLL_INTERVAL_MILLIS = 5 * self::MINUTE_MILLIS;
     const JITTER_MILLIS = 30 * self::SECOND_MILLIS;
 
+    // Internal variance data types
+    const VARIANT_TYPE_STRING = 'string';
+    const VARIANT_TYPE_NUMERIC = 'numeric';
+    const VARIANT_TYPE_BOOLEAN = 'boolean';
+    const VARIANT_TYPE_JSON = 'json';
+
     /** @var EppoClient */
     private static $instance;
 
@@ -101,11 +107,76 @@ class EppoClient
     }
 
     /**
-     * @param string $subjectKey
-     * @param string $experimentKey
-     * @param array $subjectAttributes
+     * Get's the assigned string variation for the given subject and experiment
+     * If there is an issue retrieving the variation or the retrieved variation is not a string, null wil be returned.
      *
-     * @return string|null
+     * @throws HttpRequestException
+     * @throws GuzzleException
+     * @throws InvalidApiKeyException
+     * @throws InvalidArgumentException
+     * @throws SimpleCacheInvalidArgumentException
+     */
+    public function getStringAssignment(string $subjectKey, string $experimentKey, array $subjectAttributes = []): ?string {
+        $assignmentVariation = $this->getAssignmentVariation($subjectKey, $experimentKey, $subjectAttributes, self::VARIANT_TYPE_STRING);
+        $assignment = $assignmentVariation && $assignmentVariation->typedValue;
+        return $assignment !== null ? strval($assignment) : null;
+    }
+
+    /**
+     * Get's the assigned boolean variation for the given subject and experiment
+     * If there is an issue retrieving the variation or the retrieved variation is not a boolean, null wil be returned.
+     * 
+     * @throws HttpRequestException
+     * @throws GuzzleException
+     * @throws InvalidApiKeyException
+     * @throws InvalidArgumentException
+     * @throws SimpleCacheInvalidArgumentException
+     */
+    public function getBoolAssignment(string $subjectKey, string $experimentKey, array $subjectAttributes = []): ?bool {
+        $assignmentVariation = $this->getAssignmentVariation($subjectKey, $experimentKey, $subjectAttributes, self::VARIANT_TYPE_BOOLEAN);
+        $assignment = $assignmentVariation && $assignmentVariation->typedValue;
+        return $assignment !== null ? boolval($assignment) : null;
+    }
+
+    /**
+     * Get's the assigned numeric variation as a float for the given subject and experiment
+     * If there is an issue retrieving the variation or the retrieved variation is not an integer or float (double), null wil be returned.
+     *
+     * @throws HttpRequestException
+     * @throws GuzzleException
+     * @throws InvalidApiKeyException
+     * @throws InvalidArgumentException
+     * @throws SimpleCacheInvalidArgumentException
+     */
+    public function getNumericAssignment(string $subjectKey, string $experimentKey, array $subjectAttributes = []): ?float {
+        $assignmentVariation = $this->getAssignmentVariation($subjectKey, $experimentKey, $subjectAttributes, self::VARIANT_TYPE_NUMERIC);
+        $assignment = $assignmentVariation && $assignmentVariation->typedValue;
+        return $assignment !== null ? boolval($assignment) : null;
+    }
+
+     /**
+     * Get's the assigned JSON variation, as parsed by PHP's json_decode, for the given subject and experiment. 
+     * If there is an issue retrieving the variation or the retrieved variation is not valid JSON, null wil be returned.
+     *
+     * @return object|array|string|float|int|null the parsed variation JSON
+     *
+     * @throws HttpRequestException
+     * @throws GuzzleException
+     * @throws InvalidApiKeyException
+     * @throws InvalidArgumentException
+     * @throws SimpleCacheInvalidArgumentException
+     */
+    public function getJSONAssignment(string $subjectKey, string $experimentKey, array $subjectAttributes = []): mixed {
+        $assignmentVariation = $this->getAssignmentVariation($subjectKey, $experimentKey, $subjectAttributes, self::VARIANT_TYPE_JSON);
+        $assignment = $assignmentVariation && $assignmentVariation->typedValue;
+        return $assignment !== null ? json_decode($assignment) : null;
+    }
+
+    /**
+     * Get's the legacy, string-only assignment for the given subject and experiment.
+     * If there is an issue retrieving the variation, null wil be returned.
+     * 
+     * @deprecated in favor of the typed get<type>Assignment methods
      *
      * @throws HttpRequestException
      * @throws GuzzleException
@@ -114,6 +185,23 @@ class EppoClient
      * @throws SimpleCacheInvalidArgumentException
      */
     public function getAssignment(string $subjectKey, string $experimentKey, array $subjectAttributes = []): ?string
+    {        
+        $assignedVariationConfiguration = $this->getAssignmentVariation($subjectKey, $experimentKey, $subjectAttributes);
+        return $assignedVariationConfiguration && $assignedVariationConfiguration->value;
+    }
+
+    /**
+     * Helper function that gets the Variation DTO for the given subject and experiment. 
+     * It will first check to see if the subject has an override. If not, it will compute it's assignment 
+     * based on the experiment configuration.
+     * 
+     * If there is an expected type for the variation value, a type check is performed as well.
+     * 
+     * @return Variation|null the Variation DTO assigned to the subject, or null if there is no assignment,
+     * an error was encountered, or an expected type was provided that didn't match the variation's typed
+     *  value.
+     */
+    private function getAssignmentVariation(string $subjectKey, string $experimentKey, array $subjectAttributes, string $expectedVariationType = null): ?Variation
     {
         Validator::validateNotBlank($subjectKey, 'Invalid argument: subjectKey cannot be blank');
         Validator::validateNotBlank($experimentKey, 'Invalid argument: experimentKey cannot be blank');
@@ -123,12 +211,108 @@ class EppoClient
             return null;
         }
 
-        $allowListOverride = $this->getSubjectVariationOverride($subjectKey, $experimentConfig);
-        if ($allowListOverride) {
-            return $allowListOverride;
+        $overrideVariation = $this->getSubjectOverrideVariation($subjectKey, $experimentConfig);
+        
+        /** @var Variation $assignedVariation */
+        $assignedVariation = null;
+        if (!$overrideVariation) {
+            $assignedVariation = $this->getSubjectAssignedVariation($subjectKey, $experimentKey, $experimentConfig, $subjectAttributes);
         }
 
+        $resultVariation = $overrideVariation ?: $assignedVariation;
+
+        print(">>>> resultVariation");
+        print_r($resultVariation);
+        
+        $variationValueToLog = $resultVariation->value;
+        
+        // If we have an expected type, then we will perform a type check
+        // If the type check does not pass, we'll consider it an invalid assignment and return null
+        // We'll also come up with the string value to log for the various types
+        $typeMatchesExpected = false;
+        if ($expectedVariationType && $resultVariation) {
+            // Type check
+            if ($expectedVariationType === self::VARIANT_TYPE_STRING) {
+                $typeMatchesExpected = gettype($resultVariation->typedValue) === "string";
+                $variationValueToLog = $resultVariation->typedValue;
+            } else if ($expectedVariationType === self::VARIANT_TYPE_NUMERIC) {
+                $typeMatchesExpected = in_array(gettype($resultVariation->typedValue), ["integer", "double"]);
+                $variationValueToLog = strval($resultVariation->typedValue);
+            } else if ($expectedVariationType === self::VARIANT_TYPE_BOOLEAN) {
+                $typeMatchesExpected = gettype($resultVariation->typedValue) === "boolean";
+                $variationValueToLog = $resultVariation->typedValue ? "true" : "false";
+            } else if ($expectedVariationType === self::VARIANT_TYPE_JSON) {
+                // The typed value for JSON types are the string representation of the JSON
+                // To check, we'll ensure it can parse successfully
+                json_decode($resultVariation->typedValue);
+                $typeMatchesExpected = json_last_error() === JSON_ERROR_NONE;
+                $variationValueToLog = $resultVariation->typedValue;
+            }
+        }
+
+        if ($expectedVariationType && !$typeMatchesExpected) {
+            // Typed value is unexpected type
+            return null;
+        }
+
+        if ($assignedVariation && $this->assignmentLogger) {
+            // If an assignment was made, log it. (Note: we do not log overrides)
+            try {
+                $this->assignmentLogger->logAssignment(
+                    $experimentKey,
+                    $variationValueToLog,
+                    $subjectKey,
+                    time(),
+                    $subjectAttributes
+                );
+            } catch (Exception $exception) {
+                error_log('[Eppo SDK] Error logging assignment event: ' . $exception->getMessage());
+            }
+        }
+
+        return $resultVariation;
+    }
+
+        /**
+     * Private helper function that creates a Variation DTO to represent an override assignment for
+     * the given subject and experiment, if any. If there is no override, null will be returned.
+     */
+    private function getSubjectOverrideVariation(string $subjectKey, ExperimentConfiguration $experimentConfig): ?Variation
+    {
+        $subjectHash = hash('md5', $subjectKey);
+        $overrides = $experimentConfig->getOverrides();
+        $typedOverrides = $experimentConfig->getTypedOverrides();
+
+        print_r($experimentConfig ?? ">>>> no config\n");
+        print("HASH IS $subjectHash\n");
+        
+        $overrideVariation = null;
+
+        print('>>>>> OVERRIDES\n');
+        print_r($overrides);
+
+        if (isset($overrides[$subjectHash]) || isset($typedOverrides[$subjectHash])) {
+            // We have an override for this subject
+            print(">>> OVERRIDE\n");
+            $overrideVariation = new Variation();
+            $overrideVariation->value = $overrides[$subjectHash];
+            $overrideVariation->typedValue = $typedOverrides[$subjectHash];
+        }
+
+        print_r($overrideVariation ?? ">>>> No override variation\n");
+      
+        return $overrideVariation;
+    }
+
+    /**
+     * Private helper function that retrieves the Variation DTO for assigning the given subject a variation
+     * for the given experiment. If the experiment is not enabled, there is no appropriate assignment, or
+     * an error is encountered, null will be returned.
+     */
+    private function getSubjectAssignedVariation(string $subjectKey, string $experimentKey, ExperimentConfiguration $experimentConfig, array $subjectAttributes): ?Variation {
+        
         // Check for disabled flag.
+        // TODO: should we do this check before even checking overrides?
         if (!$experimentConfig->isEnabled()) {
             return null;
         }
@@ -140,7 +324,7 @@ class EppoClient
         }
 
         /** @var Allocation $allocation */
-        $allocation = $experimentConfig->getAllocations()[$matchedRule->allocationKey];
+        $allocation = $experimentConfig->getAllocations()[$matchedRule->allocationKey] ?? null;
 
         if (!$this->isInExperimentSample($subjectKey, $experimentKey, $experimentConfig, $allocation)) {
             return null;
@@ -157,44 +341,12 @@ class EppoClient
         /** @var Variation $variation */
         foreach ($variations as $variation) {
             if (Shard::isShardInRange($shard, $variation->shardRange)) {
-                $assignedVariation = $variation->value;
+                $assignedVariation = $variation;
                 break;
             }
         }
 
-        if ($this->assignmentLogger) {
-            try {
-                $this->assignmentLogger->logAssignment(
-                    $experimentKey,
-                    $assignedVariation,
-                    $subjectKey,
-                    time(),
-                    $subjectAttributes
-                );
-            } catch (Exception $exception) {
-                error_log('[Eppo SDK] Error logging assignment event: ' . $exception->getMessage());
-            }
-        }
-
         return $assignedVariation;
-    }
-
-    /**
-     * Only used for unit-tests.
-     * For production use please use only singleton instance.
-     *
-     * @param ExperimentConfigurationRequester $experimentConfigurationRequester
-     * @param PollerInterface $poller
-     * @param LoggerInterface|null $logger
-     *
-     * @return EppoClient
-     */
-    public static function createTestClient(
-        ExperimentConfigurationRequester $experimentConfigurationRequester,
-        PollerInterface $poller,
-        ?LoggerInterface $logger = null
-    ): EppoClient {
-        return new EppoClient($experimentConfigurationRequester, $poller, $logger);
     }
 
     public function startPolling()
@@ -240,19 +392,20 @@ class EppoClient
     }
 
     /**
-     * @param string $subjectKey
-     * @param ExperimentConfiguration $experimentConfig
+     * Only used for unit-tests.
+     * For production use please use only singleton instance.
      *
-     * @return string|null
+     * @param ExperimentConfigurationRequester $experimentConfigurationRequester
+     * @param PollerInterface $poller
+     * @param LoggerInterface|null $logger
+     *
+     * @return EppoClient
      */
-    private function getSubjectVariationOverride(string $subjectKey, ExperimentConfiguration $experimentConfig): ?string
-    {
-        $subjectHash = hash('md5', $subjectKey);
-        $overrides = $experimentConfig->getOverrides();
-        if (count($overrides) > 0) {
-            return $experimentConfig->getOverrides()[$subjectHash];
-        }
-
-        return null;
+    public static function createTestClient(
+        ExperimentConfigurationRequester $experimentConfigurationRequester,
+        PollerInterface $poller,
+        ?LoggerInterface $logger = null
+    ): EppoClient {
+        return new EppoClient($experimentConfigurationRequester, $poller, $logger);
     }
 }

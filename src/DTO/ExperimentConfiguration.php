@@ -68,7 +68,8 @@ class ExperimentConfiguration
         }
         $this->setAllocations($allocations);
 
-        $this->setOverrides($configuration['overrides']);
+        $this->setOverrides($configuration['overrides'] ?? []);
+        $this->setTypedOverrides($configuration['typedOverrides'] ?? []);
     }
 
     /**
@@ -131,6 +132,22 @@ class ExperimentConfiguration
      * @param array $overrides
      */
     public function setOverrides(array $overrides): void
+    {
+        $this->overrides = $overrides;
+    }
+
+    /**
+     * @return array
+     */
+    public function getTypedOverrides(): array
+    {
+        return $this->overrides;
+    }
+
+    /**
+     * @param array $overrides
+     */
+    public function setTypedOverrides(array $overrides): void
     {
         $this->overrides = $overrides;
     }

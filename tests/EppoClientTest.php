@@ -109,13 +109,9 @@ class EppoClientTest extends TestCase
 
             $expectedAssignments = $assignmentTestData['expectedAssignments'];
 
-            try {
-                $assignments = !!$subjectsWithAttributes
-                    ? $this->getAssignmentsWithSubjectAttributes($subjectsWithAttributes, $experiment)
-                    : $this->getAssignments($subjects, $experiment);
-            } catch (Exception|GuzzleException|\Psr\SimpleCache\InvalidArgumentException $exception) {
-                $this->fail('Test failed: ' . $exception->getMessage());
-            }
+            $assignments = !!$subjectsWithAttributes
+                ? $this->getAssignmentsWithSubjectAttributes($subjectsWithAttributes, $experiment)
+                : $this->getAssignments($subjects, $experiment);
 
             $this->assertEquals($expectedAssignments, $assignments);
         }

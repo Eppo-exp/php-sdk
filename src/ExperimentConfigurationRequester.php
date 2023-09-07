@@ -72,6 +72,9 @@ class ExperimentConfigurationRequester
             return [];
         }
 
+        print('>>>>>>>>> flags\n');
+        print_r($responseData['flags']);
+
         $this->configurationStore->setConfigurations($responseData['flags']);
         return $responseData['flags'];
     }
