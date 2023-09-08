@@ -17,6 +17,9 @@ class ExperimentConfiguration
     private $overrides = [];
 
     /** @var array */
+    private $typedOverrides = [];
+
+    /** @var array */
     private $allocations = [];
 
     /** @var array */
@@ -58,6 +61,7 @@ class ExperimentConfiguration
                 $variation->shardRange = new ShardRange();
                 $variation->name = $configVariation['name'];
                 $variation->value = $configVariation['value'];
+                $variation->typedValue = $configVariation['typedValue'];
                 $variation->shardRange->start = $configVariation['shardRange']['start'];
                 $variation->shardRange->end = $configVariation['shardRange']['end'];
 
@@ -68,7 +72,8 @@ class ExperimentConfiguration
         }
         $this->setAllocations($allocations);
 
-        $this->setOverrides($configuration['overrides']);
+        $this->setOverrides($configuration['overrides'] ?? []);
+        $this->setTypedOverrides($configuration['typedOverrides'] ?? []);
     }
 
     /**
@@ -133,6 +138,22 @@ class ExperimentConfiguration
     public function setOverrides(array $overrides): void
     {
         $this->overrides = $overrides;
+    }
+
+    /**
+     * @return array
+     */
+    public function getTypedOverrides(): array
+    {
+        return $this->typedOverrides;
+    }
+
+    /**
+     * @param array $overrides
+     */
+    public function setTypedOverrides(array $typedOverrides): void
+    {
+        $this->typedOverrides = $typedOverrides;
     }
 
     /**

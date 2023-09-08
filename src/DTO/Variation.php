@@ -10,6 +10,9 @@ class Variation
     /** @var string */
     public $value;
 
+    /** @var mixed */
+    public $typedValue;
+
     /** @var ShardRange */
     public $shardRange;
 }
