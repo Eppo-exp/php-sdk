@@ -5,6 +5,7 @@ namespace Eppo;
 use Eppo\Config\SDKData;
 use Eppo\DTO\Allocation;
 use Eppo\DTO\ExperimentConfiguration;
+use Eppo\DTO\Rule;
 use Eppo\DTO\Variation;
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidArgumentException;
@@ -116,8 +117,8 @@ class EppoClient
      * @throws InvalidArgumentException
      * @throws SimpleCacheInvalidArgumentException
      */
-    public function getStringAssignment(string $subjectKey, string $experimentKey, array $subjectAttributes = []): ?string {
-        $assignmentVariation = $this->getAssignmentVariation($subjectKey, $experimentKey, $subjectAttributes, self::VARIANT_TYPE_STRING);
+    public function getStringAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): ?string {
+        $assignmentVariation = $this->getAssignmentVariation($subjectKey, $flagKey, $subjectAttributes, self::VARIANT_TYPE_STRING);
         return  $assignmentVariation ? strval($assignmentVariation->typedValue) : null;
     }
 
@@ -131,8 +132,8 @@ class EppoClient
      * @throws InvalidArgumentException
      * @throws SimpleCacheInvalidArgumentException
      */
-    public function getBooleanAssignment(string $subjectKey, string $experimentKey, array $subjectAttributes = []): ?bool {
-        $assignmentVariation = $this->getAssignmentVariation($subjectKey, $experimentKey, $subjectAttributes, self::VARIANT_TYPE_BOOLEAN);
+    public function getBooleanAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): ?bool {
+        $assignmentVariation = $this->getAssignmentVariation($subjectKey, $flagKey, $subjectAttributes, self::VARIANT_TYPE_BOOLEAN);
         return $assignmentVariation ? boolval($assignmentVariation->typedValue) : null;
     }
 
@@ -146,8 +147,8 @@ class EppoClient
      * @throws InvalidArgumentException
      * @throws SimpleCacheInvalidArgumentException
      */
-    public function getNumericAssignment(string $subjectKey, string $experimentKey, array $subjectAttributes = []): ?float {
-        $assignmentVariation = $this->getAssignmentVariation($subjectKey, $experimentKey, $subjectAttributes, self::VARIANT_TYPE_NUMERIC);
+    public function getNumericAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): ?float {
+        $assignmentVariation = $this->getAssignmentVariation($subjectKey, $flagKey, $subjectAttributes, self::VARIANT_TYPE_NUMERIC);
         return $assignmentVariation ? doubleval($assignmentVariation->typedValue) : null;
     }
 
@@ -163,8 +164,8 @@ class EppoClient
      * @throws InvalidArgumentException
      * @throws SimpleCacheInvalidArgumentException
      */
-    public function getParsedJSONAssignment(string $subjectKey, string $experimentKey, array $subjectAttributes = []): mixed {
-        $assignmentVariation = $this->getAssignmentVariation($subjectKey, $experimentKey, $subjectAttributes, self::VARIANT_TYPE_JSON);
+    public function getParsedJSONAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): mixed {
+        $assignmentVariation = $this->getAssignmentVariation($subjectKey, $flagKey, $subjectAttributes, self::VARIANT_TYPE_JSON);
         return $assignmentVariation ? $assignmentVariation->typedValue : null;
     }
 
@@ -180,8 +181,8 @@ class EppoClient
      * @throws InvalidArgumentException
      * @throws SimpleCacheInvalidArgumentException
      */
-    public function getJSONStringAssignment(string $subjectKey, string $experimentKey, array $subjectAttributes = []): string {
-        $parsedJsonValue = $this->getParsedJSONAssignment($subjectKey, $experimentKey, $subjectAttributes);
+    public function getJSONStringAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): string {
+        $parsedJsonValue = $this->getParsedJSONAssignment($subjectKey, $flagKey, $subjectAttributes);
         return isset($parsedJsonValue) ? json_encode($parsedJsonValue) : null;
     }
 
@@ -197,9 +198,9 @@ class EppoClient
      * @throws InvalidArgumentException
      * @throws SimpleCacheInvalidArgumentException
      */
-    public function getAssignment(string $subjectKey, string $experimentKey, array $subjectAttributes = []): ?string
+    public function getAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): ?string
     {        
-        $assignmentVariation = $this->getAssignmentVariation($subjectKey, $experimentKey, $subjectAttributes);
+        $assignmentVariation = $this->getAssignmentVariation($subjectKey, $flagKey, $subjectAttributes);
         return $assignmentVariation ? $assignmentVariation->value : null;
     }
 
@@ -214,22 +215,28 @@ class EppoClient
      * an error was encountered, or an expected type was provided that didn't match the variation's typed
      *  value.
      */
-    private function getAssignmentVariation(string $subjectKey, string $experimentKey, array $subjectAttributes, string $expectedVariationType = null): ?Variation
+    private function getAssignmentVariation(string $subjectKey, string $flagKey, array $subjectAttributes, string $expectedVariationType = null): ?Variation
     {
         Validator::validateNotBlank($subjectKey, 'Invalid argument: subjectKey cannot be blank');
-        Validator::validateNotBlank($experimentKey, 'Invalid argument: experimentKey cannot be blank');
+        Validator::validateNotBlank($flagKey, 'Invalid argument: flagKey cannot be blank');
 
-        $experimentConfig = $this->configurationRequester->getConfiguration($experimentKey);
+        $experimentConfig = $this->configurationRequester->getConfiguration($flagKey);
         if (!$experimentConfig) {
             return null;
         }
 
         $overrideVariation = $this->getSubjectOverrideVariation($subjectKey, $experimentConfig);
         
-        /** @var Variation $assignedVariation */
         $assignedVariation = null;
+        $allocationKey = null; // If present, used later--along with the flag key--to form the experiment key
+
         if (!$overrideVariation) {
-            $assignedVariation = $this->getSubjectAssignedVariation($subjectKey, $experimentKey, $experimentConfig, $subjectAttributes);
+            $matchedRule = $this->getMatchingRule($experimentConfig, $subjectAttributes);
+            if ($matchedRule) {
+                $allocationKey = $matchedRule->allocationKey;
+                $allocation = $experimentConfig->getAllocations()[$allocationKey] ?? null;
+                $assignedVariation = $this->getSubjectAssignedVariation($subjectKey, $flagKey, $experimentConfig, $allocation);
+            }
         }
 
         $resultVariation = $overrideVariation ?: $assignedVariation;
@@ -264,15 +271,18 @@ class EppoClient
             return null;
         }
 
+        // If an assignment was made, log it. (Note: we do not log overrides)
         if ($assignedVariation && $this->assignmentLogger) {
-            // If an assignment was made, log it. (Note: we do not log overrides)
             try {
+                $experimentKey = "$flagKey-$allocationKey";
                 $this->assignmentLogger->logAssignment(
                     $experimentKey,
                     $variationValueToLog,
                     $subjectKey,
                     time(),
-                    $subjectAttributes
+                    $subjectAttributes,
+                    $allocationKey,
+                    $flagKey
                 );
             } catch (Exception $exception) {
                 error_log('[Eppo SDK] Error logging assignment event: ' . $exception->getMessage());
@@ -282,7 +292,7 @@ class EppoClient
         return $resultVariation;
     }
 
-        /**
+    /**
      * Private helper function that creates a Variation DTO to represent an override assignment for
      * the given subject and experiment, if any. If there is no override, null will be returned.
      */
@@ -305,28 +315,30 @@ class EppoClient
     }
 
     /**
-     * Private helper function that retrieves the Variation DTO for assigning the given subject a variation
-     * for the given experiment. If the experiment is not enabled, there is no appropriate assignment, or
-     * an error is encountered, null will be returned.
+     * Private helper function that retrieves an allocation rule for the given experiment configuration and subject attributes.
      */
-    private function getSubjectAssignedVariation(string $subjectKey, string $experimentKey, ExperimentConfiguration $experimentConfig, array $subjectAttributes): ?Variation {
-        
+    private function getMatchingRule(ExperimentConfiguration $experimentConfig, array $subjectAttributes): ?Rule {
         // Check for disabled flag.
-        // TODO: should we do this check before even checking overrides?
         if (!$experimentConfig->isEnabled()) {
             return null;
         }
 
         // Attempt to match a rule from the list.
-        $matchedRule = RuleEvaluator::findMatchingRule($subjectAttributes, $experimentConfig->getRules());
-        if (!$matchedRule) {
+        return RuleEvaluator::findMatchingRule($subjectAttributes, $experimentConfig->getRules());
+    }
+
+    /**
+     * Private helper function that retrieves the Variation DTO for assigning the given subject a variation
+     * for the given experiment. If the experiment is not enabled, there is no appropriate assignment, or
+     * an error is encountered, null will be returned.
+     */
+    private function getSubjectAssignedVariation(string $subjectKey, string $flagKey, ExperimentConfiguration $experimentConfig, Allocation $allocation): ?Variation {
+        
+        if (!$allocation) {
             return null;
         }
 
-        /** @var Allocation $allocation */
-        $allocation = $experimentConfig->getAllocations()[$matchedRule->allocationKey] ?? null;
-
-        if (!$this->isInExperimentSample($subjectKey, $experimentKey, $experimentConfig, $allocation)) {
+        if (!$this->isInExperimentSample($subjectKey, $flagKey, $experimentConfig, $allocation)) {
             return null;
         }
 
@@ -334,7 +346,7 @@ class EppoClient
         $subjectShards = $experimentConfig->getSubjectShards();
         $variations = $allocation->variations;
 
-        $shard = Shard::getShard('assignment-' . $subjectKey . '-' . $experimentKey, $subjectShards);
+        $shard = Shard::getShard('assignment-' . $subjectKey . '-' . $flagKey, $subjectShards);
 
         $assignedVariation = null;
 
@@ -372,7 +384,7 @@ class EppoClient
      * Given a hash function output (bucket), check whether the bucket is between 0 and exposure_percent * total_buckets.
      *
      * @param string $subjectKey
-     * @param string $experimentKey
+     * @param string $flagKey
      * @param ExperimentConfiguration $experimentConfiguration
      * @param Allocation $allocation
      *
@@ -380,13 +392,13 @@ class EppoClient
      */
     private function isInExperimentSample(
         string $subjectKey,
-        string $experimentKey,
+        string $flagKey,
         ExperimentConfiguration $experimentConfiguration,
         Allocation $allocation
     ): bool {
         $subjectShards = $experimentConfiguration->getSubjectShards();
         $percentExposure = $allocation->percentExposure;
-        $shard = Shard::getShard('exposure-' . $subjectKey . '-' . $experimentKey, $subjectShards);
+        $shard = Shard::getShard('exposure-' . $subjectKey . '-' . $flagKey, $subjectShards);
 
         return $shard <= $percentExposure * $subjectShards;
     }

@@ -257,7 +257,7 @@ class EppoClientTest extends TestCase
         $mockLogger = $this->getLoggerMock();
         $mockLogger->expects($this->once())
             ->method('logAssignment')
-            ->with('mock-experiment', 'control', 'subject-10')
+            ->with('mock-experiment-allocation1', 'control', 'subject-10')
             ->willThrowException(new Exception('logger error'));
         $subjectAttributes = [['foo' => 3]];
 
@@ -302,8 +302,16 @@ class EppoClientTest extends TestCase
     private function getLoggerMock()
     {
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
-        $mockLogger->expects($this->once())->method('logAssignment')->with('mock-experiment', 'control', 'subject-10');
+        $mockLogger->expects($this->once())->method('logAssignment')->with(
+            'mock-experiment-allocation1', 
+            'control', 
+            'subject-10',
+            $this->greaterThan(0),
+            $this->anything(),
+            'allocation1',
+            'mock-experiment'
+        );
 
-        return $mockLogger;
+        return $mockLogger; 
     }
 }
