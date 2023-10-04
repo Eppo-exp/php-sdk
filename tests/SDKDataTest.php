@@ -16,6 +16,6 @@ final class SDKDataTest extends TestCase
     public function testGetSdkName()
     {
         $data = new SDKData();
-        $this->assertEquals('php-sdk', $data->getSdkName());
+        $this->assertEquals('eppo-php-sdk', $data->getSdkName());
     }
 }
