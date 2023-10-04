@@ -4,9 +4,6 @@ namespace Eppo;
 
 use Eppo\Config\SDKData;
 use Eppo\Exception\HttpRequestException;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
-use GuzzleHttp\Exception\RequestException;
 use Teapot\StatusCode;
 
 class HttpClient
@@ -23,23 +20,30 @@ class HttpClient
     /** @var array */
     private $sdkParams = [];
 
+    /** @var HttpClientInterface */
+    private $httpClient;
+
     /**
      * @param string $baseUrl
      * @param string $apiKey
      * @param SDKData $SDKData
      */
-    public function __construct(string $baseUrl, string $apiKey, SDKData $SDKData)
+    public function __construct(string $baseUrl, string $apiKey, SDKData $SDKData, HttpClientInterface $httpClient)
     {
         if (!$baseUrl) {
             $baseUrl = 'https://fscdn.eppo.cloud';
         }
-        $this->client = new Client(['base_uri' => $baseUrl, 'timeout' => self::REQUEST_TIMEOUT]);
 
         $this->sdkParams = [
             'apiKey' => $apiKey,
             'sdkName' => $SDKData->getSdkName(),
             'sdkVersion' => $SDKData->getSdkVersion(),
         ];
+
+        $this->httpClient = $httpClient;
+        $httpClient->setBaseUrl($baseUrl);
+        $httpClient->setEppoParameters($this->sdkParams);
+        $httpClient->setTimeout(self::REQUEST_TIMEOUT);
     }
 
     /**
@@ -47,13 +51,12 @@ class HttpClient
      *
      * @return string
      *
-     * @throws GuzzleException
      * @throws HttpRequestException
      */
     public function get($resource): string
     {
         try {
-            $response = $this->client->request('GET', $resource, ['query' => $this->sdkParams]);
+            $response = $this->httpClient->get($resource, ['query' => $this->sdkParams]);
             return (string)$response->getBody();
         } catch (RequestException $exception) {
             $this->handleHttpError($exception);

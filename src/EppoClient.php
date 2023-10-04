@@ -12,7 +12,7 @@ use Eppo\Exception\InvalidArgumentException;
 use Eppo\Exception\InvalidApiKeyException;
 use Eppo\Logger\LoggerInterface;
 use Exception;
-use GuzzleHttp\Exception\GuzzleException;
+use Eppo\GuzzleAdapter;
 use Psr\SimpleCache\CacheInterface;
 use Sarahman\SimpleCache\FileSystemCache;
 use Psr\SimpleCache\InvalidArgumentException as SimpleCacheInvalidArgumentException;
@@ -71,6 +71,7 @@ class EppoClient
     public static function init(
         string $apiKey,
         string $baseUrl = '',
+        HttpClientInterface $httpClientImpl = null,
         LoggerInterface $assignmentLogger = null,
         CacheInterface $cache = null
     ): EppoClient {
@@ -79,7 +80,7 @@ class EppoClient
             if (!$cache) {
                 $cache = new FileSystemCache(__DIR__ . '/../cache');
             }
-            $httpClient = new HttpClient($baseUrl, $apiKey, $sdkData);
+            $httpClient = new HttpClient($baseUrl, $apiKey, $sdkData, $httpClientImpl);
             $configStore = new ConfigurationStore($cache);
             $configRequester = new ExperimentConfigurationRequester($httpClient, $configStore);
             $poller = new Poller(

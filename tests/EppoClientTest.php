@@ -87,7 +87,8 @@ class EppoClientTest extends TestCase
         }
 
         try {
-            EppoClient::init('dummy', 'http://localhost:4000');
+            $httpImpl = new GuzzleAdapter();
+            EppoClient::init('dummy', 'http://localhost:4000', $httpImpl);
         } catch (Exception $exception) {
             self::fail('Failed to initialize EppoClient: ' . $exception->getMessage());
         }
