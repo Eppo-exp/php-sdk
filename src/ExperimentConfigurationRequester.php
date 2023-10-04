@@ -53,7 +53,7 @@ class ExperimentConfigurationRequester
                 return null;
             }
 
-            $configuration = $this->fetchAndStoreConfigurations()[$experiment];
+            $configuration = $configurations[$experiment];
         }
 
         return new ExperimentConfiguration($configuration);
