@@ -14,8 +14,8 @@ class SDKData
 
     public function __construct()
     {
-        $this->sdkVersion = InstalledVersions::getRootPackage()['version'];
-        $this->sdkName = InstalledVersions::getRootPackage()['name'];
+        $this->sdkVersion = '1.2.1';
+        $this->sdkName = 'php-sdk';
     }
 
     /**

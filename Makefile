@@ -43,4 +43,4 @@ test-data:
 
 .PHONY: test
 test: test-data
-	./vendor/phpunit/phpunit/phpunit tests/EppoClientTest.php
+	./vendor/phpunit/phpunit/phpunit tests
