@@ -49,11 +49,11 @@ class ExperimentConfigurationRequester
 
         if (!$configuration) {
             $configurations = $this->fetchAndStoreConfigurations();
-            if (!$configurations || !count($configurations)) {
+            if (!$configurations || !count($configurations) || !array_key_exists($experiment, $configurations)) {
                 return null;
             }
 
-            $configuration = $this->fetchAndStoreConfigurations()[$experiment];
+            $configuration = $configurations[$experiment];
         }
 
         return new ExperimentConfiguration($configuration);
