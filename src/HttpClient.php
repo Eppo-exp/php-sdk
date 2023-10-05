@@ -4,9 +4,6 @@ namespace Eppo;
 
 use Eppo\Config\SDKData;
 use Eppo\Exception\HttpRequestException;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
-use GuzzleHttp\Exception\RequestException;
 use Teapot\StatusCode;
 
 class HttpClient
@@ -14,8 +11,8 @@ class HttpClient
     /** @var int */
     const REQUEST_TIMEOUT = 5;
 
-    /** @var Client */
-    protected $client;
+    /** @var string */
+    protected $baseUrl;
 
     /** @var bool */
     public $isUnauthorized = false;
@@ -33,7 +30,7 @@ class HttpClient
         if (!$baseUrl) {
             $baseUrl = 'https://fscdn.eppo.cloud';
         }
-        $this->client = new Client(['base_uri' => $baseUrl, 'timeout' => self::REQUEST_TIMEOUT]);
+        $this->baseUrl = $baseUrl;
 
         $this->sdkParams = [
             'apiKey' => $apiKey,
@@ -47,30 +44,46 @@ class HttpClient
      *
      * @return string
      *
-     * @throws GuzzleException
      * @throws HttpRequestException
      */
     public function get($resource): string
     {
-        try {
-            $response = $this->client->request('GET', $resource, ['query' => $this->sdkParams]);
-            return (string)$response->getBody();
-        } catch (RequestException $exception) {
-            $this->handleHttpError($exception);
+        $ch = curl_init();
+
+        // Prepare the URL with query params
+        $url = $this->baseUrl . '/' . ltrim($resource, '/') . '?' . http_build_query($this->sdkParams);
+        
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_TIMEOUT, self::REQUEST_TIMEOUT);
+        
+        $output = curl_exec($ch);
+
+        if (curl_errno($ch)) {
+            throw new HttpRequestException(curl_error($ch), curl_errno($ch));
         }
+
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($status >= 400) {
+            $this->handleHttpError($status, $output);
+        }
+
+        return $output;
     }
 
     /**
-     * @param RequestException $exception
+     * @param int $status
+     * @param string $error
      *
      * @throws HttpRequestException
      */
-    private function handleHttpError(RequestException $exception)
+    private function handleHttpError(int $status, string $error)
     {
-        $status = $exception->getResponse()->getStatusCode();
         $this->isUnauthorized = $status === 401;
         $isRecoverable = $this->isHttpErrorRecoverable($status);
-        throw new HttpRequestException($exception->getMessage(), $status, $isRecoverable);
+        throw new HttpRequestException($error, $status, $isRecoverable);
     }
 
     /**
