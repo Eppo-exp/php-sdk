@@ -10,7 +10,7 @@ final class SDKDataTest extends TestCase
     public function testGetVersion()
     {
         $data = new SDKData();
-        $this->assertEquals('1.2.3', $data->getSdkVersion());
+        $this->assertEquals('1.2.4', $data->getSdkVersion());
     }
 
     public function testGetSdkName()
