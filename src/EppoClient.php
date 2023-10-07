@@ -42,6 +42,9 @@ class EppoClient
     /** @var PollerInterface */
     private $poller;
 
+    /** @var bool */
+    private $isGracefulMode;
+
     /**
      * @param ExperimentConfigurationRequester $configurationRequester
      * @param PollerInterface $poller
@@ -50,11 +53,13 @@ class EppoClient
     protected function __construct(
         ExperimentConfigurationRequester $configurationRequester,
         PollerInterface $poller,
-        ?LoggerInterface $assignmentLogger = null
+        ?LoggerInterface $assignmentLogger = null,
+        ?bool $isGracefulMode = true
     ) {
         $this->configurationRequester = $configurationRequester;
         $this->assignmentLogger = $assignmentLogger;
         $this->poller = $poller;
+        $this->isGracefulMode = $isGracefulMode;
     }
 
     /**
@@ -72,7 +77,8 @@ class EppoClient
         string $apiKey,
         string $baseUrl = '',
         LoggerInterface $assignmentLogger = null,
-        CacheInterface $cache = null
+        CacheInterface $cache = null,
+        ?bool $isGracefulMode = true
     ): EppoClient {
         if (self::$instance === null) {
             $sdkData = new SDKData();
@@ -90,7 +96,7 @@ class EppoClient
                 }
             );
 
-            self::$instance = new self($configRequester, $poller, $assignmentLogger);
+            self::$instance = new self($configRequester, $poller, $assignmentLogger, $isGracefulMode);
         }
 
         return self::$instance;
@@ -118,8 +124,17 @@ class EppoClient
      * @throws SimpleCacheInvalidArgumentException
      */
     public function getStringAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): ?string {
-        $assignmentVariation = $this->getAssignmentVariation($subjectKey, $flagKey, $subjectAttributes, self::VARIANT_TYPE_STRING);
-        return  $assignmentVariation ? strval($assignmentVariation->typedValue) : null;
+        try {
+            $assignmentVariation = $this->getAssignmentVariation($subjectKey, $flagKey, $subjectAttributes, self::VARIANT_TYPE_STRING);
+            return  $assignmentVariation ? strval($assignmentVariation->typedValue) : null;
+        } catch (Exception $exception) {
+            if ($this->isGracefulMode) {
+                error_log('[Eppo SDK] Error getting string assignment: ' . $exception->getMessage());
+                return null;
+            }
+            print_r('hello!!1');
+            throw $exception;
+        }
     }
 
     /**
@@ -133,8 +148,17 @@ class EppoClient
      * @throws SimpleCacheInvalidArgumentException
      */
     public function getBooleanAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): ?bool {
-        $assignmentVariation = $this->getAssignmentVariation($subjectKey, $flagKey, $subjectAttributes, self::VARIANT_TYPE_BOOLEAN);
-        return $assignmentVariation ? boolval($assignmentVariation->typedValue) : null;
+        try {
+            $assignmentVariation = $this->getAssignmentVariation($subjectKey, $flagKey, $subjectAttributes, self::VARIANT_TYPE_BOOLEAN);
+            return $assignmentVariation ? boolval($assignmentVariation->typedValue) : null;
+        } catch (Exception $exception) {
+            if ($this->isGracefulMode) {
+                error_log('[Eppo SDK] Error getting string assignment: ' . $exception->getMessage());
+                return null;
+            }
+            print_r('hello!!1');
+            throw $exception;
+        }
     }
 
     /**
@@ -148,8 +172,17 @@ class EppoClient
      * @throws SimpleCacheInvalidArgumentException
      */
     public function getNumericAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): ?float {
-        $assignmentVariation = $this->getAssignmentVariation($subjectKey, $flagKey, $subjectAttributes, self::VARIANT_TYPE_NUMERIC);
-        return $assignmentVariation ? doubleval($assignmentVariation->typedValue) : null;
+        try {
+            $assignmentVariation = $this->getAssignmentVariation($subjectKey, $flagKey, $subjectAttributes, self::VARIANT_TYPE_NUMERIC);
+            return $assignmentVariation ? doubleval($assignmentVariation->typedValue) : null;
+        } catch (Exception $exception) {
+            if ($this->isGracefulMode) {
+                error_log('[Eppo SDK] Error getting string assignment: ' . $exception->getMessage());
+                return null;
+            }
+            print_r('hello!!1');
+            throw $exception;
+        }
     }
 
      /**
@@ -165,8 +198,17 @@ class EppoClient
      * @throws SimpleCacheInvalidArgumentException
      */
     public function getParsedJSONAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): mixed {
-        $assignmentVariation = $this->getAssignmentVariation($subjectKey, $flagKey, $subjectAttributes, self::VARIANT_TYPE_JSON);
-        return $assignmentVariation ? $assignmentVariation->typedValue : null;
+        try {
+            $assignmentVariation = $this->getAssignmentVariation($subjectKey, $flagKey, $subjectAttributes, self::VARIANT_TYPE_JSON);
+            return $assignmentVariation ? $assignmentVariation->typedValue : null;
+        } catch (Exception $exception) {
+            if ($this->isGracefulMode) {
+                error_log('[Eppo SDK] Error getting string assignment: ' . $exception->getMessage());
+                return null;
+            }
+            print_r('hello!!1');
+            throw $exception;
+        }
     }
 
     /**
@@ -182,8 +224,17 @@ class EppoClient
      * @throws SimpleCacheInvalidArgumentException
      */
     public function getJSONStringAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): string {
-        $parsedJsonValue = $this->getParsedJSONAssignment($subjectKey, $flagKey, $subjectAttributes);
-        return isset($parsedJsonValue) ? json_encode($parsedJsonValue) : null;
+        try {
+            $parsedJsonValue = $this->getParsedJSONAssignment($subjectKey, $flagKey, $subjectAttributes);
+            return isset($parsedJsonValue) ? json_encode($parsedJsonValue) : null;
+        } catch (Exception $exception) {
+            if ($this->isGracefulMode) {
+                error_log('[Eppo SDK] Error getting string assignment: ' . $exception->getMessage());
+                return null;
+            }
+            print_r('hello!!1');
+            throw $exception;
+        }
     }
 
     /**
@@ -200,8 +251,17 @@ class EppoClient
      */
     public function getAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): ?string
     {        
-        $assignmentVariation = $this->getAssignmentVariation($subjectKey, $flagKey, $subjectAttributes);
-        return $assignmentVariation ? $assignmentVariation->value : null;
+        try {
+            $assignmentVariation = $this->getAssignmentVariation($subjectKey, $flagKey, $subjectAttributes);
+            return $assignmentVariation ? $assignmentVariation->value : null;
+        } catch (Exception $exception) {
+            if ($this->isGracefulMode) {
+                error_log('[Eppo SDK] Error getting string assignment: ' . $exception->getMessage());
+                return null;
+            }
+            print_r('hello!!1');
+            throw $exception;
+        }
     }
 
     /**
