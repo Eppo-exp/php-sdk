@@ -132,7 +132,6 @@ class EppoClient
                 error_log('[Eppo SDK] Error getting string assignment: ' . $exception->getMessage());
                 return null;
             }
-            print_r('hello!!1');
             throw $exception;
         }
     }
@@ -156,7 +155,6 @@ class EppoClient
                 error_log('[Eppo SDK] Error getting string assignment: ' . $exception->getMessage());
                 return null;
             }
-            print_r('hello!!1');
             throw $exception;
         }
     }
@@ -180,7 +178,6 @@ class EppoClient
                 error_log('[Eppo SDK] Error getting string assignment: ' . $exception->getMessage());
                 return null;
             }
-            print_r('hello!!1');
             throw $exception;
         }
     }
@@ -206,7 +203,6 @@ class EppoClient
                 error_log('[Eppo SDK] Error getting string assignment: ' . $exception->getMessage());
                 return null;
             }
-            print_r('hello!!1');
             throw $exception;
         }
     }
@@ -232,7 +228,6 @@ class EppoClient
                 error_log('[Eppo SDK] Error getting string assignment: ' . $exception->getMessage());
                 return null;
             }
-            print_r('hello!!1');
             throw $exception;
         }
     }
@@ -259,7 +254,6 @@ class EppoClient
                 error_log('[Eppo SDK] Error getting string assignment: ' . $exception->getMessage());
                 return null;
             }
-            print_r('hello!!1');
             throw $exception;
         }
     }
