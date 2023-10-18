@@ -274,8 +274,12 @@ class EppoClientTest extends TestCase
         $subjectAttributes = [['foo' => 3]];
         $client = EppoClient::createTestClient($mockConfigRequester, $pollerMock, $mockLogger, true);
 
-        $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
-        $this->assertNull($assignment);
+        $this->assertNull($client->getAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes));
+        $this->assertNull($client->getStringAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes));
+        $this->assertNull($client->getNumericAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes));
+        $this->assertNull($client->getBooleanAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes));
+        $this->assertNull($client->getJSONStringAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes));
+        $this->assertNull($client->getParsedJSONAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes));
     }
 
     public function testNoGracefulModeThrows()
@@ -289,6 +293,11 @@ class EppoClientTest extends TestCase
 
         $this->expectException(Exception::class);
         $client->getAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
+        $client->getStringAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
+        $client->getNumericAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
+        $client->getBooleanAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
+        $client->getJSONStringAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
+        $client->getParsedJSONAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
     }
 
     /**

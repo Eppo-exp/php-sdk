@@ -223,7 +223,7 @@ class EppoClient
      * @throws InvalidArgumentException
      * @throws SimpleCacheInvalidArgumentException
      */
-    public function getJSONStringAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): string
+    public function getJSONStringAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): ?string
     {
         try {
             $parsedJsonValue = $this->getParsedJSONAssignment($subjectKey, $flagKey, $subjectAttributes);
