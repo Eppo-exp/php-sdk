@@ -129,11 +129,7 @@ class EppoClient
             $assignmentVariation = $this->getAssignmentVariation($subjectKey, $flagKey, $subjectAttributes, self::VARIANT_TYPE_STRING);
             return  $assignmentVariation ? strval($assignmentVariation->typedValue) : null;
         } catch (Exception $exception) {
-            if ($this->isGracefulMode) {
-                error_log('[Eppo SDK] Error getting string assignment: ' . $exception->getMessage());
-                return null;
-            }
-            throw $exception;
+            return $this->handleException($exception);
         }
     }
 
@@ -153,11 +149,7 @@ class EppoClient
             $assignmentVariation = $this->getAssignmentVariation($subjectKey, $flagKey, $subjectAttributes, self::VARIANT_TYPE_BOOLEAN);
             return $assignmentVariation ? boolval($assignmentVariation->typedValue) : null;
         } catch (Exception $exception) {
-            if ($this->isGracefulMode) {
-                error_log('[Eppo SDK] Error getting string assignment: ' . $exception->getMessage());
-                return null;
-            }
-            throw $exception;
+            return $this->handleException($exception);
         }
     }
 
@@ -177,11 +169,7 @@ class EppoClient
             $assignmentVariation = $this->getAssignmentVariation($subjectKey, $flagKey, $subjectAttributes, self::VARIANT_TYPE_NUMERIC);
             return $assignmentVariation ? doubleval($assignmentVariation->typedValue) : null;
         } catch (Exception $exception) {
-            if ($this->isGracefulMode) {
-                error_log('[Eppo SDK] Error getting string assignment: ' . $exception->getMessage());
-                return null;
-            }
-            throw $exception;
+            return $this->handleException($exception);
         }
     }
 
@@ -203,11 +191,7 @@ class EppoClient
             $assignmentVariation = $this->getAssignmentVariation($subjectKey, $flagKey, $subjectAttributes, self::VARIANT_TYPE_JSON);
             return $assignmentVariation ? $assignmentVariation->typedValue : null;
         } catch (Exception $exception) {
-            if ($this->isGracefulMode) {
-                error_log('[Eppo SDK] Error getting string assignment: ' . $exception->getMessage());
-                return null;
-            }
-            throw $exception;
+            return $this->handleException($exception);
         }
     }
 
@@ -229,11 +213,7 @@ class EppoClient
             $parsedJsonValue = $this->getParsedJSONAssignment($subjectKey, $flagKey, $subjectAttributes);
             return isset($parsedJsonValue) ? json_encode($parsedJsonValue) : null;
         } catch (Exception $exception) {
-            if ($this->isGracefulMode) {
-                error_log('[Eppo SDK] Error getting string assignment: ' . $exception->getMessage());
-                return null;
-            }
-            throw $exception;
+            return $this->handleException($exception);
         }
     }
 
@@ -255,11 +235,7 @@ class EppoClient
             $assignmentVariation = $this->getAssignmentVariation($subjectKey, $flagKey, $subjectAttributes);
             return $assignmentVariation ? $assignmentVariation->value : null;
         } catch (Exception $exception) {
-            if ($this->isGracefulMode) {
-                error_log('[Eppo SDK] Error getting string assignment: ' . $exception->getMessage());
-                return null;
-            }
-            throw $exception;
+            return $this->handleException($exception);
         }
     }
 
@@ -462,6 +438,15 @@ class EppoClient
         $shard = Shard::getShard('exposure-' . $subjectKey . '-' . $flagKey, $subjectShards);
 
         return $shard <= $percentExposure * $subjectShards;
+    }
+
+    private function handleException(Exception $exception): mixed
+    {
+        if ($this->isGracefulMode) {
+            error_log('[Eppo SDK] Error getting assignment: ' . $exception->getMessage());
+            return null;
+        }
+        throw $exception;
     }
 
     /**
