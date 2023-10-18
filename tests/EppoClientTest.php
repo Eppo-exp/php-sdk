@@ -5,8 +5,6 @@ namespace Eppo\Tests;
 use Eppo\Config\SDKData;
 use Eppo\ConfigurationStore;
 use Eppo\EppoClient;
-use Eppo\Exception\HttpRequestException;
-use Eppo\Exception\InvalidApiKeyException;
 use Eppo\Exception\InvalidArgumentException;
 use Eppo\ExperimentConfigurationRequester;
 use Eppo\HttpClient;
@@ -14,9 +12,9 @@ use Eppo\Logger\LoggerInterface;
 use Eppo\PollerInterface;
 use Eppo\Tests\WebServer\MockWebServer;
 use Exception;
-use GuzzleHttp\Exception\GuzzleException;
 use PHPUnit\Framework\TestCase;
 use Sarahman\SimpleCache\FileSystemCache;
+use Throwable;
 
 class EppoClientTest extends TestCase
 {
@@ -105,11 +103,11 @@ class EppoClientTest extends TestCase
 
         foreach ($assignmentsTestData as $assignmentTestData) {
             $experiment = $assignmentTestData['experiment'];
-            
+
             // Some test case have only subject keys, others have keys and attributes. Either way we'll, put them into a
             // single array with the subject keys to attributes (if any) 
             $subjectsWithAttributes = $assignmentTestData['subjectsWithAttributes'] ?? [];
-            foreach($assignmentTestData["subjects"] ?? [] as $subjectKey) {
+            foreach ($assignmentTestData["subjects"] ?? [] as $subjectKey) {
                 $subjectsWithAttributes[] = ["subjectKey" => $subjectKey, "subjectAttributes" => []];
             }
 
@@ -117,8 +115,8 @@ class EppoClientTest extends TestCase
             $testValueType = $assignmentTestData["valueType"];
 
             // For each subject, retrieve the typed assignment
-            $assignments = array_map(function($subjectWithAttributes) use ($client, $testValueType, $experiment) {
-                
+            $assignments = array_map(function ($subjectWithAttributes) use ($client, $testValueType, $experiment) {
+
                 $subjectKey = $subjectWithAttributes["subjectKey"];
                 $subjectAttributes = $subjectWithAttributes["subjectAttributes"];
 
@@ -133,7 +131,7 @@ class EppoClientTest extends TestCase
                         return $client->getJSONStringAssignment($subjectKey, $experiment, $subjectAttributes);
                     default:
                         throw new InvalidArgumentException("Unexpected test value type $testValueType");
-                }   
+                }
             }, $subjectsWithAttributes);
 
             $expectedAssignments = $assignmentTestData['expectedAssignments'];
@@ -267,11 +265,46 @@ class EppoClientTest extends TestCase
         $this->assertEquals('control', $assignment);
     }
 
+    public function testGracefulModeDoesNotThrow()
+    {
+        $pollerMock = $this->getPollerMock();
+        $mockConfigRequester = $this->getExperimentConfigurationRequesterMock(self::MOCK_EXPERIMENT_CONFIG, new Exception('config requester error'));
+        $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
+
+        $subjectAttributes = [['foo' => 3]];
+        $client = EppoClient::createTestClient($mockConfigRequester, $pollerMock, $mockLogger, true);
+
+        $this->assertNull($client->getAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes));
+        $this->assertNull($client->getStringAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes));
+        $this->assertNull($client->getNumericAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes));
+        $this->assertNull($client->getBooleanAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes));
+        $this->assertNull($client->getJSONStringAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes));
+        $this->assertNull($client->getParsedJSONAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes));
+    }
+
+    public function testNoGracefulModeThrows()
+    {
+        $pollerMock = $this->getPollerMock();
+        $mockConfigRequester = $this->getExperimentConfigurationRequesterMock(self::MOCK_EXPERIMENT_CONFIG, new Exception('config requester error'));
+        $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
+
+        $subjectAttributes = [['foo' => 3]];
+        $client = EppoClient::createTestClient($mockConfigRequester, $pollerMock, $mockLogger, false);
+
+        $this->expectException(Exception::class);
+        $client->getAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
+        $client->getStringAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
+        $client->getNumericAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
+        $client->getBooleanAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
+        $client->getJSONStringAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
+        $client->getParsedJSONAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
+    }
+
     /**
      * @param array $mockedResponse
      * @return ExperimentConfigurationRequester
      */
-    private function getExperimentConfigurationRequesterMock(array $mockedResponse): ExperimentConfigurationRequester
+    private function getExperimentConfigurationRequesterMock(array $mockedResponse, ?Throwable $mockedThrowable = null): ExperimentConfigurationRequester
     {
         $cache = new FileSystemCache();
         $sdkData = new SDKData();
@@ -286,10 +319,20 @@ class EppoClientTest extends TestCase
             ->willReturn('');
 
         $configStoreMock = $this->getMockBuilder(ConfigurationStore::class)->setConstructorArgs([$cache])->getMock();
-        $configStoreMock->expects($this->any())
-            ->method('getConfiguration')
-            ->with(self::EXPERIMENT_NAME)
-            ->willReturn($mockedResponse);
+
+        if ($mockedResponse) {
+            $configStoreMock->expects($this->any())
+                ->method('getConfiguration')
+                ->with(self::EXPERIMENT_NAME)
+                ->willReturn($mockedResponse);
+        }
+
+        if ($mockedThrowable) {
+            $configStoreMock->expects($this->any())
+                ->method('getConfiguration')
+                ->with(self::EXPERIMENT_NAME)
+                ->willThrowException($mockedThrowable);
+        }
 
         return new ExperimentConfigurationRequester($httpClientMock, $configStoreMock);
     }
@@ -303,8 +346,8 @@ class EppoClientTest extends TestCase
     {
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
         $mockLogger->expects($this->once())->method('logAssignment')->with(
-            'mock-experiment-allocation1', 
-            'control', 
+            'mock-experiment-allocation1',
+            'control',
             'subject-10',
             $this->greaterThan(0),
             $this->anything(),
@@ -312,6 +355,6 @@ class EppoClientTest extends TestCase
             'mock-experiment'
         );
 
-        return $mockLogger; 
+        return $mockLogger;
     }
 }
