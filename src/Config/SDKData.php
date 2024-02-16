@@ -5,7 +5,7 @@ namespace Eppo\Config;
 class SDKData
 {
 
-    const SDK_VERSION = '1.3.0';
+    const SDK_VERSION = '1.3.1';
     const SDK_NAME = 'eppo-php-sdk';
 
     /**
