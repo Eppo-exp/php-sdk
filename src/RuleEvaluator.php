@@ -6,6 +6,7 @@ namespace Eppo;
 
 use Eppo\DTO\Condition;
 use Eppo\DTO\Rule;
+use Composer\Semver\Comparator;
 
 final class RuleEvaluator
 {
@@ -64,21 +65,29 @@ final class RuleEvaluator
         if ($value !== null) {
             switch ($condition->operator) {
                 case 'GTE':
-                    return self::compareNumber($value, $condition->value, function($a, $b) {
-                        return $a >= $b;
-                    });
+                    if (is_numeric($value) && is_numeric($condition->value)) {
+                        return $value >= $condition->value;
+                    }
+
+                    return Comparator::greaterThanOrEqualTo($value, $condition->value);
                 case 'GT':
-                    return self::compareNumber($value, $condition->value, function($a, $b) {
-                        return $a > $b;
-                    });
+                    if (is_numeric($value) && is_numeric($condition->value)) {
+                        return $value > $condition->value;
+                    }
+                    
+                    return Comparator::greaterThan($value, $condition->value);
                 case 'LTE':
-                    return self::compareNumber($value, $condition->value, function($a, $b) {
-                        return $a <= $b;
-                    });
+                    if (is_numeric($value) && is_numeric($condition->value)) {
+                        return $value <= $condition->value;
+                    }
+
+                    return Comparator::lessThanOrEqualTo($value, $condition->value);
                 case 'LT':
-                    return self::compareNumber($value, $condition->value, function($a, $b) {
-                        return $a < $b;
-                    });
+                    if (is_numeric($value) && is_numeric($condition->value)) {
+                        return $value < $condition->value;
+                    }
+
+                    return Comparator::lessThan($value, $condition->value);
                 case 'MATCHES':
                     return preg_match('/' . $condition->value . '/i', (string) $value) === 1;
                 case 'ONE_OF':
@@ -127,18 +136,5 @@ final class RuleEvaluator
         return array_values(array_filter($conditionValues, function($value) use ($attributeValue) {
             return strtolower($value) === strtolower($attributeValue);
         }));
-    }
-
-    /**
-     * Compare two numeric values using a comparison function.
-     *
-     * @param int|float|string $attributeValue The attribute value to compare.
-     * @param int|float|string $conditionValue The condition value to compare.
-     * @param callable $compareFn A comparison function to use for the comparison.
-     * @return bool Returns true if the comparison succeeds, false otherwise.
-     */
-    private static function compareNumber($attributeValue, $conditionValue, callable $compareFn): bool
-    {
-        return is_numeric($attributeValue) && is_numeric($conditionValue) && $compareFn($attributeValue, $conditionValue);
     }
 }
