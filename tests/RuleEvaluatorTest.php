@@ -18,6 +18,9 @@ final class RuleEvaluatorTest extends TestCase
     /** @var Rule */
     private $numericRule;
 
+    /** @var Rule */
+    private $semverRule;
+
     /**
      * @param string|null $name
      * @param array $data
@@ -44,6 +47,21 @@ final class RuleEvaluatorTest extends TestCase
         $this->numericRule = new Rule();
         $this->numericRule->allocationKey = 'allocation1';
         $this->numericRule->conditions = [$numericRuleCondition1, $numericRuleCondition2];
+
+        // semver
+        $semverRuleCondition1 = new Condition();
+        $semverRuleCondition1->value = '1.0.0';
+        $semverRuleCondition1->operator = 'GTE';
+        $semverRuleCondition1->attribute = 'appVersion';
+
+        $semverRuleCondition2 = new Condition();
+        $semverRuleCondition2->value = '2.1.0';
+        $semverRuleCondition2->operator = 'LTE';
+        $semverRuleCondition2->attribute = 'appVersion';
+
+        $this->semverRule = new Rule();
+        $this->semverRule->allocationKey = 'allocation1';
+        $this->semverRule->conditions = [$semverRuleCondition1, $semverRuleCondition2];
 
         $ruleWithMatchesConditionCondition = new Condition();
         $ruleWithMatchesConditionCondition->attribute = 'user_id';
@@ -76,6 +94,14 @@ final class RuleEvaluatorTest extends TestCase
         $this->assertEquals(
             RuleEvaluator::findMatchingRule(['totalSales' => 100], $rules),
             $this->numericRule
+        );
+    }
+
+    public function testReturnsTrueIfAttributesMatchSemverConditions() {
+        $rules = [$this->semverRule];
+        $this->assertEquals(
+            RuleEvaluator::findMatchingRule(['appVersion' => '1.5.0'], $rules),
+            $this->semverRule
         );
     }
 
