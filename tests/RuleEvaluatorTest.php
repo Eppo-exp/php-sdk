@@ -55,7 +55,7 @@ final class RuleEvaluatorTest extends TestCase
         $semverRuleCondition1->attribute = 'appVersion';
 
         $semverRuleCondition2 = new Condition();
-        $semverRuleCondition2->value = '2.1.0';
+        $semverRuleCondition2->value = '2.11.0';
         $semverRuleCondition2->operator = 'LTE';
         $semverRuleCondition2->attribute = 'appVersion';
 
@@ -100,7 +100,7 @@ final class RuleEvaluatorTest extends TestCase
     public function testReturnsTrueIfAttributesMatchSemverConditions() {
         $rules = [$this->semverRule];
         $this->assertEquals(
-            RuleEvaluator::findMatchingRule(['appVersion' => '1.5.0'], $rules),
+            RuleEvaluator::findMatchingRule(['appVersion' => '1.10.0'], $rules),
             $this->semverRule
         );
     }
