@@ -21,7 +21,6 @@ class SDKData
         ), true);
         $this->sdkName = $pkgDef['name'];
         $this->sdkVersion = $pkgDef['version'];
-
     }
 
     /**
