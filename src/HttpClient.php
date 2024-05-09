@@ -33,7 +33,7 @@ class HttpClient
         }
         $this->baseUrl = $baseUrl;
 
-        $this->sdkParams = array_merge($extraQueryParams, ['apiKey' => $apiKey]);
+        $this->sdkParams = [...$extraQueryParams, 'apiKey' => $apiKey];
     }
 
     /**
