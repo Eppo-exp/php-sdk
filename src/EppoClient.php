@@ -52,9 +52,9 @@ class EppoClient
      */
     protected function __construct(
         ExperimentConfigurationRequester $configurationRequester,
-        PollerInterface                  $poller,
-        ?LoggerInterface                 $assignmentLogger = null,
-        ?bool                            $isGracefulMode = true
+        PollerInterface $poller,
+        ?LoggerInterface $assignmentLogger = null,
+        ?bool $isGracefulMode = true
     )
     {
         $this->configurationRequester = $configurationRequester;
@@ -75,11 +75,11 @@ class EppoClient
      * @throws Exception
      */
     public static function init(
-        string          $apiKey,
-        string          $baseUrl = '',
+        string $apiKey,
+        string $baseUrl = '',
         LoggerInterface $assignmentLogger = null,
-        CacheInterface  $cache = null,
-        ?bool           $isGracefulMode = true
+        CacheInterface $cache = null,
+        ?bool $isGracefulMode = true
     ): EppoClient
     {
         if (self::$instance === null) {
@@ -431,10 +431,10 @@ class EppoClient
      * @return bool
      */
     private function isInExperimentSample(
-        string                  $subjectKey,
-        string                  $flagKey,
+        string $subjectKey,
+        string $flagKey,
         ExperimentConfiguration $experimentConfiguration,
-        Allocation              $allocation
+        Allocation $allocation
     ): bool
     {
         $subjectShards = $experimentConfiguration->getSubjectShards();
@@ -465,9 +465,9 @@ class EppoClient
      */
     public static function createTestClient(
         ExperimentConfigurationRequester $experimentConfigurationRequester,
-        PollerInterface                  $poller,
-        ?LoggerInterface                 $logger = null,
-        ?bool                            $isGracefulMode = true
+        PollerInterface $poller,
+        ?LoggerInterface $logger = null,
+        ?bool $isGracefulMode = true
     ): EppoClient
     {
         return new EppoClient($experimentConfigurationRequester, $poller, $logger, $isGracefulMode);
