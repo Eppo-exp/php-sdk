@@ -4,9 +4,20 @@ namespace Eppo\DTO;
 
 class Rule
 {
-    /** @var string */
-    public $allocationKey = '';
 
     /** @var array */
-    public $conditions = [];
+    private $conditions = [];
+
+    /**
+     * @param array $conditions
+     */
+    public function __construct(array $conditions)
+    {
+        $this->conditions = $conditions;
+    }
+
+    public function getConditions(): array
+    {
+        return $this->conditions;
+    }
 }
