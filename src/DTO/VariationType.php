@@ -1,10 +1,11 @@
 <?php
+
 namespace Eppo\DTO;
 
-class VariationType
+enum VariationType: string
 {
-    public const STRING = 'STRING';
-    public const BOOLEAN = 'BOOLEAN';
-    public const NUMERIC = 'NUMERIC';
-    public const JSON = 'JSON';
+    case STRING = 'string';
+    case BOOLEAN = 'BOOLEAN';
+    case NUMERIC = 'NUMERIC';
+    case JSON = 'JSON';
 }

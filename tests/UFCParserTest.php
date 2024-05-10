@@ -1,16 +1,10 @@
 <?php
 
 
-use Eppo\Config\SDKData;
-use Eppo\ConfigurationStore;
 use Eppo\DTO\Flag;
-
 use Eppo\DTO\VariationType;
-use Eppo\ExperimentConfigurationRequester;
-use Eppo\HttpClient;
 use Eppo\UFCParser;
 use PHPUnit\Framework\TestCase;
-use Sarahman\SimpleCache\FileSystemCache;
 
 class UFCParserTest extends TestCase
 {
@@ -18,21 +12,6 @@ class UFCParserTest extends TestCase
     const FLAG_KEY = 'kill-switch';
 
     const MOCK_DATA_FILENAME = __DIR__ . '/mockdata/ufc-v1.json';
-
-
-    public static function setUpBeforeClass(): void
-    {
-//        try {
-//            MockWebServer::start();
-//        } catch (Exception $exception) {
-//            self::fail('Failed to start mocked web server: ' . $exception->getMessage());
-//        }
-    }
-
-    public static function tearDownAfterClass(): void
-    {
-//        MockWebServer::stop();
-    }
 
     public function testParsesComplexFlagPayload(): void
     {
@@ -43,49 +22,47 @@ class UFCParserTest extends TestCase
 
         $this->assertInstanceOf(Flag::class, $flag);
 
-        $this->assertEquals(self::FLAG_KEY, $flag->getKey());
-        $this->assertTrue($flag->isEnabled());
-        $this->assertEquals(VariationType::BOOLEAN, $flag->getVariationType());
+        $this->assertEquals(self::FLAG_KEY, $flag->key);
+        $this->assertTrue($flag->enabled);
+        $this->assertEquals(VariationType::BOOLEAN, $flag->variationType);
 
-        $this->assertCount(2, $flag->getVariations());
-
-        /** @see `../mockdata/ufc-v1.json` */
-        $firstVariation = $flag->getVariations()['on'];
-        $this->assertEquals('on', $firstVariation->getKey());
-        $val = $firstVariation->getValue();
-
-        $this->assertTrue($firstVariation->getValue());
-
-        $this->assertCount(3, $flag->getAllocations());
+        $this->assertCount(2, $flag->variations);
 
         /** @see `../mockdata/ufc-v1.json` */
-        $secondAllocation = $flag->getAllocations()[1];
-        $this->assertEquals('on-for-age-50+', $secondAllocation->getKey());
-        $this->assertTrue($secondAllocation->getDoLog());
+        $firstVariation = $flag->variations['on'];
+        $this->assertEquals('on', $firstVariation->key);
+        $this->assertTrue($firstVariation->value);
 
-        $this->assertCount(1, $secondAllocation->getRules());
+        $this->assertCount(3, $flag->allocations);
 
-        $firstRule = $secondAllocation->getRules()[0];
-        $this->assertCount(1, $firstRule->getConditions());
+        /** @see `../mockdata/ufc-v1.json` */
+        $secondAllocation = $flag->allocations[1];
+        $this->assertEquals('on-for-age-50+', $secondAllocation->key);
+        $this->assertTrue($secondAllocation->doLog);
 
-        $firstCondition = $firstRule->getConditions()[0];
-        $this->assertEquals('age', $firstCondition->getAttribute());
-        $this->assertEquals('GTE', $firstCondition->getOperator());
-        $this->assertEquals(50, $firstCondition->getValue());
+        $this->assertCount(1, $secondAllocation->rules);
 
-        $this->assertCount(1, $secondAllocation->getSplits());
+        $firstRule = $secondAllocation->rules[0];
+        $this->assertCount(1, $firstRule->conditions);
 
-        $firstSplit = $secondAllocation->getSplits()[0];
-        $this->assertEquals('on', $firstSplit->getVariationKey());
-        $this->assertEmpty($firstSplit->getExtraLogging());
+        $firstCondition = $firstRule->conditions[0];
+        $this->assertEquals('age', $firstCondition->attribute);
+        $this->assertEquals('GTE', $firstCondition->operator);
+        $this->assertEquals(50, $firstCondition->value);
 
-        $this->assertCount(1, $firstSplit->getShards());
-        $firstShard = $firstSplit->getShards()[0];
-        $this->assertEquals('some-salt', $firstShard->getSalt());
-        $this->assertCount(1, $firstShard->getRanges());
+        $this->assertCount(1, $secondAllocation->splits);
 
-        $firstRange = $firstShard->getRanges()[0];
-        $this->assertEquals(0, $firstRange->getStart());
-        $this->assertEquals(10000, $firstRange->getEnd());
+        $firstSplit = $secondAllocation->splits[0];
+        $this->assertEquals('on', $firstSplit->variationKey);
+        $this->assertEmpty($firstSplit->extraLogging);
+
+        $this->assertCount(1, $firstSplit->shards);
+        $firstShard = $firstSplit->shards[0];
+        $this->assertEquals('some-salt', $firstShard->salt);
+        $this->assertCount(1, $firstShard->ranges);
+
+        $firstRange = $firstShard->ranges[0];
+        $this->assertEquals(0, $firstRange->start);
+        $this->assertEquals(10000, $firstRange->end);
     }
 }

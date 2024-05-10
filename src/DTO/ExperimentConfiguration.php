@@ -58,7 +58,7 @@ class ExperimentConfiguration
 
             foreach ($configAllocation['variations'] as $configVariation) {
                 $variation = new Variation();
-                $variation->shardRange = new ShardRange();
+                $variation->shardRange = new Range();
                 $variation->name = $configVariation['name'];
                 $variation->value = $configVariation['value'];
                 $variation->typedValue = $configVariation['typedValue'];

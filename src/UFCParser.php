@@ -7,9 +7,10 @@ use Eppo\DTO\Condition;
 use Eppo\DTO\Flag;
 use Eppo\DTO\Rule;
 use Eppo\DTO\Shard;
-use Eppo\DTO\ShardRange;
+use Eppo\DTO\Range;
 use Eppo\DTO\Split;
 use Eppo\DTO\Variation;
+use Eppo\DTO\VariationType;
 
 class UFCParser
 {
@@ -26,7 +27,7 @@ class UFCParser
         return new Flag($configuration['key'],
             $configuration['enabled'],
             $allocations,
-            $configuration['variationType'],
+            VariationType::from($configuration['variationType']),
             $variations,
             $configuration['totalShards']);
     }
@@ -42,7 +43,8 @@ class UFCParser
             return new Variation(
                 $variationConfig['key'],
                 $variationConfig['value'],
-                $configuration['variationType']);
+                VariationType::from($configuration['variationType'])
+            );
         },
             $configuration['variations']);
     }
@@ -70,7 +72,7 @@ class UFCParser
                 $shards = array_map(function ($shardConfig) {
 
                     $ranges = array_map(function ($rangeConfig) {
-                        return new ShardRange($rangeConfig['start'], $rangeConfig['end']);
+                        return new Range($rangeConfig['start'], $rangeConfig['end']);
                     }, $shardConfig['ranges']);
 
                     return new Shard(

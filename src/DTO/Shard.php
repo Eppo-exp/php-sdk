@@ -2,30 +2,17 @@
 
 namespace Eppo\DTO;
 
-class Shard {
-    /** @var string */
-    private $salt;
-    /** @var array of `ShardRange` */
-    private $ranges;
 
-    public function getSalt(): string
-    {
-        return $this->salt;
-    }
-
-    public function getRanges(): array
-    {
-        return $this->ranges;
-    }
-
+class Shard
+{
     /**
      * @param string $salt
-     * @param array $ranges
+     * @param Range[] $ranges
      */
-    public function __construct(string $salt, array $ranges)
+    public function __construct(
+        public string $salt,
+        public array $ranges)
     {
-        $this->salt = $salt;
-        $this->ranges = $ranges;
     }
 
 }

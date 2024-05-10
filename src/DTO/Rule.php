@@ -4,20 +4,10 @@ namespace Eppo\DTO;
 
 class Rule
 {
-
-    /** @var array */
-    private $conditions = [];
-
     /**
-     * @param array $conditions
+     * @param Condition[] $conditions
      */
-    public function __construct(array $conditions)
+    public function __construct(public array $conditions)
     {
-        $this->conditions = $conditions;
-    }
-
-    public function getConditions(): array
-    {
-        return $this->conditions;
     }
 }
