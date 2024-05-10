@@ -5,14 +5,10 @@ namespace Eppo\Config;
 class SDKData
 {
     /** @var string */
-    private $sdkVersion;
-    /** @var string */
-    private $sdkName;
+    private string $sdkVersion;
 
-    public function getData(): array
-    {
-        return ["sdkVersion" => $this->sdkVersion, "sdkName" => $this->sdkName];
-    }
+    /** @var string */
+    private string $sdkName;
 
     public function __construct()
     {

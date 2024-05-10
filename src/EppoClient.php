@@ -85,10 +85,13 @@ class EppoClient
         if (self::$instance === null) {
             // Get SDK metadata to pass as params in the http client.
             $sdkData = new SDKData();
+            $sdkParams = ["sdkVersion" => $sdkData->getSdkVersion(),
+                "sdkName" => $sdkData->getSdkName()];
+
             if (!$cache) {
                 $cache = new FileSystemCache(__DIR__ . '/../cache');
             }
-            $httpClient = new HttpClient($baseUrl, $apiKey, $sdkData->getData());
+            $httpClient = new HttpClient($baseUrl, $apiKey, $sdkParams);
             $configStore = new ConfigurationStore($cache);
             $configRequester = new ExperimentConfigurationRequester($httpClient, $configStore);
             $poller = new Poller(
