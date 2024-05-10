@@ -23,7 +23,7 @@
     }
   },
   "require": {
-    "php": "^7.3.31 || ^8.0",
+    "php": "^8.0",
     "ext-json": "*",
     "sarahman/simple-filesystem-cache": "^1.0",
     "shrikeh/teapot": "^2.3",
