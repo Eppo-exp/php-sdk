@@ -2,7 +2,7 @@
 
 namespace Eppo;
 
-use Eppo\DTO\Range;
+use Eppo\DTO\ShardRange;
 
 final class Shard
 {
@@ -21,11 +21,11 @@ final class Shard
 
     /**
      * @param int $shard
-     * @param Range $range
+     * @param ShardRange $range
      *
      * @return bool
      */
-    public static function isShardInRange(int $shard, Range $range): bool
+    public static function isShardInRange(int $shard, ShardRange $range): bool
     {
         return $shard >= $range->start && $shard < $range->end;
     }

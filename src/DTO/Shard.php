@@ -7,7 +7,7 @@ class Shard
 {
     /**
      * @param string $salt
-     * @param Range[] $ranges
+     * @param ShardRange[] $ranges
      */
     public function __construct(
         public string $salt,
