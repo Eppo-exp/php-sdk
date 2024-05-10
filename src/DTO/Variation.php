@@ -5,10 +5,7 @@ namespace Eppo\DTO;
 
 class Variation
 {
-    public array|bool|float|string $value;
-
-    public function __construct(public string $key, bool|float|string $value, VariationType $valueType)
+    public function __construct(public string $key, public array|bool|float|string $value)
     {
-        $this->value = $valueType === VariationType::JSON ? json_decode($value) : $value;
     }
 }

@@ -21,41 +21,40 @@ class UFCParser
      */
     public function parseFlag(array $configuration): Flag
     {
-        $variations = self::parseVariations($configuration);
+        $variationType = VariationType::from($configuration['variationType']);
+        $variations = self::parseVariations($configuration['variations'], $variationType);
         $allocations = self::parseAllocations($configuration['allocations']);
 
         return new Flag($configuration['key'],
             $configuration['enabled'],
             $allocations,
-            VariationType::from($configuration['variationType']),
+            $variationType,
             $variations,
             $configuration['totalShards']);
     }
 
 
     /**
-     * @param $configuration
+     * @param array $variations
+     * @param VariationType $variationType
      * @return Variation[]
      */
-    private static function parseVariations($configuration): array
+    private static function parseVariations(array $variations, VariationType $variationType): array
     {
-        return array_map(function ($variationConfig) use ($configuration) {
-            return new Variation(
-                $variationConfig['key'],
-                $variationConfig['value'],
-                VariationType::from($configuration['variationType'])
-            );
+        return array_map(function ($variationConfig) use ($variationType) {
+            $typedValue = $variationType === VariationType::JSON ? json_decode($variationConfig['value']) : $variationConfig['value'];
+            return new Variation($variationConfig['key'], $typedValue);
         },
-            $configuration['variations']);
+            $variations);
     }
 
     /**
-     * @param $allocations1
+     * @param array $allocations
      * @return Allocation[]
      */
-    private static function parseAllocations($allocations1): array
+    private static function parseAllocations(array $allocations): array
     {
-        $allocations = array_map(function ($allocationConfig) {
+        return array_map(function ($allocationConfig) {
             $rules = array_map(function ($ruleConfig) {
                 $conditions = array_map(function ($conditionConfig) {
                     return new Condition(
@@ -95,7 +94,6 @@ class UFCParser
                 array_key_exists('startAt', $allocationConfig) ? strtotime($allocationConfig['startAt']) : null,
                 array_key_exists('endAt', $allocationConfig) ? strtotime($allocationConfig['endAt']) : null
             );
-        }, $allocations1);
-        return $allocations;
+        }, $allocations);
     }
 }
