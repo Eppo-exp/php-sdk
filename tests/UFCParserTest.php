@@ -48,44 +48,44 @@ class UFCParserTest extends TestCase
         $this->assertEquals(VariationType::BOOLEAN, $flag->getVariationType());
 
         $this->assertCount(2, $flag->getVariations());
+
+        /** @see `../mockdata/ufc-v1.json` */
+        $firstVariation = $flag->getVariations()['on'];
+        $this->assertEquals('on', $firstVariation->getKey());
+        $val = $firstVariation->getValue();
+
+        $this->assertTrue($firstVariation->getValue());
+
         $this->assertCount(3, $flag->getAllocations());
+
+        /** @see `../mockdata/ufc-v1.json` */
+        $secondAllocation = $flag->getAllocations()[1];
+        $this->assertEquals('on-for-age-50+', $secondAllocation->getKey());
+        $this->assertTrue($secondAllocation->getDoLog());
+
+        $this->assertCount(1, $secondAllocation->getRules());
+
+        $firstRule = $secondAllocation->getRules()[0];
+        $this->assertCount(1, $firstRule->getConditions());
+
+        $firstCondition = $firstRule->getConditions()[0];
+        $this->assertEquals('age', $firstCondition->getAttribute());
+        $this->assertEquals('GTE', $firstCondition->getOperator());
+        $this->assertEquals(50, $firstCondition->getValue());
+
+        $this->assertCount(1, $secondAllocation->getSplits());
+
+        $firstSplit = $secondAllocation->getSplits()[0];
+        $this->assertEquals('on', $firstSplit->getVariationKey());
+        $this->assertEmpty($firstSplit->getExtraLogging());
+
+        $this->assertCount(1, $firstSplit->getShards());
+        $firstShard = $firstSplit->getShards()[0];
+        $this->assertEquals('some-salt', $firstShard->getSalt());
+        $this->assertCount(1, $firstShard->getRanges());
+
+        $firstRange = $firstShard->getRanges()[0];
+        $this->assertEquals(0, $firstRange->getStart());
+        $this->assertEquals(10000, $firstRange->getEnd());
     }
-
-    /**
-     * @param array $data
-     * @return ExperimentConfigurationRequester
-     */
-    private function getFlagLoaderForData(array $data, ?Throwable $mockedThrowable = null): FlagConfigurationLoader
-    {
-        $cache = new FileSystemCache();
-        $sdkData = new SDKData();
-
-        $httpClientMock = $this->getMockBuilder(HttpClient::class)->setConstructorArgs([
-            '',
-            'dummy',
-            $sdkData
-        ])->getMock();
-        $httpClientMock->expects($this->any())
-            ->method('get')
-            ->willReturn('');
-
-        $configStoreMock = $this->getMockBuilder(ConfigurationStore::class)->setConstructorArgs([$cache])->getMock();
-
-        if ($data) {
-            $configStoreMock->expects($this->any())
-                ->method('getConfiguration')
-                ->with(self::FLAG_KEY)
-                ->willReturn($data[self::FLAG_KEY]);
-        }
-
-        if ($mockedThrowable) {
-            $configStoreMock->expects($this->any())
-                ->method('getConfiguration')
-                ->with(self::FLAG_KEY)
-                ->willThrowException($mockedThrowable);
-        }
-
-        return new FlagConfigurationLoader($httpClientMock, $configStoreMock);
-    }
-
 }

@@ -78,7 +78,7 @@ class Allocation
     /**
      * @return bool
      */
-    public function isDoLog(): bool
+    public function getDoLog(): bool
     {
         return $this->doLog;
     }

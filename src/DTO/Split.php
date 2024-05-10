@@ -4,9 +4,32 @@ namespace Eppo\DTO;
 
 class Split
 {
-private $variationKey;
-private $shards;
-private $extraLogging;
+    public function getVariationKey(): string
+    {
+        return $this->variationKey;
+    }
+
+    public function getShards(): array
+    {
+        return $this->shards;
+    }
+
+    public function getExtraLogging(): array
+    {
+        return $this->extraLogging;
+    }
+    /**
+     * @var string
+     */
+    private string $variationKey;
+    /**
+     * @var Shard[]
+     */
+    private array $shards;
+    /**
+     * @var array
+     */
+    private array $extraLogging;
 
     /**
      * @param $variationKey

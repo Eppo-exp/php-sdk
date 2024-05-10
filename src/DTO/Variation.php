@@ -2,6 +2,7 @@
 
 namespace Eppo\DTO;
 
+
 class Variation
 {
     /** @var string */
@@ -9,11 +10,9 @@ class Variation
 
     /**
      * Properly typed value for this variation.
-     * @var mixed
+     * @var array|bool|float|string
      */
-    private $value;
-
-
+    private array|bool|float|string $value;
 
     public function __construct(string $key, $value, string $valueType)
     {
@@ -21,7 +20,7 @@ class Variation
         $this->value = $valueType === VariationType::JSON ? json_decode($value) : $value;
     }
 
-    public function getValue(): string
+    public function getValue(): array|bool|float|string
     {
         return $this->value;
     }

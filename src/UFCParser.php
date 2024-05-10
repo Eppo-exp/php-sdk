@@ -20,7 +20,6 @@ class UFCParser
      */
     public function parseFlag(array $configuration): Flag
     {
-        print(json_encode(array_keys($configuration)));
         $variations = self::parseVariations($configuration);
         $allocations = self::parseAllocations($configuration['allocations']);
 
@@ -39,14 +38,13 @@ class UFCParser
      */
     private static function parseVariations($configuration): array
     {
-        $variations = array_map(function ($variationConfig) use ($configuration) {
+        return array_map(function ($variationConfig) use ($configuration) {
             return new Variation(
                 $variationConfig['key'],
                 $variationConfig['value'],
                 $configuration['variationType']);
         },
             $configuration['variations']);
-        return $variations;
     }
 
     /**
@@ -91,7 +89,7 @@ class UFCParser
                 $allocationConfig['key'],
                 $rules,
                 $splits,
-                boolval($allocationConfig['doLog']),
+                (bool)$allocationConfig['doLog'],
                 array_key_exists('startAt', $allocationConfig) ? strtotime($allocationConfig['startAt']) : null,
                 array_key_exists('endAt', $allocationConfig) ? strtotime($allocationConfig['endAt']) : null
             );

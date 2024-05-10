@@ -16,9 +16,9 @@ class Condition
     /**
      * @param string $operator
      * @param string $attribute
-     * @param string|float|bool|array $value
+     * @param float|bool|array|string $value
      */
-    public function __construct(string $operator, string $attribute,  $value)
+    public function __construct(string $attribute, string $operator, float|bool|array|string $value)
     {
         $this->operator = $operator;
         $this->attribute = $attribute;
