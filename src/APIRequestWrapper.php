@@ -8,7 +8,7 @@ use Http\Discovery\Psr18Client;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Message\RequestFactoryInterface;
-use Teapot\StatusCode;
+use Teapot\StatusCode\RFC\RFC7231;
 use Webclient\Extension\Redirect\RedirectClientDecorator;
 
 class APIRequestWrapper
@@ -81,8 +81,8 @@ class APIRequestWrapper
      */
     private function isHttpErrorRecoverable(int $status): bool
     {
-        if ($status >= StatusCode::BAD_REQUEST && $status < StatusCode::INTERNAL_SERVER_ERROR) {
-            return $status === StatusCode::CONFLICT || $status === StatusCode::REQUEST_TIMEOUT;
+        if ($status >= RFC7231::BAD_REQUEST && $status < RFC7231::INTERNAL_SERVER_ERROR) {
+            return $status === RFC7231::CONFLICT || $status === RFC7231::REQUEST_TIMEOUT;
         }
         return true;
     }

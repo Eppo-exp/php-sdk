@@ -289,7 +289,11 @@ class EppoClient
         Validator::validateNotBlank($subjectKey, 'Invalid argument: subjectKey cannot be blank');
         Validator::validateNotBlank($flagKey, 'Invalid argument: flagKey cannot be blank');
 
-        $experimentConfig = $this->configurationRequester->getConfiguration($flagKey);
+        try {
+            $experimentConfig = $this->configurationRequester->getConfiguration($flagKey);
+        } catch (HttpRequestException|SimpleCacheInvalidArgumentException|GuzzleException|InvalidApiKeyException $e) {
+            return null;
+        }
         if (!$experimentConfig) {
             return null;
         }
