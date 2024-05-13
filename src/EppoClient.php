@@ -110,12 +110,12 @@ class EppoClient
             if (!$httpClient) {
                 $httpClient = Psr18ClientDiscovery::find();
             }
-            $requestFactory  = $requestFactory ?: new Psr17Factory();
+            $requestFactory = $requestFactory ?: new Psr17Factory();
 
             $apiWrapper = new APIRequestWrapper(
                 $apiKey,
                 $sdkParams,
-                $httpClient ,
+                $httpClient,
                 $requestFactory,
                 self::RAC_ENDPOINT,
                 $baseUrl
@@ -289,11 +289,8 @@ class EppoClient
         Validator::validateNotBlank($subjectKey, 'Invalid argument: subjectKey cannot be blank');
         Validator::validateNotBlank($flagKey, 'Invalid argument: flagKey cannot be blank');
 
-        try {
-            $experimentConfig = $this->configurationRequester->getConfiguration($flagKey);
-        } catch (HttpRequestException|SimpleCacheInvalidArgumentException|GuzzleException|InvalidApiKeyException $e) {
-            return null;
-        }
+        $experimentConfig = $this->configurationRequester->getConfiguration($flagKey);
+
         if (!$experimentConfig) {
             return null;
         }
