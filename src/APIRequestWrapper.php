@@ -42,7 +42,7 @@ class APIRequestWrapper
     }
 
     /**
-     * @throws ClientExceptionInterface
+     * @throws ClientExceptionInterface|HttpRequestException
      */
     public function get(): string
     {
@@ -53,28 +53,10 @@ class APIRequestWrapper
 
         $response = $this->httpClient->sendRequest($request);
 
-        //
-//        $ch = curl_init();
-//
-//
-//        curl_setopt($ch, CURLOPT_URL, $url);
-//        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-//        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-//        curl_setopt($ch, CURLOPT_TIMEOUT, self::REQUEST_TIMEOUT);
-//
-//        $output = curl_exec($ch);
-//
-//        if (curl_errno($ch)) {
-//            throw new HttpRequestException(curl_error($ch), curl_errno($ch));
-//        }
-//
-//        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-//        curl_close($ch);
-//
-//        if ($status >= 400) {
-//            $this->handleHttpError($status, $output);
-//        }
-
+        if ($response->getStatusCode() >= 400)
+        {
+            $this->handleHttpError($response->getStatusCode(), $response->getBody());
+        }
 
         return $response->getBody();
     }
