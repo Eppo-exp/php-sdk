@@ -2,17 +2,21 @@
 
 namespace Eppo\Tests;
 
+use Eppo\APIRequestWrapper;
 use Eppo\Config\SDKData;
 use Eppo\ConfigurationStore;
 use Eppo\EppoClient;
 use Eppo\Exception\InvalidArgumentException;
 use Eppo\ExperimentConfigurationRequester;
-use Eppo\HttpClient;
 use Eppo\Logger\LoggerInterface;
 use Eppo\PollerInterface;
 use Eppo\Tests\WebServer\MockWebServer;
 use Exception;
+use Http\Mock\Client;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestFactoryInterface;
+use PsrMock\Psr17\RequestFactory;
 use Sarahman\SimpleCache\FileSystemCache;
 use Throwable;
 
@@ -105,7 +109,7 @@ class EppoClientTest extends TestCase
             $experiment = $assignmentTestData['experiment'];
 
             // Some test case have only subject keys, others have keys and attributes. Either way we'll, put them into a
-            // single array with the subject keys to attributes (if any) 
+            // single array with the subject keys to attributes (if any)
             $subjectsWithAttributes = $assignmentTestData['subjectsWithAttributes'] ?? [];
             foreach ($assignmentTestData["subjects"] ?? [] as $subjectKey) {
                 $subjectsWithAttributes[] = ["subjectKey" => $subjectKey, "subjectAttributes" => []];
@@ -309,10 +313,17 @@ class EppoClientTest extends TestCase
         $cache = new FileSystemCache();
         $sdkData = new SDKData();
 
-        $httpClientMock = $this->getMockBuilder(HttpClient::class)->setConstructorArgs([
+        $sdkParams = ["sdkVersion" => $sdkData->getSdkVersion(),
+            "sdkName" => $sdkData->getSdkName()];
+
+
+        $httpClientMock = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs([
             '',
-            'dummy',
-            $sdkData->getData()
+            $sdkParams,
+            new Client(),
+            new RequestFactory(),
+            '',
+            ''
         ])->getMock();
         $httpClientMock->expects($this->any())
             ->method('get')

@@ -6,26 +6,25 @@ use Eppo\DTO\ExperimentConfiguration;
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
 use GuzzleHttp\Exception\GuzzleException;
+use Http\Discovery\Psr18Client;
+use Psr\Http\Client\ClientExceptionInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 
 class ExperimentConfigurationRequester
 {
-    /** @var string */
-    const RAC_ENDPOINT = '/api/randomized_assignment/v3/config';
 
-    /** @var HttpClient */
-    private $httpClient;
+    private APIRequestWrapper $apiClient;
 
-    /** @var ConfigurationStore */
-    private $configurationStore;
+    private ConfigurationStore $configurationStore;
+
 
     /**
-     * @param HttpClient $httpClient
+     * @param APIRequestWrapper $httpClient
      * @param ConfigurationStore $configurationStore
      */
-    public function __construct(HttpClient $httpClient, ConfigurationStore $configurationStore)
+    public function __construct(APIRequestWrapper $httpClient, ConfigurationStore $configurationStore)
     {
-        $this->httpClient = $httpClient;
+        $this->apiClient = $httpClient;
         $this->configurationStore = $configurationStore;
     }
 
@@ -41,7 +40,7 @@ class ExperimentConfigurationRequester
      */
     public function getConfiguration(string $experiment): ?ExperimentConfiguration
     {
-        if ($this->httpClient->isUnauthorized) {
+        if ($this->apiClient->isUnauthorized) {
             throw new InvalidApiKeyException();
         }
 
@@ -61,17 +60,15 @@ class ExperimentConfigurationRequester
 
     /**
      * @return array
-     * @throws GuzzleException
-     * @throws HttpRequestException
      * @throws InvalidArgumentException
+     * @throws ClientExceptionInterface
      */
     public function fetchAndStoreConfigurations(): array
     {
-        $responseData = json_decode($this->httpClient->get(self::RAC_ENDPOINT), true);
+        $responseData = json_decode($this->apiClient->get(), true);
         if (!$responseData) {
             return [];
         }
-
         $this->configurationStore->setConfigurations($responseData['flags']);
         return $responseData['flags'];
     }
