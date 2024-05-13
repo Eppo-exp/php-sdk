@@ -80,8 +80,8 @@ class EppoClient
      * @param string $baseUrl
      * @param LoggerInterface|null $assignmentLogger optional assignment logger. Please check Eppo/LoggerLoggerInterface.
      * @param CacheInterface|null $cache optional cache instance. Compatible with psr-16 simple cache. By default, (if nothing passed) EppoClient will use FileSystem cache.
-     * @param ClientInterface|null $httpClient
-     * @param RequestFactoryInterface|null $requestFactory
+     * @param ClientInterface|null $httpClient optional PSR-18 ClientInterface. If nothing is passed, EppoClient will use Discovery to locate a suitable implementation in the project.
+     * @param RequestFactoryInterface|null $requestFactory optional PSR-17 Request Factory implementation. If none is provided, EppoClient will use Discovery
      * @param bool|null $isGracefulMode
      * @return EppoClient
      * @throws Exception
@@ -111,10 +111,6 @@ class EppoClient
                 $httpClient = Psr18ClientDiscovery::find();
             }
             $requestFactory  = $requestFactory ?: new Psr17Factory();
-            if (!$requestFactory)
-            {
-                throw new InvalidArgumentException('No implementation of PSR17 Request Factory can be found');
-            }
 
             $apiWrapper = new APIRequestWrapper(
                 $apiKey,
