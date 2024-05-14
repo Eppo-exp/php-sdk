@@ -2,17 +2,10 @@
 
 namespace Eppo\DTO;
 
+
 class Variation
 {
-    /** @var string */
-    public $name;
-
-    /** @var string */
-    public $value;
-
-    /** @var mixed */
-    public $typedValue;
-
-    /** @var ShardRange */
-    public $shardRange;
+    public function __construct(public string $key, public array|bool|float|string $value)
+    {
+    }
 }
