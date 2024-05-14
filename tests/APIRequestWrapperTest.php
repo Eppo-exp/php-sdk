@@ -34,16 +34,6 @@ use Throwable;
 
 class APIRequestWrapperTest extends TestCase
 {
-
-    public static function setUpBeforeClass(): void
-    {
-
-    }
-
-    public static function tearDownAfterClass(): void
-    {
-    }
-
     public function testApiFollowsRedirects() : void
     {
         $http = $this->getRedirectingClientMock();

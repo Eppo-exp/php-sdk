@@ -3,14 +3,19 @@
 namespace Eppo;
 
 use Eppo\Exception\HttpRequestException;
-use Http\Discovery\Psr18Client;
-
-use Psr\Http\Client\ClientInterface;
 use Psr\Http\Client\ClientExceptionInterface;
+use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Teapot\StatusCode\RFC\RFC7231;
 use Webclient\Extension\Redirect\RedirectClientDecorator;
 
+/**
+ * Encapsulates request logic for retrieving configuration data from the Eppo API.
+ *
+ * This calls strictly handles fulfilling requests for configuration data and makes no attempts to
+ * parse the response. Errors are inspected by the handling logic to determine if request errors
+ * can be retried and identify when invalid API credentials are used.
+ */
 class APIRequestWrapper
 {
     private string $baseUrl;
@@ -18,11 +23,12 @@ class APIRequestWrapper
     public bool $isUnauthorized = false;
 
     private ClientInterface $httpClient;
+
     private array $queryParams;
 
     private RequestFactoryInterface $requestFactory;
-    private string $resource;
 
+    private string $resource;
 
     public function __construct(string $apiKey,
         array $extraQueryParams,
@@ -49,12 +55,11 @@ class APIRequestWrapper
         // Prepare the URL with query params
         $resourceURI = $this->baseUrl . '/' . ltrim($this->resource, '/') . '?' . http_build_query($this->queryParams);
 
-        $request = $this->requestFactory->createRequest('GET',$resourceURI );
+        $request = $this->requestFactory->createRequest('GET', $resourceURI);
 
         $response = $this->httpClient->sendRequest($request);
 
-        if ($response->getStatusCode() >= 400)
-        {
+        if ($response->getStatusCode() >= 400) {
             $this->handleHttpError($response->getStatusCode(), $response->getBody());
         }
 
