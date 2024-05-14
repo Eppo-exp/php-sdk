@@ -17,7 +17,10 @@ use Webclient\Extension\Redirect\RedirectClientDecorator;
  * can be retried and identify when invalid API credentials are used.
  */
 class APIRequestWrapper
-{
+{    /** @var string */
+    const RAC_ENDPOINT = '/api/randomized_assignment/v3/config';
+    const CONFIG_BASE = 'https://fscdn.eppo.cloud';
+
     private string $baseUrl;
 
     public bool $isUnauthorized = false;
@@ -34,8 +37,8 @@ class APIRequestWrapper
         array $extraQueryParams,
         ClientInterface $baseHttpClient,
         RequestFactoryInterface $requestFactory,
-        string $resource,
-        string $baseUrl = 'https://fscdn.eppo.cloud')
+        string $baseUrl = self::CONFIG_BASE,
+        string $resource = self::RAC_ENDPOINT)
     {
         // Our HTTP Client needs to be able to follow redirects.
         $this->httpClient = new RedirectClientDecorator($baseHttpClient);

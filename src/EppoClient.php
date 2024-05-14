@@ -8,27 +8,21 @@ use Eppo\DTO\ExperimentConfiguration;
 use Eppo\DTO\Rule;
 use Eppo\DTO\Variation;
 use Eppo\Exception\HttpRequestException;
-use Eppo\Exception\InvalidArgumentException;
 use Eppo\Exception\InvalidApiKeyException;
+use Eppo\Exception\InvalidArgumentException;
 use Eppo\Logger\LoggerInterface;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use Http\Discovery\Psr17Factory;
-use Http\Discovery\Psr17FactoryDiscovery;
-use Http\Discovery\Psr18Client;
 use Http\Discovery\Psr18ClientDiscovery;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\SimpleCache\CacheInterface;
-use Sarahman\SimpleCache\FileSystemCache;
 use Psr\SimpleCache\InvalidArgumentException as SimpleCacheInvalidArgumentException;
-use Http\Client;
+use Sarahman\SimpleCache\FileSystemCache;
 
 class EppoClient
 {
-    /** @var string */
-    const RAC_ENDPOINT = '/api/randomized_assignment/v3/config';
-
     const SECOND_MILLIS = 1000;
     const MINUTE_MILLIS = 60 * self::SECOND_MILLIS;
     const POLL_INTERVAL_MILLIS = 5 * self::MINUTE_MILLIS;
@@ -117,7 +111,6 @@ class EppoClient
                 $sdkParams,
                 $httpClient,
                 $requestFactory,
-                self::RAC_ENDPOINT,
                 $baseUrl
             );
 

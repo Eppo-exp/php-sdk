@@ -38,7 +38,7 @@ class APIRequestWrapperTest extends TestCase
     {
         $http = $this->getRedirectingClientMock();
         $api = new APIRequestWrapper(
-            '', [], $http, new Psr17Factory(), ''
+            'APIKEY', [], $http, new Psr17Factory()
         );
         $api->get();
     }
@@ -50,7 +50,7 @@ class APIRequestWrapperTest extends TestCase
     {
         $http = $this->getHttpClientMock(RFC7235::UNAUTHORIZED, '');
         $api = new APIRequestWrapper(
-            '', [], $http, new Psr17Factory(), ''
+            '', [], $http, new Psr17Factory()
         );
 
         $this->expectException(HttpRequestException::class);
@@ -86,7 +86,7 @@ class APIRequestWrapperTest extends TestCase
     {
         $http = $this->getHttpClientMock($status, '');
         $api = new APIRequestWrapper(
-            '', [], $http, new Psr17Factory(), ''
+            '', [], $http, new Psr17Factory()
         );
 
         try
@@ -125,12 +125,12 @@ class APIRequestWrapperTest extends TestCase
         $httpClientMock = $this->getMockBuilder(ClientInterface::class)->setConstructorArgs([
         ])->getMock();
 
-        $redirectLocation = 'https://geteppo.com';
+        $redirectLocation = 'https://geteppo.com/api/randomized_assignment/v3/config?apiKey=APIKEY';
         $redirectHeaders = new Headers();
         $redirectHeaders->setHeader(new Header('Location', $redirectLocation));
 
         $redirectResponse = new Response( statusCode : RFC7231::MOVED_PERMANENTLY, headers: $redirectHeaders);
-        $resourceUri = 'https://fscdn.eppo.cloud/?apiKey=';
+        $resourceUri = 'https://fscdn.eppo.cloud/api/randomized_assignment/v3/config?apiKey=APIKEY';
 
         $httpClientMock->expects($this->exactly(2))
             ->method('sendRequest')
