@@ -17,7 +17,7 @@ class SDKData
         ), true);
         $this->sdkName = $pkgDef['name'];
 
-        $this->sdkVersion  = \Composer\InstalledVersions::getPrettyVersion('eppo/php-sdk');
+        $this->sdkVersion  = \Composer\InstalledVersions::getPrettyVersion($this->sdkName);
     }
 
     /**
