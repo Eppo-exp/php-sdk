@@ -16,7 +16,8 @@ class SDKData
             __DIR__ . '/../../composer.json'
         ), true);
         $this->sdkName = $pkgDef['name'];
-        $this->sdkVersion = $pkgDef['version'];
+
+        $this->sdkVersion  = \Composer\InstalledVersions::getPrettyVersion('eppo/php-sdk');
     }
 
     /**
