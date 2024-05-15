@@ -319,11 +319,9 @@ class EppoClientTest extends TestCase
 
         $httpClientMock = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs([
             '',
-            $sdkParams,
-            new Client(),
-            new RequestFactory(),
-            '',
-            ''
+            'dummy',
+            ["sdkVersion" => $sdkData->getSdkVersion(),
+                "sdkName" => $sdkData->getSdkName()]
         ])->getMock();
         $httpClientMock->expects($this->any())
             ->method('get')
