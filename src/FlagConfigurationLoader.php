@@ -11,21 +11,30 @@ use Eppo\DTO\ShardRange;
 use Eppo\DTO\Split;
 use Eppo\DTO\Variation;
 use Eppo\DTO\Shard;
+use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
+use Psr\Http\Client\ClientExceptionInterface;
+use Psr\SimpleCache\InvalidArgumentException;
 
 class FlagConfigurationLoader
 {
     const UFC_ENDPOINT = '/api/flag-config/v1/config';
 
     private UFCParser $parser;
-    public function __construct(private readonly HttpClient $httpClient, private readonly ConfigurationStore $configurationStore)
+    public function __construct(private readonly APIRequestWrapper $apiRequestWrapper, private readonly ConfigurationStore $configurationStore)
     {
         $this->parser = new UFCParser();
     }
 
+    /**
+     * @throws ClientExceptionInterface
+     * @throws InvalidArgumentException
+     * @throws HttpRequestException
+     * @throws InvalidApiKeyException
+     */
     public function getConfiguration(string $flagKey): ?Flag
     {
-        if ($this->httpClient->isUnauthorized) {
+        if ($this->apiRequestWrapper->isUnauthorized) {
             throw new InvalidApiKeyException();
         }
 
@@ -43,9 +52,14 @@ class FlagConfigurationLoader
         return $this->parser->parseFlag($configuration);
     }
 
+    /**
+     * @throws InvalidArgumentException
+     * @throws HttpRequestException
+     * @throws ClientExceptionInterface
+     */
     public function fetchAndStoreConfigurations(): array
     {
-        $responseData = json_decode($this->httpClient->get(self::UFC_ENDPOINT), true);
+        $responseData = json_decode($this->apiRequestWrapper->get(), true);
         if (!$responseData) {
             return [];
         }
