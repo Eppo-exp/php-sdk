@@ -26,7 +26,6 @@
     "ext-json": "*",
     "psr/simple-cache": "2.*",
     "sarahman/simple-filesystem-cache": "^1.0",
-    "psr/simple-cache": "2.*",
     "shrikeh/teapot": "^2.3",
     "composer/semver": "^3.4",
     "php-http/discovery": "^1.17",
