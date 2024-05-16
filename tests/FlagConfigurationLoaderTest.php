@@ -3,7 +3,6 @@
 namespace Eppo\Tests;
 
 use Eppo\APIRequestWrapper;
-use Eppo\Config\SDKData;
 use Eppo\ConfigurationStore;
 use Eppo\DTO\Flag;
 use Eppo\Exception\HttpRequestException;
@@ -24,21 +23,6 @@ class FlagConfigurationLoaderTest extends TestCase
     const FLAG_KEY = 'kill-switch';
 
     const MOCK_RESPONSE_FILENAME = __DIR__ . '/mockdata/ufc-v1.json';
-
-
-    public static function setUpBeforeClass(): void
-    {
-//        try {
-//            MockWebServer::start();
-//        } catch (Exception $exception) {
-//            self::fail('Failed to start mocked web server: ' . $exception->getMessage());
-//        }
-    }
-
-    public static function tearDownAfterClass(): void
-    {
-//        MockWebServer::stop();
-    }
 
     /**
      * @throws ClientExceptionInterface
