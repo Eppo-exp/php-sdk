@@ -18,7 +18,7 @@ use Webclient\Extension\Redirect\RedirectClientDecorator;
  */
 class APIRequestWrapper
 {    /** @var string */
-    const RAC_ENDPOINT = '/api/randomized_assignment/v3/config';
+    const UFC_ENDPOINT = '/flag-config/v1/config';
     const CONFIG_BASE = 'https://fscdn.eppo.cloud';
 
     private string $baseUrl;
@@ -38,7 +38,7 @@ class APIRequestWrapper
         ClientInterface $baseHttpClient,
         RequestFactoryInterface $requestFactory,
         string $baseUrl = self::CONFIG_BASE,
-        string $resource = self::RAC_ENDPOINT)
+        string $resource = self::UFC_ENDPOINT)
     {
         // Our HTTP Client needs to be able to follow redirects.
         $this->httpClient = new RedirectClientDecorator($baseHttpClient);

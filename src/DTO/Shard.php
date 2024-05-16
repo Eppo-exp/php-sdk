@@ -14,5 +14,4 @@ class Shard
         public array $ranges)
     {
     }
-
 }

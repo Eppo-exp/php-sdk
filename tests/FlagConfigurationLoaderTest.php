@@ -2,20 +2,18 @@
 
 namespace Eppo\Tests;
 
+use Eppo\APIRequestWrapper;
 use Eppo\Config\SDKData;
 use Eppo\ConfigurationStore;
 use Eppo\DTO\Flag;
-use Eppo\DTO\VariationType;
-use Eppo\EppoClient;
-use Eppo\Exception\InvalidArgumentException;
-use Eppo\ExperimentConfigurationRequester;
+use Eppo\Exception\HttpRequestException;
+use Eppo\Exception\InvalidApiKeyException;
 use Eppo\FlagConfigurationLoader;
-use Eppo\HttpClient;
-use Eppo\Logger\LoggerInterface;
-use Eppo\PollerInterface;
-use Eppo\Tests\WebServer\MockWebServer;
-use Exception;
+use Http\Discovery\Psr17Factory;
+use Http\Discovery\Psr18Client;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Client\ClientExceptionInterface;
+use Psr\SimpleCache\InvalidArgumentException;
 use Sarahman\SimpleCache\FileSystemCache;
 use Throwable;
 
@@ -24,7 +22,7 @@ class FlagConfigurationLoaderTest extends TestCase
     /** @var string */
     const FLAG_KEY = 'kill-switch';
 
-    const MOCK_RESPONSE_FILENAME =  __DIR__ . '/mockdata/ufc-v1.json';
+    const MOCK_RESPONSE_FILENAME = __DIR__ . '/mockdata/ufc-v1.json';
 
 
     public static function setUpBeforeClass(): void
@@ -41,6 +39,12 @@ class FlagConfigurationLoaderTest extends TestCase
 //        MockWebServer::stop();
     }
 
+    /**
+     * @throws ClientExceptionInterface
+     * @throws InvalidApiKeyException
+     * @throws HttpRequestException
+     * @throws InvalidArgumentException
+     */
     public function testLoadsConfiguration(): void
     {
         // Load mock response data
@@ -50,33 +54,35 @@ class FlagConfigurationLoaderTest extends TestCase
 
         $flag = $flagLoader->getConfiguration(self::FLAG_KEY);
         $this->assertInstanceOf(Flag::class, $flag);
-        $this->assertEquals(self::FLAG_KEY, $flag->getKey());
+        $this->assertEquals(self::FLAG_KEY, $flag->key);
 
     }
 
-    public function testPullsConfigurationFromStore(): void
+    public function skiptestPullsConfigurationFromStore(): void
     {
         // Test that FlagLoader gets the config from the configStore and doesn't call fetchAndStore
     }
 
-    public function testFetchesToRefreshStore(): void
+    public function skiptestFetchesToRefreshStore(): void
     {
         // Test that FlagLoader calls loadAndStore
     }
+    public function skiptestThrows(): void
+    {
+        // Test that FlagLoader throws exceptions when appropriate
+    }
+
     /**
      * @param array $data
+     * @param Throwable|null $mockedThrowable
      * @return FlagConfigurationLoader
      */
     private function getFlagLoaderForData(array $data, ?Throwable $mockedThrowable = null): FlagConfigurationLoader
     {
         $cache = new FileSystemCache();
-        $sdkData = new SDKData();
 
-        $httpClientMock = $this->getMockBuilder(HttpClient::class)->setConstructorArgs([
-            '',
-            'dummy',
-            $sdkData
-        ])->getMock();
+        $httpClientMock = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs(
+            ['', [], new Psr18Client(), new Psr17Factory()])->getMock();
         $httpClientMock->expects($this->any())
             ->method('get')
             ->willReturn('');

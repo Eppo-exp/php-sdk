@@ -9,5 +9,6 @@ class FlagEvaluation
         public bool $doLog,
         public string $allocationKey
     )
-    {}
+    {
+    }
 }
