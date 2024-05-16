@@ -36,6 +36,7 @@ class APIRequestWrapperTest extends TestCase
 {
     public function testApiFollowsRedirects() : void
     {
+        // Note: this test also verifies that the correct endpoint is called via mock expectations.
         $http = $this->getRedirectingClientMock();
         $api = new APIRequestWrapper(
             'APIKEY', [], $http, new Psr17Factory()
@@ -102,7 +103,6 @@ class APIRequestWrapperTest extends TestCase
 
     private function getHttpClientMock(int $statusCode, string $body): ClientInterface
     {
-
         $httpClientMock = $this->getMockBuilder(ClientInterface::class)->setConstructorArgs([
         ])->getMock();
 
