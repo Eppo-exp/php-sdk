@@ -17,8 +17,8 @@ class Allocation
         public array $rules,
         public array $splits,
         public bool $doLog,
-        public ?int $startAt,
-        public ?int $endAt)
+        public ?int $startAt = null,
+        public ?int $endAt = null)
     {
     }
 }
