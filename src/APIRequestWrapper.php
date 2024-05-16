@@ -19,7 +19,7 @@ use Webclient\Extension\Redirect\RedirectClientDecorator;
 class APIRequestWrapper
 {    /** @var string */
     const UFC_ENDPOINT = '/flag-config/v1/config';
-    const CONFIG_BASE = 'https://fscdn.eppo.cloud';
+    const CONFIG_BASE = 'https://fscdn.eppo.cloud/api';
 
     private string $baseUrl;
 
