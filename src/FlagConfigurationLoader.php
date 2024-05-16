@@ -2,15 +2,7 @@
 
 namespace Eppo;
 
-use Eppo\DTO\Allocation;
-use Eppo\DTO\Condition;
-use Eppo\DTO\ExperimentConfiguration;
 use Eppo\DTO\Flag;
-use Eppo\DTO\Rule;
-use Eppo\DTO\ShardRange;
-use Eppo\DTO\Split;
-use Eppo\DTO\Variation;
-use Eppo\DTO\Shard;
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
 use Psr\Http\Client\ClientExceptionInterface;
