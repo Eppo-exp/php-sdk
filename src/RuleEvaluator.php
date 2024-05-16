@@ -5,11 +5,57 @@ declare(strict_types=1);
 namespace Eppo;
 
 use Eppo\DTO\Condition;
+use Eppo\DTO\Flag;
+use Eppo\DTO\FlagEvaluation;
 use Eppo\DTO\Rule;
 use Composer\Semver\Comparator;
+use Eppo\DTO\Shard;
+use Eppo\DTO\Variation;
 
 final class RuleEvaluator
 {
+    /**
+     * Determines which, if any, variation is applicable to the given subject.
+     *
+     * Returns `null` if the flag is disabled or no matching variation can be found.
+     *
+     * @param Flag $flag
+     * @param string $subjectKey
+     * @param array $subjectAttributes
+     * @return FlagEvaluation|null
+     */
+    public static function evaluateFlag(Flag $flag, string $subjectKey, array $subjectAttributes): FlagEvaluation|null
+    {
+        if (!$flag->enabled)
+            return null;
+
+        $now = time();
+        foreach ($flag->allocations as $allocation) {
+            # Skip allocations that are not active
+            if ($allocation->startAt && $now < $allocation->startAt) {
+                continue;
+            }
+            if ($allocation->endAt && $now > $allocation->endAt) {
+                continue;
+            }
+
+            print ('active allocs');
+
+            $subject = ['id' => $subjectKey, ...$subjectAttributes];
+            if (self::matchesAnyRule($allocation->rules, $subject)) {
+                foreach ($allocation->splits as $split) {
+                    # Split needs to match all shards
+                    if (self::matchesAllShards($split->shards, $subjectKey, $flag->totalShards)) {
+                        return new FlagEvaluation($flag->variations[$split->variationKey], $allocation->doLog, $allocation->key);
+                    }
+                }
+            }
+        }
+
+        // No allocations matched.
+        return null;
+    }
+
     /**
      * Find the first rule in the given set of rules that matches the given subject attributes.
      *
@@ -36,7 +82,7 @@ final class RuleEvaluator
      *
      * @return bool Returns true if the subject attributes match the rule, and false otherwise.
      */
-    private static function matchesRule(array $subjectAttributes, Rule $rule): bool
+    public static function matchesRule(array $subjectAttributes, Rule $rule): bool
     {
         $conditionEvaluations = self::evaluateRuleConditions($subjectAttributes, $rule->conditions);
         return !in_array(false, $conditionEvaluations, true);
@@ -49,7 +95,7 @@ final class RuleEvaluator
      */
     private static function evaluateRuleConditions(array $subjectAttributes, array $conditions): array
     {
-        return array_map(function($condition) use ($subjectAttributes) {
+        return array_map(function ($condition) use ($subjectAttributes) {
             return self::evaluateCondition($subjectAttributes, $condition);
         }, $conditions);
     }
@@ -74,7 +120,7 @@ final class RuleEvaluator
                     if (is_numeric($value) && is_numeric($condition->value)) {
                         return $value > $condition->value;
                     }
-                    
+
                     return Comparator::greaterThan($value, $condition->value);
                 case 'LTE':
                     if (is_numeric($value) && is_numeric($condition->value)) {
@@ -89,7 +135,7 @@ final class RuleEvaluator
 
                     return Comparator::lessThan($value, $condition->value);
                 case 'MATCHES':
-                    return preg_match('/' . $condition->value . '/i', (string) $value) === 1;
+                    return preg_match('/' . $condition->value . '/i', (string)$value) === 1;
                 case 'ONE_OF':
                     return self::isOneOf($value, $condition->value);
                 case 'NOT_ONE_OF':
@@ -133,8 +179,50 @@ final class RuleEvaluator
      */
     private static function getMatchingStringValues($attributeValue, $conditionValues): array
     {
-        return array_values(array_filter($conditionValues, function($value) use ($attributeValue) {
+        return array_values(array_filter($conditionValues, function ($value) use ($attributeValue) {
             return strtolower($value) === strtolower($attributeValue);
         }));
     }
+
+    public static function matchesAnyRule(array $rules, array $subject): bool
+    {
+        var_dump($rules);
+        if (count($rules) === 0) {
+            return true;
+        }
+        foreach ($rules as $rule) {
+            if (self::matchesRule($subject, $rule)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @param Shard[] $shards
+     * @param string $subjectKey
+     * @param int $totalShards
+     */
+    private static function matchesAllShards(array $shards, string $subjectKey, int $totalShards): bool
+    {
+        foreach ($shards as $shard) {
+            if (!self::matchesShard($shard, $subjectKey, $totalShards)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static function matchesShard(Shard $shard, $subjectKey, int $totalShards): bool
+    {
+        $hashKey = $shard->salt . '-' . $subjectKey;
+        $subjectBucket = Sharder::getShard($hashKey, $totalShards);
+        foreach ($shard->ranges as $range) {
+            if (Sharder::isShardInRange($subjectBucket, $range)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

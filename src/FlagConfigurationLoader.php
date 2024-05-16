@@ -18,8 +18,6 @@ use Psr\SimpleCache\InvalidArgumentException;
 
 class FlagConfigurationLoader
 {
-    const UFC_ENDPOINT = '/api/flag-config/v1/config';
-
     private UFCParser $parser;
     public function __construct(private readonly APIRequestWrapper $apiRequestWrapper, private readonly ConfigurationStore $configurationStore)
     {

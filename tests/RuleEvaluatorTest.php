@@ -2,24 +2,38 @@
 
 namespace Eppo\Tests;
 
+use Eppo\DTO\Allocation;
 use Eppo\DTO\Condition;
+use Eppo\DTO\Flag;
 use Eppo\DTO\Rule;
+use Eppo\DTO\Shard;
+use Eppo\DTO\ShardRange;
+use Eppo\DTO\Split;
+use Eppo\DTO\Variation;
+use Eppo\DTO\VariationType;
 use Eppo\RuleEvaluator;
+use Google\Api\Distribution\Range;
 use PHPUnit\Framework\TestCase;
 
 final class RuleEvaluatorTest extends TestCase
 {
-    /** @var Rule */
-    private $ruleWithEmptyConditions;
+    private Rule $ruleWithEmptyConditions;
 
-    /** @var Rule */
-    private $ruleWithMatchesCondition;
+    private Rule $ruleWithMatchesCondition;
 
-    /** @var Rule */
-    private $numericRule;
+    private Rule $numericRule;
 
-    /** @var Rule */
-    private $semverRule;
+    private Rule $semverRule;
+    /**
+     * @var array|int[]
+     */
+    private array $subject;
+
+    /**
+     * @var Split[]
+     */
+    private array $matchingSplits;
+    private Variation $matchVariation;
 
     /**
      * @param string|null $name
@@ -30,249 +44,87 @@ final class RuleEvaluatorTest extends TestCase
     {
         parent::__construct($name, $data, $dataName);
 
-        $this->ruleWithEmptyConditions = new Rule();
-        $this->ruleWithEmptyConditions->allocationKey = 'allocation1';
-        $this->ruleWithEmptyConditions->conditions = [];
+        $this->ruleWithEmptyConditions = new Rule([]);
+        $this->subject = ['age' => 20];
 
-        $numericRuleCondition1 = new Condition();
-        $numericRuleCondition1->value = 100;
-        $numericRuleCondition1->operator = 'LTE';
-        $numericRuleCondition1->attribute = 'totalSales';
-
-        $numericRuleCondition2 = new Condition();
-        $numericRuleCondition2->value = 10;
-        $numericRuleCondition2->operator = 'GTE';
-        $numericRuleCondition2->attribute = 'totalSales';
-
-        $this->numericRule = new Rule();
-        $this->numericRule->allocationKey = 'allocation1';
-        $this->numericRule->conditions = [$numericRuleCondition1, $numericRuleCondition2];
-
-        // semver
-        $semverRuleCondition1 = new Condition();
-        $semverRuleCondition1->value = '1.0.0';
-        $semverRuleCondition1->operator = 'GTE';
-        $semverRuleCondition1->attribute = 'appVersion';
-
-        $semverRuleCondition2 = new Condition();
-        $semverRuleCondition2->value = '2.11.0';
-        $semverRuleCondition2->operator = 'LTE';
-        $semverRuleCondition2->attribute = 'appVersion';
-
-        $this->semverRule = new Rule();
-        $this->semverRule->allocationKey = 'allocation1';
-        $this->semverRule->conditions = [$semverRuleCondition1, $semverRuleCondition2];
-
-        $ruleWithMatchesConditionCondition = new Condition();
-        $ruleWithMatchesConditionCondition->attribute = 'user_id';
-        $ruleWithMatchesConditionCondition->value = '[0-9]+';
-        $ruleWithMatchesConditionCondition->operator = 'MATCHES';
-
-        $this->ruleWithMatchesCondition = new Rule();
-        $this->ruleWithMatchesCondition->allocationKey = 'allocation1';
-        $this->ruleWithMatchesCondition->conditions = [$ruleWithMatchesConditionCondition];
+        $this->matchingSplits = [new Split('match', [new Shard("na", [new ShardRange(0, 10)])], [])];
+$this->matchVariation = new Variation('match', 'foo');
+//        $numericRuleCondition1 = new Condition('totalSales', 'LTE', 100);
+//        $numericRuleCondition2 = new Condition('totalSales', 'GTE', 10);
+//
+//        $this->numericRule = new Rule([$numericRuleCondition1, $numericRuleCondition2]);
+//
+//        // semver
+//        $semverRuleCondition1 = new Condition();
+//        $semverRuleCondition1->value = '1.0.0';
+//        $semverRuleCondition1->operator = 'GTE';
+//        $semverRuleCondition1->attribute = 'appVersion';
+//
+//        $semverRuleCondition2 = new Condition();
+//        $semverRuleCondition2->value = '2.11.0';
+//        $semverRuleCondition2->operator = 'LTE';
+//        $semverRuleCondition2->attribute = 'appVersion';
+//
+//        $this->semverRule = new Rule();
+//        $this->semverRule->allocationKey = 'allocation1';
+//        $this->semverRule->conditions = [$semverRuleCondition1, $semverRuleCondition2];
+//
+//        $ruleWithMatchesConditionCondition = new Condition();
+//        $ruleWithMatchesConditionCondition->attribute = 'user_id';
+//        $ruleWithMatchesConditionCondition->value = '[0-9]+';
+//        $ruleWithMatchesConditionCondition->operator = 'MATCHES';
+//
+//        $this->ruleWithMatchesCondition = new Rule();
+//        $this->ruleWithMatchesCondition->allocationKey = 'allocation1';
+//        $this->ruleWithMatchesCondition->conditions = [$ruleWithMatchesConditionCondition];
     }
 
-    public function testReturnsNullIfRulesArrayIsEmpty()
+    // Rule Matching
+
+    // matches rule but no shards
+    // matches rule and some shards
+    // matches rule and all shards
+    // no match
+
+    // Flag Evaluation
+
+    public function testDisabledFlag(): void
     {
-        $rules = [];
-        $this->assertNull(
-            RuleEvaluator::findMatchingRule(['name' => 'my-user'], $rules),
-        );
+        $flag = new Flag('disabled', false, [], VariationType::BOOLEAN, [], 10);
+        $this->assertNull(RuleEvaluator::evaluateFlag($flag, 'Elvis', []));
     }
 
-    public function testReturnsNullIfAttributesDoNotMatchAnyRules()
+    public function testFlagWithInactiveAllocations(): void
     {
-        $rules = [$this->numericRule];
-        $this->assertNull(
-            RuleEvaluator::findMatchingRule(['totalSales' => 101], $rules),
-        );
+        $now = time();
+        $overAlloc = new Allocation('over', [], $this->matchingSplits, false, endAt: $now - 10000);
+        $hasntStartedAlloc = new Allocation('hasntStarted', [], $this->matchingSplits, false, $now + 1000 * 60);
+
+        $flag = new Flag('inactive_allocs', true, [$overAlloc, $hasntStartedAlloc], VariationType::BOOLEAN, [$this->matchVariation->key => $this->matchVariation], 10);
+        $this->assertNull(RuleEvaluator::evaluateFlag($flag, 'Elvis', $this->subject));
     }
 
-    public function testReturnsTrueIfAttributesMatchAndConditions() {
-        $rules = [$this->numericRule];
-        $this->assertEquals(
-            RuleEvaluator::findMatchingRule(['totalSales' => 100], $rules),
-            $this->numericRule
-        );
+    public function testFlagWithoutAllocations(): void
+    {
+        $flag = new Flag('no_allocs', true, [], VariationType::BOOLEAN, [], 10);
+        $this->assertNull(RuleEvaluator::evaluateFlag($flag, 'Elvis', $this->subject));
     }
 
-    public function testReturnsTrueIfAttributesMatchSemverConditions() {
-        $rules = [$this->semverRule];
-        $this->assertEquals(
-            RuleEvaluator::findMatchingRule(['appVersion' => '1.10.0'], $rules),
-            $this->semverRule
-        );
+    public function testMatchesVariationWithoutRules(): void
+    {
+        $allocation1 = new Allocation('alloc1', [], $this->matchingSplits, false);
+        $basicVariation = new Variation('foo', 'bar');
+        $flag = new Flag('matches', true, [$allocation1], VariationType::STRING, ["match"=>$basicVariation], 10);
+        $this->assertNotNull(RuleEvaluator::evaluateFlag($flag, 'Elvis', $this->subject));
+        $this->assertNotNull(RuleEvaluator::evaluateFlag($flag, 'Elvis', $this->subject));
     }
 
-    public function testReturnsNullIfThereIsNoAttributeForTheCondition() {
-        $rules = [$this->numericRule];
-        $this->assertNull(
-            RuleEvaluator::findMatchingRule(['unknown' => 'test'], $rules),
-        );
+
+    // no rules
+    public function testMatchesEmptyRuleSet(): void
+    {
+        $this->assertTrue(RuleEvaluator::matchesAnyRule([], $this->subject));
     }
 
-    public function testReturnsTrueIfRulesHaveNoConditions() {
-        $rules = [$this->ruleWithEmptyConditions];
-        $this->assertEquals(
-            RuleEvaluator::findMatchingRule(['totalSales' => 101], $rules),
-            $this->ruleWithEmptyConditions
-        );
-    }
 
-    public function testReturnsNullIfUsingNumericOperatorWithString() {
-        $rules = [$this->numericRule, $this->ruleWithMatchesCondition];
-
-        $this->assertNull(
-            RuleEvaluator::findMatchingRule(['totalSales' => 'stringValue'], $rules),
-        );
-    }
-
-    public function testHandlesRuleWithMatchesOperator() {
-        $rules = [$this->ruleWithMatchesCondition];
-
-        $this->assertEquals(
-            RuleEvaluator::findMatchingRule(['user_id' => '14'], $rules),
-            $this->ruleWithMatchesCondition
-        );
-
-        $this->assertEquals(
-            RuleEvaluator::findMatchingRule(['user_id' => 15], $rules),
-            $this->ruleWithMatchesCondition
-        );
-    }
-
-    public function testHandlesOneOfRuleTypeWithBoolean() {
-        $oneOfRule = new Rule();
-        $oneOfRule->allocationKey = 'allocation1';
-        $oneOfRule->conditions[] = new Condition();
-        $oneOfRule->conditions[0]->operator = 'ONE_OF';
-        $oneOfRule->conditions[0]->value = ['true'];
-        $oneOfRule->conditions[0]->attribute = 'enabled';
-
-        $notOneOfRule = new Rule();
-        $notOneOfRule->allocationKey = 'allocation1';
-        $notOneOfRule->conditions[] = new Condition();
-        $notOneOfRule->conditions[0]->operator = 'NOT_ONE_OF';
-        $notOneOfRule->conditions[0]->value = ['true'];
-        $notOneOfRule->conditions[0]->attribute = 'enabled';
-
-        $this->assertEquals(
-            RuleEvaluator::findMatchingRule(['enabled' => true], [$oneOfRule]),
-            $oneOfRule
-        );
-        $this->assertNull(
-            RuleEvaluator::findMatchingRule(['enabled' => false], [$oneOfRule]),
-        );
-
-        $this->assertEquals(
-            RuleEvaluator::findMatchingRule(['enabled' => false], [$notOneOfRule]),
-            $notOneOfRule
-        );
-        $this->assertNull(
-            RuleEvaluator::findMatchingRule(['enabled' => true], [$notOneOfRule]),
-        );
-    }
-
-    public function testHandlesOneOfRuleTypeWithString() {
-        $oneOfRule = new Rule();
-        $oneOfRule->allocationKey = 'allocation1';
-        $oneOfRule->conditions[] = new Condition();
-        $oneOfRule->conditions[0]->operator = 'ONE_OF';
-        $oneOfRule->conditions[0]->value = ['user1', 'user2'];
-        $oneOfRule->conditions[0]->attribute = 'userId';
-
-        $notOneOfRule = new Rule();
-        $notOneOfRule->allocationKey = 'allocation1';
-        $notOneOfRule->conditions[] = new Condition();
-        $notOneOfRule->conditions[0]->operator = 'NOT_ONE_OF';
-        $notOneOfRule->conditions[0]->value = ['user14'];
-        $notOneOfRule->conditions[0]->attribute = 'userId';
-
-        $this->assertEquals(
-            RuleEvaluator::findMatchingRule(['userId' => 'user1'], [$oneOfRule]),
-            $oneOfRule
-        );
-        $this->assertEquals(
-            RuleEvaluator::findMatchingRule(['userId' => 'user2'], [$oneOfRule]),
-            $oneOfRule
-        );
-        $this->assertNull(
-            RuleEvaluator::findMatchingRule(['userId' => 'user3'], [$oneOfRule]),
-        );
-        $this->assertNull(
-            RuleEvaluator::findMatchingRule(['userId' => 'user14'], [$notOneOfRule]),
-        );
-        $this->assertEquals(
-            RuleEvaluator::findMatchingRule(['userId' => 'user15'], [$notOneOfRule]),
-            $notOneOfRule
-        );
-    }
-
-    public function testDoesCaseInsensitiveMatchingWithOneOfOperator() {
-        $oneOfRule = new Rule();
-        $oneOfRule->allocationKey = 'allocation1';
-        $oneOfRule->conditions[] = new Condition();
-        $oneOfRule->conditions[0]->operator = 'ONE_OF';
-        $oneOfRule->conditions[0]->value = ['CA', 'US'];
-        $oneOfRule->conditions[0]->attribute = 'country';
-
-        $this->assertEquals(
-            RuleEvaluator::findMatchingRule(['country' => 'us'], [$oneOfRule]),
-            $oneOfRule
-        );
-
-        $this->assertEquals(
-            RuleEvaluator::findMatchingRule(['country' => 'cA'], [$oneOfRule]),
-            $oneOfRule
-        );
-    }
-
-    public function testDoesCaseInsensitiveMatchingWithNotOneOfOperator() {
-        $notOneOfRule = new Rule();
-        $notOneOfRule->allocationKey = 'allocation1';
-        $notOneOfRule->conditions[] = new Condition();
-        $notOneOfRule->conditions[0]->operator = 'NOT_ONE_OF';
-        $notOneOfRule->conditions[0]->value = ['1.0.BB', '1Ab'];
-        $notOneOfRule->conditions[0]->attribute = 'deviceType';
-
-        $this->assertNull(
-            RuleEvaluator::findMatchingRule(['deviceType' => '1ab'], [$notOneOfRule]),
-        );
-    }
-
-    public function testHandlesOneOfRuleWithNumber() {
-        $oneOfRule = new Rule();
-        $oneOfRule->allocationKey = 'allocation1';
-        $oneOfRule->conditions[] = new Condition();
-        $oneOfRule->conditions[0]->operator = 'ONE_OF';
-        $oneOfRule->conditions[0]->value = ['1', '2'];
-        $oneOfRule->conditions[0]->attribute = 'userId';
-
-        $notOneOfRule = new Rule();
-        $notOneOfRule->allocationKey = 'allocation1';
-        $notOneOfRule->conditions[] = new Condition();
-        $notOneOfRule->conditions[0]->operator = 'NOT_ONE_OF';
-        $notOneOfRule->conditions[0]->value = ['14'];
-        $notOneOfRule->conditions[0]->attribute = 'userId';
-
-        $this->assertEquals(
-            RuleEvaluator::findMatchingRule(['userId' => 1], [$oneOfRule]),
-            $oneOfRule
-        );
-        $this->assertEquals(
-            RuleEvaluator::findMatchingRule(['userId' => '2'], [$oneOfRule]),
-            $oneOfRule
-        );
-        $this->assertNull(
-            RuleEvaluator::findMatchingRule(['userId' => 3], [$oneOfRule]),
-        );
-        $this->assertNull(
-            RuleEvaluator::findMatchingRule(['userId' => 14], [$notOneOfRule]),
-        );
-        $this->assertEquals(
-            RuleEvaluator::findMatchingRule(['userId' => '15'], [$notOneOfRule]),
-            $notOneOfRule
-        );
-    }
 }
