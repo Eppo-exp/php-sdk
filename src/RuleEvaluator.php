@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Eppo;
 
+use Composer\Semver\Comparator;
 use Eppo\DTO\Condition;
 use Eppo\DTO\Flag;
 use Eppo\DTO\FlagEvaluation;
+use Eppo\DTO\Operator;
 use Eppo\DTO\Rule;
-use Composer\Semver\Comparator;
 use Eppo\DTO\Shard;
-use Eppo\DTO\Variation;
 
 final class RuleEvaluator
 {
@@ -39,7 +39,6 @@ final class RuleEvaluator
                 continue;
             }
 
-            print ('active allocs');
 
             $subject = ['id' => $subjectKey, ...$subjectAttributes];
             if (self::matchesAnyRule($allocation->rules, $subject)) {
@@ -110,35 +109,35 @@ final class RuleEvaluator
         $value = $subjectAttributes[$condition->attribute] ?? null;
         if ($value !== null) {
             switch ($condition->operator) {
-                case 'GTE':
+                case Operator::GTE:
                     if (is_numeric($value) && is_numeric($condition->value)) {
                         return $value >= $condition->value;
                     }
 
                     return Comparator::greaterThanOrEqualTo($value, $condition->value);
-                case 'GT':
+                case Operator::GT:
                     if (is_numeric($value) && is_numeric($condition->value)) {
                         return $value > $condition->value;
                     }
 
                     return Comparator::greaterThan($value, $condition->value);
-                case 'LTE':
+                case Operator::LTE:
                     if (is_numeric($value) && is_numeric($condition->value)) {
                         return $value <= $condition->value;
                     }
 
                     return Comparator::lessThanOrEqualTo($value, $condition->value);
-                case 'LT':
+                case Operator::LT:
                     if (is_numeric($value) && is_numeric($condition->value)) {
                         return $value < $condition->value;
                     }
 
                     return Comparator::lessThan($value, $condition->value);
-                case 'MATCHES':
+                case Operator::MATCHES:
                     return preg_match('/' . $condition->value . '/i', (string)$value) === 1;
-                case 'ONE_OF':
+                case Operator::ONE_OF:
                     return self::isOneOf($value, $condition->value);
-                case 'NOT_ONE_OF':
+                case Operator::NOT_ONE_OF:
                     return self::isNotOneOf($value, $condition->value);
             }
         }
@@ -186,7 +185,6 @@ final class RuleEvaluator
 
     public static function matchesAnyRule(array $rules, array $subject): bool
     {
-        var_dump($rules);
         if (count($rules) === 0) {
             return true;
         }
@@ -203,7 +201,7 @@ final class RuleEvaluator
      * @param string $subjectKey
      * @param int $totalShards
      */
-    private static function matchesAllShards(array $shards, string $subjectKey, int $totalShards): bool
+    public static function matchesAllShards(array $shards, string $subjectKey, int $totalShards): bool
     {
         foreach ($shards as $shard) {
             if (!self::matchesShard($shard, $subjectKey, $totalShards)) {
@@ -217,6 +215,7 @@ final class RuleEvaluator
     {
         $hashKey = $shard->salt . '-' . $subjectKey;
         $subjectBucket = Sharder::getShard($hashKey, $totalShards);
+
         foreach ($shard->ranges as $range) {
             if (Sharder::isShardInRange($subjectBucket, $range)) {
                 return true;

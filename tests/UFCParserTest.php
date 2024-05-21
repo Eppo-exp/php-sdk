@@ -2,6 +2,7 @@
 
 
 use Eppo\DTO\Flag;
+use Eppo\DTO\Operator;
 use Eppo\DTO\VariationType;
 use Eppo\UFCParser;
 use PHPUnit\Framework\TestCase;
@@ -47,7 +48,7 @@ class UFCParserTest extends TestCase
 
         $firstCondition = $firstRule->conditions[0];
         $this->assertEquals('age', $firstCondition->attribute);
-        $this->assertEquals('GTE', $firstCondition->operator);
+        $this->assertEquals(Operator::GTE, $firstCondition->operator);
         $this->assertEquals(50, $firstCondition->value);
 
         $this->assertCount(1, $secondAllocation->splits);
