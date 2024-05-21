@@ -66,7 +66,7 @@ class APIRequestWrapper
             $this->handleHttpError($response->getStatusCode(), $response->getBody());
         }
 
-        return $response->getBody();
+        return $response->getBody()->getContents();
     }
 
     /**
