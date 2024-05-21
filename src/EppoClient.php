@@ -30,18 +30,18 @@ class EppoClient
     const POLL_INTERVAL_MILLIS = 5 * self::MINUTE_MILLIS;
     const JITTER_MILLIS = 30 * self::SECOND_MILLIS;
 
-    private static EppoClient $instance;
+    private static ?EppoClient $instance = null;
     private RuleEvaluator $evaluator;
 
 
     /**
-     * @param FlagConfigurationLoader $configurationRequester
+     * @param FlagConfigurationLoader $configurationLoader
      * @param PollerInterface $poller
      * @param LoggerInterface|null $assignmentLogger optional assignment logger. Please check Eppo/LoggerLoggerInterface
      * @param bool|null $isGracefulMode
      */
     protected function __construct(
-        private readonly FlagConfigurationLoader $configurationRequester,
+        private readonly FlagConfigurationLoader $configurationLoader,
         private readonly PollerInterface $poller,
         private readonly ?LoggerInterface $assignmentLogger = null,
         private readonly ?bool $isGracefulMode = true
@@ -124,6 +124,11 @@ class EppoClient
     }
 
 
+    /**
+     * @throws SimpleCacheInvalidArgumentException
+     * @throws ClientExceptionInterface
+     * @throws Exception
+     */
     private function getTypedAssignment(VariationType $valueType, string $subjectKey, string $flagKey, array $subjectAttributes = []): mixed
     {
         try {
@@ -131,17 +136,11 @@ class EppoClient
             if ($assignmentVariation === null) {
                 return null;
             }
-            switch ($valueType) {
-                case VariationType::STRING:
-                    return $assignmentVariation->value;
-                case VariationType::NUMERIC:
-                    return doubleval($assignmentVariation->value);
-                case VariationType::BOOLEAN:
-                    return boolval($assignmentVariation->value);
-                case VariationType::JSON:
-                    return $assignmentVariation->value;
-            }
-            return null;
+            return match ($valueType) {
+                VariationType::JSON, VariationType::STRING => $assignmentVariation->value,
+                VariationType::NUMERIC => doubleval($assignmentVariation->value),
+                VariationType::BOOLEAN => boolval($assignmentVariation->value)
+            };
         } catch (Exception $exception) {
             return $this->handleException($exception);
         }
@@ -151,11 +150,6 @@ class EppoClient
      * Gets the assigned string variation for the given subject and experiment
      * If there is an issue retrieving the variation or the retrieved variation is not a string, null wil be returned.
      *
-     * @throws HttpRequestException
-     * @throws GuzzleException
-     * @throws InvalidApiKeyException
-     * @throws InvalidArgumentException
-     * @throws SimpleCacheInvalidArgumentException
      */
     public function getStringAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): ?string
     {
@@ -232,14 +226,10 @@ class EppoClient
     }
 
     /**
-     * Get's the legacy, string-only assignment for the given subject and experiment.
+     * Gets the legacy, string-only assignment for the given subject and experiment.
      * If there is an issue retrieving the variation, null wil be returned.
      *
-     * @throws HttpRequestException
-     * @throws GuzzleException
-     * @throws InvalidApiKeyException
-     * @throws InvalidArgumentException
-     * @throws SimpleCacheInvalidArgumentException
+     * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
      * @deprecated in favor of the typed get<type>Assignment methods
      *
      */
@@ -247,7 +237,7 @@ class EppoClient
     {
         try {
             $assignmentVariation = $this->getAssignmentDetail($subjectKey, $flagKey, $subjectAttributes);
-            return $assignmentVariation ? $assignmentVariation->value : null;
+            return $assignmentVariation?->value;
         } catch (Exception $exception) {
             return $this->handleException($exception);
         }
@@ -268,7 +258,6 @@ class EppoClient
      * @return Variation|null the Variation DTO assigned to the subject, or null if there is no assignment,
      * an error was encountered, or an expected type was provided that didn't match the variation's typed
      * value.
-     * @throws GuzzleException
      * @throws HttpRequestException
      * @throws InvalidApiKeyException
      * @throws InvalidArgumentException
@@ -280,7 +269,8 @@ class EppoClient
         Validator::validateNotBlank($subjectKey, 'Invalid argument: subjectKey cannot be blank');
         Validator::validateNotBlank($flagKey, 'Invalid argument: flagKey cannot be blank');
 
-        $flag = $this->configurationRequester->getConfiguration($flagKey);
+        $flag = $this->configurationLoader->getConfiguration($flagKey);
+
         if (!$flag) {
             syslog(LOG_WARNING, "[EPPO SDK] No assigned variation; flag not found ${flagKey}");
             return null;
@@ -288,7 +278,6 @@ class EppoClient
 
         $evaluationResult = $this->evaluator->evaluateFlag($flag, $subjectKey, $subjectAttributes);
         $computedVariation = $evaluationResult?->variation ?? null;
-
 
         // If there is an assignment and the expected type has been expressed, do a type check and log an error if they don't match.
         if ($computedVariation && $expectedVariationType && !$this->checkExpectedType($expectedVariationType, $computedVariation->value)) {
