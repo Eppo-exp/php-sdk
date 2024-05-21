@@ -29,13 +29,15 @@ $eppoClient = EppoClient::init(
    "<your_api_key>",
    "<base_url>", // optional, default https://fscdn.eppo.cloud/api
    $assignmentLogger, // optional, must be an instance of Eppo\Logger\LoggerInterface
-   $cache // optional, must be an instance of PSR-16 CacheInterface. If not passed, FileSystem cache will be used
+   $cache // optional, must be an instance of PSR-16 SimpleInterface. If not passed, FileSystem cache will be used
+   $httpClient // optional, must be an instance of PSR-18 ClientInterface. If not passed, Discovery will be used to find a suitable implementation
+   $requestFactory // optional, must be an instance of PSR-17 Factory. If not passed, Discovery will be used to find a suitable implementation
 );
 
 $subjectAttributes = [];
-$assignment = $eppoClient->getAssignment('subject-1', 'experiment_5', $subjectAttributes);
+$assignment = $eppoClient->getStringAssignment('experiment_5', 'subject-1', $subjectAttributes, 'defaultValue');
 
-if ($assignment === 'control') {
+if ($assignment !== 'defaultValue') {
     // do something
 }
 

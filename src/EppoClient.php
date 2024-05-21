@@ -129,10 +129,10 @@ class EppoClient
      * @throws ClientExceptionInterface
      * @throws Exception
      */
-    private function getTypedAssignment(VariationType $valueType, string $subjectKey, string $flagKey, array $subjectAttributes = [], array|bool|float|int|string|null $defaultValue = null): array|bool|float|int|string|null
+    private function getTypedAssignment(VariationType $valueType, string $flagKey, string $subjectKey, array $subjectAttributes = [], array|bool|float|int|string|null $defaultValue = null): array|bool|float|int|string|null
     {
         try {
-            $assignmentVariation = $this->getAssignmentDetail($subjectKey, $flagKey, $subjectAttributes, $valueType);
+            $assignmentVariation = $this->getAssignmentDetail($flagKey, $subjectKey, $subjectAttributes, $valueType);
             if ($assignmentVariation === null) {
                 return $defaultValue;
             }
@@ -153,9 +153,9 @@ class EppoClient
      *
      * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
      */
-    public function getStringAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = [], ?string $defaultValue = null): ?string
+    public function getStringAssignment(string $flagKey, string $subjectKey, array $subjectAttributes = [], ?string $defaultValue = null): ?string
     {
-        return $this->getTypedAssignment(VariationType::STRING, $subjectKey, $flagKey, $subjectAttributes, $defaultValue);
+        return $this->getTypedAssignment(VariationType::STRING, $flagKey, $subjectKey, $subjectAttributes, $defaultValue);
     }
 
     /**
@@ -164,9 +164,9 @@ class EppoClient
      *
      * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
      */
-    public function getBooleanAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = [], ?bool $defaultValue = null): ?bool
+    public function getBooleanAssignment(string $flagKey, string $subjectKey, array $subjectAttributes = [], ?bool $defaultValue = null): ?bool
     {
-        return $this->getTypedAssignment(VariationType::BOOLEAN, $subjectKey, $flagKey, $subjectAttributes, $defaultValue);
+        return $this->getTypedAssignment(VariationType::BOOLEAN, $flagKey, $subjectKey, $subjectAttributes, $defaultValue);
     }
 
     /**
@@ -175,9 +175,9 @@ class EppoClient
      *
      * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
      */
-    public function getNumericAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = [], ?float $defaultValue = null): ?float
+    public function getNumericAssignment(string $flagKey, string $subjectKey, array $subjectAttributes = [], ?float $defaultValue = null): ?float
     {
-        return $this->getTypedAssignment(VariationType::NUMERIC, $subjectKey, $flagKey, $subjectAttributes, $defaultValue);
+        return $this->getTypedAssignment(VariationType::NUMERIC, $flagKey, $subjectKey, $subjectAttributes, $defaultValue);
     }
 
     /**
@@ -186,22 +186,27 @@ class EppoClient
      *
      * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
      */
-    public function getIntegerAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = [], ?float $defaultValue = null): ?int
+    public function getIntegerAssignment(string $flagKey, string $subjectKey, array $subjectAttributes = [], ?float $defaultValue = null): ?int
     {
-        return $this->getTypedAssignment(VariationType::INTEGER, $subjectKey, $flagKey, $subjectAttributes, $defaultValue);
+        return $this->getTypedAssignment(VariationType::INTEGER, $flagKey, $subjectKey, $subjectAttributes, $defaultValue);
     }
 
     /**
      * Gets the assigned JSON variation, as parsed by PHP's json_decode, for the given subject and experiment.
      * If there is an issue retrieving the variation or the retrieved variation is not valid JSON, null wil be returned.
      *
-     * @return mixed the parsed variation JSON
+     * @param string $flagKey
+     * @param string $subjectKey
+     * @param array $subjectAttributes
+     * @param array|null $defaultValue
+     * @return array|null the parsed variation JSON
      *
-     * @throws ClientExceptionInterface|SimpleCacheInvalidArgumentException
+     * @throws ClientExceptionInterface
+     * @throws SimpleCacheInvalidArgumentException
      */
-    public function getJSONAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = [], array $defaultValue = null): ?array
+    public function getJSONAssignment(string $flagKey, string $subjectKey, array $subjectAttributes = [], array $defaultValue = null): ?array
     {
-        return $this->getTypedAssignment(VariationType::JSON, $subjectKey, $flagKey, $subjectAttributes, $defaultValue);
+        return $this->getTypedAssignment(VariationType::JSON, $flagKey, $subjectKey, $subjectAttributes, $defaultValue);
     }
 
     /**
@@ -212,10 +217,10 @@ class EppoClient
      * @deprecated in favor of the typed get<type>Assignment methods
      *
      */
-    public function getAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = [], ?string $defaultValue = null): ?string
+    public function getAssignment(string $flagKey, string $subjectKey, array $subjectAttributes = [], ?string $defaultValue = null): ?string
     {
         try {
-            $assignmentVariation = $this->getAssignmentDetail($subjectKey, $flagKey, $subjectAttributes);
+            $assignmentVariation = $this->getAssignmentDetail($flagKey, $subjectKey, $subjectAttributes);
             return $assignmentVariation?->value;
         } catch (Exception $exception) {
             return $this->handleException($exception, $defaultValue);
@@ -230,20 +235,20 @@ class EppoClient
      *
      * Returns null if the subject has no allocation for the flag.
      *
-     * @param string $subjectKey an identifier for the experiment. Ex: a user ID
      * @param string $flagKey a feature flag identifier
+     * @param string $subjectKey an identifier for the experiment. Ex: a user ID
      * @param array $subjectAttributes optional attributes to use in the evaluation of experiment targeting rules. These attributes are also included in the loggin callback.
-     * @param string|null $expectedVariationType
+     * @param VariationType|null $expectedVariationType
      * @return Variation|null the Variation DTO assigned to the subject, or null if there is no assignment,
      * an error was encountered, or an expected type was provided that didn't match the variation's typed
      * value.
+     * @throws ClientExceptionInterface
      * @throws HttpRequestException
      * @throws InvalidApiKeyException
      * @throws InvalidArgumentException
      * @throws SimpleCacheInvalidArgumentException
-     * @throws ClientExceptionInterface
      */
-    private function getAssignmentDetail(string $subjectKey, string $flagKey, array $subjectAttributes = [], VariationType $expectedVariationType = null): ?Variation
+    private function getAssignmentDetail(string $flagKey, string $subjectKey, array $subjectAttributes = [], VariationType $expectedVariationType = null): ?Variation
     {
         Validator::validateNotBlank($subjectKey, 'Invalid argument: subjectKey cannot be blank');
         Validator::validateNotBlank($flagKey, 'Invalid argument: flagKey cannot be blank');

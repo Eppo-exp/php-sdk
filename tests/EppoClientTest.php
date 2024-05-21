@@ -58,11 +58,11 @@ class EppoClientTest extends TestCase
         $subjectAttributes = [['foo' => 3]];
         $client = EppoClient::createTestClient($mockConfigRequester, $pollerMock, $mockLogger);
 
-        $this->assertNull($client->getAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes));
-        $this->assertNull($client->getStringAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes));
-        $this->assertNull($client->getNumericAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes));
-        $this->assertNull($client->getBooleanAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes));
-        $this->assertNull($client->getJSONAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes));
+        $this->assertNull($client->getAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes));
+        $this->assertNull($client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes));
+        $this->assertNull($client->getNumericAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes));
+        $this->assertNull($client->getBooleanAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes));
+        $this->assertNull($client->getJSONAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes));
     }
 
 
@@ -81,11 +81,11 @@ class EppoClientTest extends TestCase
         $client = EppoClient::createTestClient($mockConfigRequester, $pollerMock, $mockLogger, false);
 
         $this->expectException(Exception::class);
-        $client->getAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
-        $client->getStringAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
-        $client->getNumericAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
-        $client->getBooleanAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
-        $client->getJSONAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
+        $client->getAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes);
+        $client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes);
+        $client->getNumericAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes);
+        $client->getBooleanAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes);
+        $client->getJSONAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes);
     }
 
 
@@ -120,11 +120,11 @@ class EppoClientTest extends TestCase
     array|bool|float|int|string $defaultValue): array|bool|float|int|string|null
     {
         return match ($type) {
-            VariationType::STRING => $client->getStringAssignment($subjectKey, $flag, $subject, $defaultValue),
-            VariationType::BOOLEAN => $client->getBooleanAssignment($subjectKey, $flag, $subject, $defaultValue),
-            VariationType::NUMERIC => $client->getNumericAssignment($subjectKey, $flag, $subject, $defaultValue),
-            VariationType::JSON => $client->getJSONAssignment($subjectKey, $flag, $subject, $defaultValue),
-            VariationType::INTEGER =>  $client->getIntegerAssignment($subjectKey, $flag, $subject, $defaultValue)
+            VariationType::STRING => $client->getStringAssignment($flag, $subjectKey, $subject, $defaultValue),
+            VariationType::BOOLEAN => $client->getBooleanAssignment($flag, $subjectKey, $subject, $defaultValue),
+            VariationType::NUMERIC => $client->getNumericAssignment($flag, $subjectKey, $subject, $defaultValue),
+            VariationType::JSON => $client->getJSONAssignment($flag, $subjectKey, $subject, $defaultValue),
+            VariationType::INTEGER =>  $client->getIntegerAssignment($flag, $subjectKey, $subject, $defaultValue)
         };
     }
 
