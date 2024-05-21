@@ -39,6 +39,7 @@ test-data:
 	git clone -b ${branchName} --depth 1 --single-branch ${githubRepoLink} ${gitDataDir}
 	cp ${gitDataDir}rac-experiments-v3.json ${testDataDir}
 	cp -r ${gitDataDir}assignment-v2 ${testDataDir}
+	cp -r ${gitDataDir}ufc ${testDataDir}
 	rm -rf ${tempDir}
 
 .PHONY: test
