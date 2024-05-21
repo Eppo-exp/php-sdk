@@ -10,7 +10,6 @@ use Eppo\EppoClient;
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
 use Eppo\Exception\InvalidArgumentException;
-use Eppo\ExperimentConfigurationRequester;
 use Eppo\FlagConfigurationLoader;
 use Eppo\Logger\LoggerInterface;
 use Eppo\PollerInterface;
@@ -18,10 +17,8 @@ use Eppo\Tests\WebServer\MockWebServer;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
 use Http\Discovery\Psr18Client;
-use Http\Mock\Client;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Client\ClientInterface;
-use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Http\Client\ClientExceptionInterface;
 use PsrMock\Psr17\RequestFactory;
 use Sarahman\SimpleCache\FileSystemCache;
 use Throwable;
@@ -52,176 +49,6 @@ class EppoClientTest extends TestCase
         MockWebServer::stop();
     }
 
-    /*
-        public function testGetAssignmentVariationAssignmentSplits(): void
-        {
-            $client = EppoClient::getInstance();
-            $assignmentsTestData = self::$testFilesHelper->readAssignmentTestData();
-
-            foreach ($assignmentsTestData as $assignmentTestData) {
-                $experiment = $assignmentTestData['experiment'];
-
-                // Some test case have only subject keys, others have keys and attributes. Either way we'll, put them into a
-                // single array with the subject keys to attributes (if any)
-                $subjectsWithAttributes = $assignmentTestData['subjectsWithAttributes'] ?? [];
-                foreach ($assignmentTestData["subjects"] ?? [] as $subjectKey) {
-                    $subjectsWithAttributes[] = ["subjectKey" => $subjectKey, "subjectAttributes" => []];
-                }
-
-                // Use the hint from the test to determine what typed assignment function we should use
-                $testValueType = $assignmentTestData["valueType"];
-
-                // For each subject, retrieve the typed assignment
-                $assignments = array_map(function ($subjectWithAttributes) use ($client, $testValueType, $experiment) {
-
-                    $subjectKey = $subjectWithAttributes["subjectKey"];
-                    $subjectAttributes = $subjectWithAttributes["subjectAttributes"];
-
-                    switch ($testValueType) {
-                        case EppoClient::VARIANT_TYPE_STRING:
-                            return $client->getStringAssignment($subjectKey, $experiment, $subjectAttributes);
-                        case EppoClient::VARIANT_TYPE_NUMERIC:
-                            return $client->getNumericAssignment($subjectKey, $experiment, $subjectAttributes);
-                        case EppoClient::VARIANT_TYPE_BOOLEAN:
-                            return $client->getBooleanAssignment($subjectKey, $experiment, $subjectAttributes);
-                        case EppoClient::VARIANT_TYPE_JSON:
-                            return $client->getJSONStringAssignment($subjectKey, $experiment, $subjectAttributes);
-                        default:
-                            throw new InvalidArgumentException("Unexpected test value type $testValueType");
-                    }
-                }, $subjectsWithAttributes);
-
-                $expectedAssignments = $assignmentTestData['expectedAssignments'];
-
-                $this->assertEquals($expectedAssignments, $assignments);
-            }
-        }
-
-        public function testAssignsSubjectFromOverridesWhenExperimentIsEnabled()
-        {
-            $mockedResponse = self::MOCK_EXPERIMENT_CONFIG;
-            $mockedResponse['overrides'] = ['1b50f33aef8f681a13f623963da967ed' => 'variant-2'];
-
-            $experimentConfigRequesterMock = $this->getExperimentConfigurationRequesterMock($mockedResponse);
-            $pollerMock = $this->getPollerMock();
-
-            $client = EppoClient::createTestClient($experimentConfigRequesterMock, $pollerMock);
-            $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME);
-
-            $this->assertEquals('variant-2', $assignment);
-        }
-
-        public function testAssignsSubjectFromOverridesWhenExperimentIsNotEnabled()
-        {
-            $mockedResponse = self::MOCK_EXPERIMENT_CONFIG;
-            $mockedResponse['overrides'] = ['1b50f33aef8f681a13f623963da967ed' => 'variant-2'];
-
-            $experimentConfigRequesterMock = $this->getExperimentConfigurationRequesterMock($mockedResponse);
-            $pollerMock = $this->getPollerMock();
-
-            $client = EppoClient::createTestClient($experimentConfigRequesterMock, $pollerMock);
-            $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME);
-            $this->assertEquals('variant-2', $assignment);
-        }
-
-        public function testReturnsNullWhenExperimentConfigIsAbsent()
-        {
-            $experimentConfigRequesterMock = $this->getExperimentConfigurationRequesterMock([]);
-            $pollerMock = $this->getPollerMock();
-
-            $client = EppoClient::createTestClient($experimentConfigRequesterMock, $pollerMock);
-            $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME);
-            $this->assertNull($assignment);
-        }
-
-        public function testOnlyReturnsVariationIfSubjectMatchesRules()
-        {
-            $mockedResponse = self::MOCK_EXPERIMENT_CONFIG;
-            $mockedResponse['rules'] = [
-                [
-                    'allocationKey' => 'allocation1',
-                    'conditions' => [
-                        [
-                            'operator' => 'GT',
-                            'attribute' => 'appVersion',
-                            'value' => 10
-                        ]
-                    ]
-                ]
-            ];
-            $mockedResponse['allocations'] = [
-                'allocation1' => [
-                    'percentExposure' => 1,
-                    'variations' => [
-                        [
-                            'name' => 'control',
-                            'value' => 'control',
-                            'typedValue' => 'control',
-                            'shardRange' => [
-                                'start' => 0,
-                                'end' => 50
-                            ]
-                        ],
-                        [
-                            'name' => 'treatment',
-                            'value' => 'treatment',
-                            'typedValue' => 'treatment',
-                            'shardRange' => [
-                                'start' => 50,
-                                'end' => 100
-                            ]
-                        ]
-                    ]
-                ]
-            ];
-
-            $experimentConfigRequesterMock = $this->getExperimentConfigurationRequesterMock($mockedResponse);
-            $pollerMock = $this->getPollerMock();
-            $client = EppoClient::createTestClient($experimentConfigRequesterMock, $pollerMock);
-
-            $this->assertNull(
-                $client->getAssignment('subject-10', self::EXPERIMENT_NAME, ['appVersion' => 9])
-            );
-            $this->assertNull(
-                $client->getAssignment('subject-10', self::EXPERIMENT_NAME)
-            );
-            $this->assertEquals(
-                $client->getAssignment('subject-10', self::EXPERIMENT_NAME, ['appVersion' => 11]),
-                'control'
-            );
-        }
-
-        public function testLogsVariationAssignment()
-        {
-            $pollerMock = $this->getPollerMock();
-            $mockConfigRequester = $this->getExperimentConfigurationRequesterMock(self::MOCK_EXPERIMENT_CONFIG);
-            $mockLogger = $this->getLoggerMock();
-
-            $subjectAttributes = [['foo' => 3]];
-
-            $client = EppoClient::createTestClient($mockConfigRequester, $pollerMock, $mockLogger);
-            $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
-
-            $this->assertEquals('control', $assignment);
-        }
-
-        public function testHandlesLoggingException()
-        {
-            $pollerMock = $this->getPollerMock();
-            $mockConfigRequester = $this->getExperimentConfigurationRequesterMock(self::MOCK_EXPERIMENT_CONFIG);
-            $mockLogger = $this->getLoggerMock();
-            $mockLogger->expects($this->once())
-                ->method('logAssignment')
-                ->with('mock-experiment-allocation1', 'control', 'subject-10')
-                ->willThrowException(new Exception('logger error'));
-            $subjectAttributes = [['foo' => 3]];
-
-            $client = EppoClient::createTestClient($mockConfigRequester, $pollerMock, $mockLogger);
-            $assignment = $client->getAssignment('subject-10', self::EXPERIMENT_NAME, $subjectAttributes);
-
-            $this->assertEquals('control', $assignment);
-        }
-    */
     public function testGracefulModeDoesNotThrow()
     {
         $pollerMock = $this->getPollerMock();
@@ -240,11 +67,9 @@ class EppoClientTest extends TestCase
 
 
     /**
-     * @throws InvalidApiKeyException
      * @throws GuzzleException
-     * @throws HttpRequestException
      * @throws \Psr\SimpleCache\InvalidArgumentException
-     * @throws InvalidArgumentException
+     * @throws ClientExceptionInterface
      */
     public function testNoGracefulModeThrows()
     {
@@ -289,7 +114,7 @@ class EppoClientTest extends TestCase
     /**
      * @throws GuzzleException
      * @throws \Psr\SimpleCache\InvalidArgumentException
-     * @throws Exception|\Psr\Http\Client\ClientExceptionInterface
+     * @throws Exception|ClientExceptionInterface
      */
     private function getTypedAssignment(EppoClient $client, VariationType $type, string $flag, string $subjectKey, array $subject,
     array|bool|float|int|string $defaultValue): array|bool|float|int|string|null
