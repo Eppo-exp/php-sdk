@@ -129,12 +129,12 @@ class EppoClient
      * @throws ClientExceptionInterface
      * @throws Exception
      */
-    private function getTypedAssignment(VariationType $valueType, string $subjectKey, string $flagKey, array $subjectAttributes = []): mixed
+    private function getTypedAssignment(VariationType $valueType, string $subjectKey, string $flagKey, array $subjectAttributes = [], array|bool|float|string|null $defaultValue = null): array|bool|float|string
     {
         try {
             $assignmentVariation = $this->getAssignmentDetail($subjectKey, $flagKey, $subjectAttributes, $valueType);
             if ($assignmentVariation === null) {
-                return null;
+                return $defaultValue;
             }
             return match ($valueType) {
                 VariationType::JSON, VariationType::STRING => $assignmentVariation->value,
@@ -142,7 +142,7 @@ class EppoClient
                 VariationType::BOOLEAN => boolval($assignmentVariation->value)
             };
         } catch (Exception $exception) {
-            return $this->handleException($exception);
+            return $this->handleException($exception,  $defaultValue);
         }
     }
 
@@ -150,40 +150,33 @@ class EppoClient
      * Gets the assigned string variation for the given subject and experiment
      * If there is an issue retrieving the variation or the retrieved variation is not a string, null wil be returned.
      *
+     * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
      */
-    public function getStringAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): ?string
+    public function getStringAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = [], ?string $defaultValue = null): ?string
     {
-        return $this->getTypedAssignment(VariationType::STRING, $subjectKey, $flagKey, $subjectAttributes);
+        return $this->getTypedAssignment(VariationType::STRING, $subjectKey, $flagKey, $subjectAttributes, $defaultValue);
     }
 
     /**
      * Gets the assigned boolean variation for the given subject and experiment
      * If there is an issue retrieving the variation or the retrieved variation is not a boolean, null wil be returned.
      *
-     * @throws HttpRequestException
-     * @throws GuzzleException
-     * @throws InvalidApiKeyException
-     * @throws InvalidArgumentException
-     * @throws SimpleCacheInvalidArgumentException
+     * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
      */
-    public function getBooleanAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): ?bool
+    public function getBooleanAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = [], ?bool $defaultValue = null): ?bool
     {
-        return $this->getTypedAssignment(VariationType::BOOLEAN, $subjectKey, $flagKey, $subjectAttributes);
+        return $this->getTypedAssignment(VariationType::BOOLEAN, $subjectKey, $flagKey, $subjectAttributes, $defaultValue);
     }
 
     /**
      * Gets the assigned numeric variation as a float for the given subject and experiment
      * If there is an issue retrieving the variation or the retrieved variation is not an integer or float (double), null wil be returned.
      *
-     * @throws HttpRequestException
-     * @throws GuzzleException
-     * @throws InvalidApiKeyException
-     * @throws InvalidArgumentException
-     * @throws SimpleCacheInvalidArgumentException
+     * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
      */
-    public function getNumericAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): ?float
+    public function getNumericAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = [], ?float $defaultValue = null): ?float
     {
-        return $this->getTypedAssignment(VariationType::NUMERIC, $subjectKey, $flagKey, $subjectAttributes);
+        return $this->getTypedAssignment(VariationType::NUMERIC, $subjectKey, $flagKey, $subjectAttributes, $defaultValue);
     }
 
     /**
@@ -192,15 +185,11 @@ class EppoClient
      *
      * @return mixed the parsed variation JSON
      *
-     * @throws HttpRequestException
-     * @throws GuzzleException
-     * @throws InvalidApiKeyException
-     * @throws InvalidArgumentException
-     * @throws SimpleCacheInvalidArgumentException
+     * @throws ClientExceptionInterface|SimpleCacheInvalidArgumentException
      */
-    public function getParsedJSONAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): mixed
+    public function getParsedJSONAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = [], array $defaultValue = null): array
     {
-        return $this->getTypedAssignment(VariationType::JSON, $subjectKey, $flagKey, $subjectAttributes);
+        return $this->getTypedAssignment(VariationType::JSON, $subjectKey, $flagKey, $subjectAttributes, $defaultValue);
     }
 
     /**
@@ -315,7 +304,7 @@ class EppoClient
     }
 
 
-    private function checkExpectedType(VariationType $expectedVariationType, $typedValue) : bool
+    private function checkExpectedType(VariationType $expectedVariationType, $typedValue): bool
     {
         return (
             ($expectedVariationType == VariationType::STRING && gettype($typedValue) === "string") ||
@@ -363,11 +352,11 @@ class EppoClient
     {
     }
 
-    private function handleException(Exception $exception): mixed
+    private function handleException(Exception $exception, array|bool|float|string $defaultValue): string|array|bool|float
     {
         if ($this->isGracefulMode) {
             error_log('[Eppo SDK] Error getting assignment: ' . $exception->getMessage());
-            return null;
+            return $defaultValue;
         }
         throw $exception;
     }
