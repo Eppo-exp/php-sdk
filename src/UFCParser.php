@@ -42,7 +42,7 @@ class UFCParser
     private static function parseVariations(array $variations, VariationType $variationType): array
     {
         return array_map(function ($variationConfig) use ($variationType) {
-            $typedValue = $variationType === VariationType::JSON ? json_decode($variationConfig['value']) : $variationConfig['value'];
+            $typedValue = $variationType === VariationType::JSON ? json_decode($variationConfig['value'], true) : $variationConfig['value'];
             return new Variation($variationConfig['key'], $typedValue);
         },
             $variations);
@@ -55,7 +55,7 @@ class UFCParser
     private static function parseAllocations(array $allocations): array
     {
         return array_map(function ($allocationConfig) {
-            $rules = array_map(function ($ruleConfig) {
+            $rules = array_key_exists('rules', $allocationConfig) ? array_map(function ($ruleConfig) {
                 $conditions = array_map(function ($conditionConfig) {
                     return new Condition(
                         $conditionConfig['attribute'],
@@ -64,7 +64,7 @@ class UFCParser
                     );
                 }, $ruleConfig['conditions']);
                 return new Rule($conditions);
-            }, $allocationConfig['rules']);
+            }, $allocationConfig['rules']) : [];
 
             $splits = array_map(function ($splitConfig) {
 
