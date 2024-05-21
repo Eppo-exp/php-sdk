@@ -129,7 +129,7 @@ class EppoClient
      * @throws ClientExceptionInterface
      * @throws Exception
      */
-    private function getTypedAssignment(VariationType $valueType, string $subjectKey, string $flagKey, array $subjectAttributes = [], array|bool|float|string|null $defaultValue = null): array|bool|float|string
+    private function getTypedAssignment(VariationType $valueType, string $subjectKey, string $flagKey, array $subjectAttributes = [], array|bool|float|int|string|null $defaultValue = null): array|bool|float|int|string|null
     {
         try {
             $assignmentVariation = $this->getAssignmentDetail($subjectKey, $flagKey, $subjectAttributes, $valueType);
@@ -139,6 +139,7 @@ class EppoClient
             return match ($valueType) {
                 VariationType::JSON, VariationType::STRING => $assignmentVariation->value,
                 VariationType::NUMERIC => doubleval($assignmentVariation->value),
+                VariationType::INTEGER => intval($assignmentVariation->value),
                 VariationType::BOOLEAN => boolval($assignmentVariation->value)
             };
         } catch (Exception $exception) {
@@ -180,6 +181,17 @@ class EppoClient
     }
 
     /**
+     * Gets the assigned variation as an integer for the given subject and experiment
+     * If there is an issue retrieving the variation or the retrieved variation is not an integer, null wil be returned.
+     *
+     * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
+     */
+    public function getIntegerAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = [], ?float $defaultValue = null): ?int
+    {
+        return $this->getTypedAssignment(VariationType::INTEGER, $subjectKey, $flagKey, $subjectAttributes, $defaultValue);
+    }
+
+    /**
      * Gets the assigned JSON variation, as parsed by PHP's json_decode, for the given subject and experiment.
      * If there is an issue retrieving the variation or the retrieved variation is not valid JSON, null wil be returned.
      *
@@ -187,31 +199,9 @@ class EppoClient
      *
      * @throws ClientExceptionInterface|SimpleCacheInvalidArgumentException
      */
-    public function getParsedJSONAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = [], array $defaultValue = null): array
+    public function getParsedJSONAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = [], array $defaultValue = null): ?array
     {
         return $this->getTypedAssignment(VariationType::JSON, $subjectKey, $flagKey, $subjectAttributes, $defaultValue);
-    }
-
-    /**
-     * Get's the assigned JSON variation, represented as JSON string, for the given subject and experiment.
-     * If there is an issue retrieving the variation or the retrieved variation is not valid JSON, null wil be returned.
-     *
-     * @return string|null the parsed variation JSON as a string
-     *
-     * @throws HttpRequestException
-     * @throws GuzzleException
-     * @throws InvalidApiKeyException
-     * @throws InvalidArgumentException
-     * @throws SimpleCacheInvalidArgumentException
-     */
-    public function getJSONStringAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): ?string
-    {
-        try {
-            $parsedJsonValue = $this->getParsedJSONAssignment($subjectKey, $flagKey, $subjectAttributes);
-            return isset($parsedJsonValue) ? json_encode($parsedJsonValue) : null;
-        } catch (Exception $exception) {
-            return $this->handleException($exception);
-        }
     }
 
     /**
@@ -222,13 +212,13 @@ class EppoClient
      * @deprecated in favor of the typed get<type>Assignment methods
      *
      */
-    public function getAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): ?string
+    public function getAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = [], ?string $defaultValue = null): ?string
     {
         try {
             $assignmentVariation = $this->getAssignmentDetail($subjectKey, $flagKey, $subjectAttributes);
             return $assignmentVariation?->value;
         } catch (Exception $exception) {
-            return $this->handleException($exception);
+            return $this->handleException($exception, $defaultValue);
         }
     }
 
@@ -271,7 +261,8 @@ class EppoClient
         // If there is an assignment and the expected type has been expressed, do a type check and log an error if they don't match.
         if ($computedVariation && $expectedVariationType && !$this->checkExpectedType($expectedVariationType, $computedVariation->value)) {
             $actualType = gettype($computedVariation->value);
-            syslog(LOG_ERR, "[EPPO SDK] Variation does not have the expected type, ${$expectedVariationType}; found ${$actualType}");
+            $eVarType = $expectedVariationType->value;
+            syslog(LOG_ERR, "[EPPO SDK] Variation does not have the expected type, ${eVarType}; found ${actualType}");
             return null;
         }
 
@@ -308,6 +299,7 @@ class EppoClient
     {
         return (
             ($expectedVariationType == VariationType::STRING && gettype($typedValue) === "string") ||
+            ($expectedVariationType == VariationType::INTEGER && gettype($typedValue) ===  "integer") ||
             ($expectedVariationType == VariationType::NUMERIC && in_array(gettype($typedValue), ["integer", "double"])) ||
             ($expectedVariationType == VariationType::BOOLEAN && gettype($typedValue) === "boolean") ||
             ($expectedVariationType == VariationType::JSON)); // JSON type check un-necessary here.
@@ -321,7 +313,7 @@ class EppoClient
     {
         if ($valueType === null || $valueType === VariationType::STRING) {
             return $variation->value;
-        } elseif ($valueType === VariationType::NUMERIC) {
+        } elseif ($valueType === VariationType::NUMERIC || $valueType === VariationType::INTEGER) {
             return strval($variation->value);
         } elseif ($valueType === VariationType::BOOLEAN || $valueType === VariationType::JSON) {
             // json_encode renders booleans in human readable "true" and "false".
@@ -352,7 +344,10 @@ class EppoClient
     {
     }
 
-    private function handleException(Exception $exception, array|bool|float|string $defaultValue): string|array|bool|float
+    /**
+     * @throws Exception
+     */
+    private function handleException(Exception $exception, array|bool|float|int|string|null $defaultValue): array|bool|float|int|string|null
     {
         if ($this->isGracefulMode) {
             error_log('[Eppo SDK] Error getting assignment: ' . $exception->getMessage());
