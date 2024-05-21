@@ -107,7 +107,7 @@ final class RuleEvaluator
     private static function evaluateCondition(array $subjectAttributes, Condition $condition): bool
     {
         $value = $subjectAttributes[$condition->attribute] ?? null;
-        if ($value !== null) {
+        if ($value !== null || $condition->operator === Operator::IS_NULL) {
             switch ($condition->operator) {
                 case Operator::GTE:
                     if (is_numeric($value) && is_numeric($condition->value)) {
@@ -120,18 +120,21 @@ final class RuleEvaluator
                         return $value > $condition->value;
                     }
 
+                    // semver
                     return Comparator::greaterThan($value, $condition->value);
                 case Operator::LTE:
                     if (is_numeric($value) && is_numeric($condition->value)) {
                         return $value <= $condition->value;
                     }
 
+                    // semver
                     return Comparator::lessThanOrEqualTo($value, $condition->value);
                 case Operator::LT:
                     if (is_numeric($value) && is_numeric($condition->value)) {
                         return $value < $condition->value;
                     }
 
+                    // semver
                     return Comparator::lessThan($value, $condition->value);
                 case Operator::MATCHES:
                     return preg_match('/' . $condition->value . '/i', (string)$value) === 1;
@@ -139,6 +142,8 @@ final class RuleEvaluator
                     return self::isOneOf($value, $condition->value);
                 case Operator::NOT_ONE_OF:
                     return self::isNotOneOf($value, $condition->value);
+                case Operator::IS_NULL:
+                    return ($value === null) == $condition->value;
             }
         }
         return false;
