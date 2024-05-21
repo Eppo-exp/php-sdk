@@ -199,7 +199,7 @@ class EppoClient
      *
      * @throws ClientExceptionInterface|SimpleCacheInvalidArgumentException
      */
-    public function getParsedJSONAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = [], array $defaultValue = null): ?array
+    public function getJSONAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = [], array $defaultValue = null): ?array
     {
         return $this->getTypedAssignment(VariationType::JSON, $subjectKey, $flagKey, $subjectAttributes, $defaultValue);
     }
