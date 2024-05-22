@@ -44,7 +44,7 @@ class APIRequestWrapper
         $this->httpClient = new RedirectClientDecorator($baseHttpClient);
         $this->baseUrl = $baseUrl ?? self::CONFIG_BASE;
         $this->requestFactory = $requestFactory;
-        $this->resource = $resource ?? self::CONFIG_BASE;
+        $this->resource = $resource ?? self::UFC_ENDPOINT;
         $this->queryParams = [
             'apiKey' => $apiKey, ...$extraQueryParams
         ];
