@@ -65,7 +65,7 @@ class EppoClient
      */
     public static function init(
         string $apiKey,
-        string $baseUrl = '',
+        ?string $baseUrl = null,
         LoggerInterface $assignmentLogger = null,
         CacheInterface $cache = null,
         ClientInterface $httpClient = null,

@@ -37,14 +37,14 @@ class APIRequestWrapper
         array $extraQueryParams,
         ClientInterface $baseHttpClient,
         RequestFactoryInterface $requestFactory,
-        string $baseUrl = self::CONFIG_BASE,
-        string $resource = self::UFC_ENDPOINT)
+        ?string $baseUrl = null,
+        ?string $resource = null)
     {
         // Our HTTP Client needs to be able to follow redirects.
         $this->httpClient = new RedirectClientDecorator($baseHttpClient);
-        $this->baseUrl = $baseUrl;
+        $this->baseUrl = $baseUrl ?? self::CONFIG_BASE;
         $this->requestFactory = $requestFactory;
-        $this->resource = $resource;
+        $this->resource = $resource ?? self::CONFIG_BASE;
         $this->queryParams = [
             'apiKey' => $apiKey, ...$extraQueryParams
         ];

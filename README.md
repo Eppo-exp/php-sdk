@@ -66,3 +66,13 @@ after this, run this script by:
 `php eppo-poller.php`
 
 This will start an indefinite process of polling the Eppo-api.
+
+## Troubleshooting
+### HTTP
+This package uses the `php-http/discovery` package to automatically locate implementations of the various HTTP related 
+PSR interfaces (ex: `ClientInterface`, `RequstFactory`, etc.). If your project does not depend on any library which can 
+fulfill this need, you may see an exception such as follows.
+>Fatal error: Uncaught Http\Discovery\Exception\DiscoveryFailedException: Could not find resource using any discovery strategy.
+
+To solve this, simple require a suitable package, such as _guzzle_
+>composer require guzzlehttp/guzzle:^7.0
