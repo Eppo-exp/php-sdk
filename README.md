@@ -44,7 +44,7 @@ if ($assignment !== 'defaultValue') {
 ```
 
 To make the experience of using the library faster, there is an option to start a background polling for randomization params.
-This background job will start calling the Eppo api, updating the config in the cache.
+This background job will start calling the Eppo API, updating the config in the cache.
 
 For this, create a file, e.g. `eppo-poller.php` with the contents:
 
@@ -74,5 +74,5 @@ PSR interfaces (ex: `ClientInterface`, `RequstFactory`, etc.). If your project d
 fulfill this need, you may see an exception such as follows.
 >Fatal error: Uncaught Http\Discovery\Exception\DiscoveryFailedException: Could not find resource using any discovery strategy.
 
-To solve this, simple require a suitable package, such as _guzzle_
+To solve this, simply require a suitable package, such as _guzzle_
 >composer require guzzlehttp/guzzle:^7.0
