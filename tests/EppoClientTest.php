@@ -15,8 +15,6 @@ use Exception;
 use Http\Discovery\Psr18Client;
 use Http\Mock\Client;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Client\ClientInterface;
-use Psr\Http\Message\RequestFactoryInterface;
 use PsrMock\Psr17\RequestFactory;
 use Sarahman\SimpleCache\FileSystemCache;
 use Throwable;

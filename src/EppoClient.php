@@ -99,6 +99,7 @@ class EppoClient
             if (!$cache) {
                 $cache = new FileSystemCache(__DIR__ . '/../cache');
             }
+            
             $configStore = new ConfigurationStore($cache);
 
             if (!$httpClient) {
@@ -283,7 +284,6 @@ class EppoClient
         Validator::validateNotBlank($flagKey, 'Invalid argument: flagKey cannot be blank');
 
         $experimentConfig = $this->configurationRequester->getConfiguration($flagKey);
-
         if (!$experimentConfig) {
             return null;
         }
