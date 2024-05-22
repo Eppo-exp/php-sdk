@@ -12,12 +12,11 @@ use Webclient\Extension\Redirect\RedirectClientDecorator;
 /**
  * Encapsulates request logic for retrieving configuration data from the Eppo API.
  *
- * This calls strictly handles fulfilling requests for configuration data and makes no attempts to
- * parse the response. Errors are inspected by the handling logic to determine if request errors
  * can be retried and identify when invalid API credentials are used.
  */
 class APIRequestWrapper
-{    /** @var string */
+{
+    /** @var string */
     const UFC_ENDPOINT = '/flag-config/v1/config';
     const CONFIG_BASE = 'https://fscdn.eppo.cloud/api';
 

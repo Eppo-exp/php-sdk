@@ -3,9 +3,6 @@
 namespace Eppo;
 
 use Eppo\Config\SDKData;
-use Eppo\DTO\Allocation;
-use Eppo\DTO\ExperimentConfiguration;
-use Eppo\DTO\Rule;
 use Eppo\DTO\Variation;
 use Eppo\DTO\VariationType;
 use Eppo\Exception\HttpRequestException;
@@ -13,12 +10,6 @@ use Eppo\Exception\InvalidApiKeyException;
 use Eppo\Exception\InvalidArgumentException;
 use Eppo\Logger\LoggerInterface;
 use Exception;
-use GuzzleHttp\Exception\GuzzleException;
-use Http\Discovery\Psr17Factory;
-use Http\Discovery\Psr18ClientDiscovery;
-use Psr\Http\Client\ClientExceptionInterface;
-use Psr\Http\Client\ClientInterface;
-use Psr\Http\Message\RequestFactoryInterface;
 use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException as SimpleCacheInvalidArgumentException;
 use Sarahman\SimpleCache\FileSystemCache;
@@ -82,6 +73,7 @@ class EppoClient
             if (!$cache) {
                 $cache = new FileSystemCache(__DIR__ . '/../cache');
             }
+
             $configStore = new ConfigurationStore($cache);
 
             if (!$httpClient) {
