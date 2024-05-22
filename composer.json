@@ -35,7 +35,8 @@
     "phpunit/phpunit": "^9.6",
     "google/cloud-storage": "^1.30",
     "ext-posix": "*",
-    "ext-pcntl": "*"
+    "ext-pcntl": "*",
+    "psr-mock/http": "^1.0"
   },
   "config": {
     "allow-plugins": {

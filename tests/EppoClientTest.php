@@ -12,6 +12,7 @@ use Eppo\Logger\LoggerInterface;
 use Eppo\PollerInterface;
 use Eppo\Tests\WebServer\MockWebServer;
 use Exception;
+use Http\Discovery\Psr18Client;
 use Http\Mock\Client;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Client\ClientInterface;
@@ -319,9 +320,9 @@ class EppoClientTest extends TestCase
 
         $httpClientMock = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs([
             '',
-            'dummy',
-            ["sdkVersion" => $sdkData->getSdkVersion(),
-                "sdkName" => $sdkData->getSdkName()]
+            $sdkParams,
+            new Psr18Client(),
+            new RequestFactory()
         ])->getMock();
         $httpClientMock->expects($this->any())
             ->method('get')

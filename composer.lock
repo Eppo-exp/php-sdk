@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "79e3535df02d11a89e26a4cb539703b1",
+    "content-hash": "1322eed5dfe39c9cf82f8341144cdf8e",
     "packages": [
         {
             "name": "composer/semver",
@@ -674,26 +674,26 @@
         },
         {
             "name": "firebase/php-jwt",
-            "version": "v6.10.0",
+            "version": "v6.10.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/firebase/php-jwt.git",
-                "reference": "a49db6f0a5033aef5143295342f1c95521b075ff"
+                "reference": "500501c2ce893c824c801da135d02661199f60c5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/firebase/php-jwt/zipball/a49db6f0a5033aef5143295342f1c95521b075ff",
-                "reference": "a49db6f0a5033aef5143295342f1c95521b075ff",
+                "url": "https://api.github.com/repos/firebase/php-jwt/zipball/500501c2ce893c824c801da135d02661199f60c5",
+                "reference": "500501c2ce893c824c801da135d02661199f60c5",
                 "shasum": ""
             },
             "require": {
-                "php": "^7.4||^8.0"
+                "php": "^8.0"
             },
             "require-dev": {
-                "guzzlehttp/guzzle": "^6.5||^7.4",
+                "guzzlehttp/guzzle": "^7.4",
                 "phpspec/prophecy-phpunit": "^2.0",
                 "phpunit/phpunit": "^9.5",
-                "psr/cache": "^1.0||^2.0",
+                "psr/cache": "^2.0||^3.0",
                 "psr/http-client": "^1.0",
                 "psr/http-factory": "^1.0"
             },
@@ -731,9 +731,9 @@
             ],
             "support": {
                 "issues": "https://github.com/firebase/php-jwt/issues",
-                "source": "https://github.com/firebase/php-jwt/tree/v6.10.0"
+                "source": "https://github.com/firebase/php-jwt/tree/v6.10.1"
             },
-            "time": "2023-12-01T16:26:39+00:00"
+            "time": "2024-05-18T18:05:11+00:00"
         },
         {
             "name": "google/auth",
@@ -863,16 +863,16 @@
         },
         {
             "name": "google/cloud-storage",
-            "version": "v1.41.4",
+            "version": "v1.42.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/googleapis/google-cloud-php-storage.git",
-                "reference": "304b3ef6a1bd827774faa1deea315b5844826af2"
+                "reference": "1c77f5882c30bec95ab2837b9534a946325d1c57"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/googleapis/google-cloud-php-storage/zipball/304b3ef6a1bd827774faa1deea315b5844826af2",
-                "reference": "304b3ef6a1bd827774faa1deea315b5844826af2",
+                "url": "https://api.github.com/repos/googleapis/google-cloud-php-storage/zipball/1c77f5882c30bec95ab2837b9534a946325d1c57",
+                "reference": "1c77f5882c30bec95ab2837b9534a946325d1c57",
                 "shasum": ""
             },
             "require": {
@@ -914,9 +914,9 @@
             ],
             "description": "Cloud Storage Client for PHP",
             "support": {
-                "source": "https://github.com/googleapis/google-cloud-php-storage/tree/v1.41.4"
+                "source": "https://github.com/googleapis/google-cloud-php-storage/tree/v1.42.0"
             },
-            "time": "2024-05-03T18:32:44+00:00"
+            "time": "2024-05-19T17:27:42+00:00"
         },
         {
             "name": "google/common-protos",
@@ -2286,6 +2286,317 @@
                 }
             ],
             "time": "2024-04-05T04:35:58+00:00"
+        },
+        {
+            "name": "psr-mock/http",
+            "version": "1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/psr-mock/http.git",
+                "reference": "67e281b6f5ec17d282c1cdd37bb79493bf8adde4"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/psr-mock/http/zipball/67e281b6f5ec17d282c1cdd37bb79493bf8adde4",
+                "reference": "67e281b6f5ec17d282c1cdd37bb79493bf8adde4",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.1",
+                "psr-mock/http-client-implementation": "^1.0",
+                "psr-mock/http-factory-implementation": "^1.0",
+                "psr-mock/http-message-implementation": "^1.0"
+            },
+            "provide": {
+                "psr/http-client-implementation": "^1.0",
+                "psr/http-factory-implementation": "^1.0",
+                "psr/http-message-implementation": "^1.0"
+            },
+            "type": "metapackage",
+            "extra": {
+                "merge-plugin": {
+                    "ignore-duplicates": false,
+                    "include": [
+                        "composer.local.json"
+                    ],
+                    "merge-dev": true,
+                    "merge-extra": false,
+                    "merge-extra-deep": false,
+                    "merge-scripts": false,
+                    "recurse": true,
+                    "replace": true
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "PsrDiscovery\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Evan Sims",
+                    "email": "hello@evansims.com",
+                    "homepage": "https://evansims.com/"
+                }
+            ],
+            "description": "Lightweight mock implementations of PSR-18, PSR-17 and PSR-7 tailored to simplify unit testing.",
+            "homepage": "https://github.com/psr-mock",
+            "keywords": [
+                "discovery",
+                "http-client-implementation",
+                "http-factory-implementation",
+                "http-message-implementation",
+                "psr",
+                "psr-17",
+                "psr-18",
+                "psr-7"
+            ],
+            "support": {
+                "source": "https://github.com/psr-mock/http/tree/1.0.1"
+            },
+            "time": "2024-03-04T21:43:33+00:00"
+        },
+        {
+            "name": "psr-mock/http-client-implementation",
+            "version": "1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/psr-mock/http-client-implementation.git",
+                "reference": "3afdff33b27283890e8ce533cca48aec89eaf5de"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/psr-mock/http-client-implementation/zipball/3afdff33b27283890e8ce533cca48aec89eaf5de",
+                "reference": "3afdff33b27283890e8ce533cca48aec89eaf5de",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.1",
+                "psr/http-client": "^1.0",
+                "psr/http-message": "^1.0"
+            },
+            "provide": {
+                "psr/http-client-implementation": "^1.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.14",
+                "infection/infection": "^0.26",
+                "mockery/mockery": "^1.5",
+                "pestphp/pest": "^2.0",
+                "phpstan/phpstan": "^1.10",
+                "phpstan/phpstan-strict-rules": "^1.5",
+                "rector/rector": "^0.15",
+                "vimeo/psalm": "^5.8",
+                "wikimedia/composer-merge-plugin": "^2.0"
+            },
+            "type": "library",
+            "extra": {
+                "merge-plugin": {
+                    "ignore-duplicates": false,
+                    "include": [
+                        "composer.local.json"
+                    ],
+                    "merge-dev": true,
+                    "merge-extra": false,
+                    "merge-extra-deep": false,
+                    "merge-scripts": false,
+                    "recurse": true,
+                    "replace": true
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "PsrMock\\Psr18\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Evan Sims",
+                    "email": "hello@evansims.com",
+                    "homepage": "https://evansims.com/"
+                }
+            ],
+            "description": "Lightweight PSR-18 HTTP Client implementation provider tailored to simplify mocked testing.",
+            "homepage": "https://github.com/psr-mock/http-client-implementation",
+            "keywords": [
+                "http-client-implementation",
+                "mocking",
+                "psr",
+                "psr-18",
+                "testing"
+            ],
+            "support": {
+                "issues": "https://github.com/psr-mock/http-client-implementation/issues",
+                "source": "https://github.com/psr-mock/http-client-implementation/tree/1.0.1"
+            },
+            "time": "2024-03-04T21:48:32+00:00"
+        },
+        {
+            "name": "psr-mock/http-factory-implementation",
+            "version": "1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/psr-mock/http-factory-implementation.git",
+                "reference": "fa2235c0116b0a4b3e5a0c49e3dce7612726f1c5"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/psr-mock/http-factory-implementation/zipball/fa2235c0116b0a4b3e5a0c49e3dce7612726f1c5",
+                "reference": "fa2235c0116b0a4b3e5a0c49e3dce7612726f1c5",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.1",
+                "psr-mock/http-message-implementation": "^1.0",
+                "psr/http-factory": "^1.0",
+                "psr/http-message": "^1.0"
+            },
+            "provide": {
+                "psr/http-factory-implementation": "^1.0",
+                "psr/http-message-implementation": "^1.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.14",
+                "infection/infection": "^0.26",
+                "mockery/mockery": "^1.5",
+                "pestphp/pest": "^2.0",
+                "phpstan/phpstan": "^1.10",
+                "phpstan/phpstan-strict-rules": "^1.5",
+                "rector/rector": "^0.15",
+                "vimeo/psalm": "^5.8",
+                "wikimedia/composer-merge-plugin": "^2.0"
+            },
+            "type": "library",
+            "extra": {
+                "merge-plugin": {
+                    "ignore-duplicates": false,
+                    "include": [
+                        "composer.local.json"
+                    ],
+                    "merge-dev": true,
+                    "merge-extra": false,
+                    "merge-extra-deep": false,
+                    "merge-scripts": false,
+                    "recurse": true,
+                    "replace": true
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "PsrMock\\Psr17\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Evan Sims",
+                    "email": "hello@evansims.com",
+                    "homepage": "https://evansims.com/"
+                }
+            ],
+            "description": "Lightweight PSR-17 HTTP Factory implementation provider tailored to simplify mocked testing.",
+            "homepage": "https://github.com/psr-mock/http-factory-implementation",
+            "keywords": [
+                "http-factory-implementation",
+                "mocking",
+                "psr",
+                "psr-17",
+                "testing"
+            ],
+            "support": {
+                "issues": "https://github.com/psr-mock/http-factory-implementation/issues",
+                "source": "https://github.com/psr-mock/http-factory-implementation/tree/1.0.1"
+            },
+            "time": "2024-03-04T21:52:23+00:00"
+        },
+        {
+            "name": "psr-mock/http-message-implementation",
+            "version": "1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/psr-mock/http-message-implementation.git",
+                "reference": "d8a108cdf03feadca2028a5728af1f6fed3a34e0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/psr-mock/http-message-implementation/zipball/d8a108cdf03feadca2028a5728af1f6fed3a34e0",
+                "reference": "d8a108cdf03feadca2028a5728af1f6fed3a34e0",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.1",
+                "psr/http-message": "^1.0"
+            },
+            "provide": {
+                "psr/http-message-implementation": "^1.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.14",
+                "infection/infection": "^0.26",
+                "mockery/mockery": "^1.5",
+                "pestphp/pest": "^2.0",
+                "phpstan/phpstan": "^1.10",
+                "phpstan/phpstan-strict-rules": "^1.5",
+                "rector/rector": "^0.15",
+                "vimeo/psalm": "^5.8",
+                "wikimedia/composer-merge-plugin": "^2.0"
+            },
+            "type": "library",
+            "extra": {
+                "merge-plugin": {
+                    "ignore-duplicates": false,
+                    "include": [
+                        "composer.local.json"
+                    ],
+                    "merge-dev": true,
+                    "merge-extra": false,
+                    "merge-extra-deep": false,
+                    "merge-scripts": false,
+                    "recurse": true,
+                    "replace": true
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "PsrMock\\Psr7\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Evan Sims",
+                    "email": "hello@evansims.com",
+                    "homepage": "https://evansims.com/"
+                }
+            ],
+            "description": "Lightweight PSR-7 HTTP Message implementations provider tailored to simplify mocked testing.",
+            "homepage": "https://github.com/psr-mock/http-message-implementation",
+            "keywords": [
+                "http-message-implementation",
+                "mocking",
+                "psr",
+                "psr-7",
+                "testing"
+            ],
+            "support": {
+                "issues": "https://github.com/psr-mock/http-message-implementation/issues",
+                "source": "https://github.com/psr-mock/http-message-implementation/tree/1.0.1"
+            },
+            "time": "2024-03-04T21:57:44+00:00"
         },
         {
             "name": "psr/cache",
