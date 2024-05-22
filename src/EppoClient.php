@@ -10,6 +10,11 @@ use Eppo\Exception\InvalidApiKeyException;
 use Eppo\Exception\InvalidArgumentException;
 use Eppo\Logger\LoggerInterface;
 use Exception;
+use Http\Discovery\Psr17Factory;
+use Http\Discovery\Psr18ClientDiscovery;
+use Psr\Http\Client\ClientExceptionInterface;
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestFactoryInterface;
 use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException as SimpleCacheInvalidArgumentException;
 use Sarahman\SimpleCache\FileSystemCache;
@@ -178,7 +183,7 @@ class EppoClient
      *
      * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
      */
-    public function getIntegerAssignment(string $flagKey, string $subjectKey, array $subjectAttributes = [], ?float $defaultValue = null): ?int
+    public function getIntegerAssignment(string $flagKey, string $subjectKey, array $subjectAttributes = [], ?int $defaultValue = null): ?int
     {
         return $this->getTypedAssignment(VariationType::INTEGER, $flagKey, $subjectKey, $subjectAttributes, $defaultValue);
     }

@@ -108,12 +108,12 @@ class APIRequestWrapperTest extends TestCase
         $httpClientMock = $this->getMockBuilder(ClientInterface::class)->setConstructorArgs([
         ])->getMock();
 
-        $redirectLocation = 'https://geteppo.com/api/randomized_assignment/v3/config?apiKey=APIKEY';
+        $redirectLocation = 'https://geteppo.com/api/flag-config/v1/config?apiKey=APIKEY';
         $redirectHeaders = new Headers();
         $redirectHeaders->setHeader(new Header('Location', $redirectLocation));
 
         $redirectResponse = new Response(statusCode: RFC7231::MOVED_PERMANENTLY, headers: $redirectHeaders);
-        $resourceUri = 'https://fscdn.eppo.cloud/api/randomized_assignment/v3/config?apiKey=APIKEY';
+        $resourceUri = 'https://fscdn.eppo.cloud/api/flag-config/v1/config?apiKey=APIKEY';
 
         $httpClientMock->expects($this->exactly(2))
             ->method('sendRequest')
