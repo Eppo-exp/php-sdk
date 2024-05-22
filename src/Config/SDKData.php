@@ -7,17 +7,11 @@ class SDKData
     /** @var string */
     private string $sdkVersion;
 
-    /** @var string */
-    private string $sdkName;
+    const SDK_NAME = 'eppo/php-sdk';
 
     public function __construct()
     {
-        $pkgDef = json_decode(file_get_contents(
-            __DIR__ . '/../../composer.json'
-        ), true);
-        $this->sdkName = $pkgDef['name'];
-
-        $this->sdkVersion  = \Composer\InstalledVersions::getPrettyVersion($this->sdkName);
+        $this->sdkVersion  = \Composer\InstalledVersions::getPrettyVersion(self::SDK_NAME);
     }
 
     /**
@@ -33,6 +27,6 @@ class SDKData
      */
     public function getSdkName(): string
     {
-        return $this->sdkName;
+        return self::SDK_NAME;
     }
 }
