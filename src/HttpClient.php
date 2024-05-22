@@ -2,6 +2,7 @@
 
 namespace Eppo;
 
+use Eppo\Config\HardCodedSDKData;
 use Eppo\Config\SDKData;
 use Eppo\Exception\HttpRequestException;
 use Teapot\StatusCode;
@@ -25,18 +26,14 @@ class HttpClient
      * @param string $apiKey
      * @param SDKData $SDKData
      */
-    public function __construct(string $baseUrl, string $apiKey, SDKData $SDKData)
+    public function __construct(string $baseUrl, string $apiKey, array $extraQueryParams)
     {
         if (!$baseUrl) {
             $baseUrl = 'https://fscdn.eppo.cloud';
         }
         $this->baseUrl = $baseUrl;
 
-        $this->sdkParams = [
-            'apiKey' => $apiKey,
-            'sdkName' => $SDKData->getSdkName(),
-            'sdkVersion' => $SDKData->getSdkVersion(),
-        ];
+        $this->sdkParams = [...$extraQueryParams, 'apiKey' => $apiKey];
     }
 
     /**

@@ -4,16 +4,22 @@ namespace Eppo\Config;
 
 class SDKData
 {
+    /** @var string */
+    private string $sdkVersion;
 
-    const SDK_VERSION = '1.3.0';
-    const SDK_NAME = 'eppo-php-sdk';
+    const SDK_NAME = 'eppo/php-sdk';
+
+    public function __construct()
+    {
+        $this->sdkVersion  = \Composer\InstalledVersions::getPrettyVersion(self::SDK_NAME);
+    }
 
     /**
      * @return string
      */
     public function getSdkVersion(): string
     {
-        return self::SDK_VERSION;;
+        return $this->sdkVersion;
     }
 
     /**

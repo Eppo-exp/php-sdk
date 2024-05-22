@@ -55,7 +55,8 @@ class EppoClient
         PollerInterface $poller,
         ?LoggerInterface $assignmentLogger = null,
         ?bool $isGracefulMode = true
-    ) {
+    )
+    {
         $this->configurationRequester = $configurationRequester;
         $this->assignmentLogger = $assignmentLogger;
         $this->poller = $poller;
@@ -79,13 +80,18 @@ class EppoClient
         LoggerInterface $assignmentLogger = null,
         CacheInterface $cache = null,
         ?bool $isGracefulMode = true
-    ): EppoClient {
+    ): EppoClient
+    {
         if (self::$instance === null) {
+            // Get SDK metadata to pass as params in the http client.
             $sdkData = new SDKData();
+            $sdkParams = ["sdkVersion" => $sdkData->getSdkVersion(),
+                "sdkName" => $sdkData->getSdkName()];
+
             if (!$cache) {
                 $cache = new FileSystemCache(__DIR__ . '/../cache');
             }
-            $httpClient = new HttpClient($baseUrl, $apiKey, $sdkData);
+            $httpClient = new HttpClient($baseUrl, $apiKey, $sdkParams);
             $configStore = new ConfigurationStore($cache);
             $configRequester = new ExperimentConfigurationRequester($httpClient, $configStore);
             $poller = new Poller(
@@ -114,7 +120,7 @@ class EppoClient
     }
 
     /**
-     * Get's the assigned string variation for the given subject and experiment
+     * Gets the assigned string variation for the given subject and experiment
      * If there is an issue retrieving the variation or the retrieved variation is not a string, null wil be returned.
      *
      * @throws HttpRequestException
@@ -127,16 +133,16 @@ class EppoClient
     {
         try {
             $assignmentVariation = $this->getAssignmentVariation($subjectKey, $flagKey, $subjectAttributes, self::VARIANT_TYPE_STRING);
-            return  $assignmentVariation ? strval($assignmentVariation->typedValue) : null;
+            return $assignmentVariation ? strval($assignmentVariation->typedValue) : null;
         } catch (Exception $exception) {
             return $this->handleException($exception);
         }
     }
 
     /**
-     * Get's the assigned boolean variation for the given subject and experiment
+     * Gets the assigned boolean variation for the given subject and experiment
      * If there is an issue retrieving the variation or the retrieved variation is not a boolean, null wil be returned.
-     * 
+     *
      * @throws HttpRequestException
      * @throws GuzzleException
      * @throws InvalidApiKeyException
@@ -154,7 +160,7 @@ class EppoClient
     }
 
     /**
-     * Get's the assigned numeric variation as a float for the given subject and experiment
+     * Gets the assigned numeric variation as a float for the given subject and experiment
      * If there is an issue retrieving the variation or the retrieved variation is not an integer or float (double), null wil be returned.
      *
      * @throws HttpRequestException
@@ -174,7 +180,7 @@ class EppoClient
     }
 
     /**
-     * Get's the assigned JSON variation, as parsed by PHP's json_decode, for the given subject and experiment. 
+     * Gets the assigned JSON variation, as parsed by PHP's json_decode, for the given subject and experiment.
      * If there is an issue retrieving the variation or the retrieved variation is not valid JSON, null wil be returned.
      *
      * @return mixed the parsed variation JSON
@@ -196,7 +202,7 @@ class EppoClient
     }
 
     /**
-     * Get's the assigned JSON variation, represented as JSON string, for the given subject and experiment. 
+     * Gets the assigned JSON variation, represented as JSON string, for the given subject and experiment.
      * If there is an issue retrieving the variation or the retrieved variation is not valid JSON, null wil be returned.
      *
      * @return string|null the parsed variation JSON as a string
@@ -218,16 +224,16 @@ class EppoClient
     }
 
     /**
-     * Get's the legacy, string-only assignment for the given subject and experiment.
+     * Gets the legacy, string-only assignment for the given subject and experiment.
      * If there is an issue retrieving the variation, null wil be returned.
-     * 
-     * @deprecated in favor of the typed get<type>Assignment methods
      *
      * @throws HttpRequestException
      * @throws GuzzleException
      * @throws InvalidApiKeyException
      * @throws InvalidArgumentException
      * @throws SimpleCacheInvalidArgumentException
+     * @deprecated in favor of the typed get<type>Assignment methods
+     *
      */
     public function getAssignment(string $subjectKey, string $flagKey, array $subjectAttributes = []): ?string
     {
@@ -240,12 +246,12 @@ class EppoClient
     }
 
     /**
-     * Helper function that gets the Variation DTO for the given subject and experiment. 
-     * It will first check to see if the subject has an override. If not, it will compute it's assignment 
+     * Helper function that gets the Variation DTO for the given subject and experiment.
+     * It will first check to see if the subject has an override. If not, it will compute its assignment
      * based on the experiment configuration.
-     * 
+     *
      * If there is an expected type for the variation value, a type check is performed as well.
-     * 
+     *
      * @return Variation|null the Variation DTO assigned to the subject, or null if there is no assignment,
      * an error was encountered, or an expected type was provided that didn't match the variation's typed
      *  value.
@@ -432,7 +438,8 @@ class EppoClient
         string $flagKey,
         ExperimentConfiguration $experimentConfiguration,
         Allocation $allocation
-    ): bool {
+    ): bool
+    {
         $subjectShards = $experimentConfiguration->getSubjectShards();
         $percentExposure = $allocation->percentExposure;
         $shard = Shard::getShard('exposure-' . $subjectKey . '-' . $flagKey, $subjectShards);
@@ -464,7 +471,8 @@ class EppoClient
         PollerInterface $poller,
         ?LoggerInterface $logger = null,
         ?bool $isGracefulMode = true
-    ): EppoClient {
+    ): EppoClient
+    {
         return new EppoClient($experimentConfigurationRequester, $poller, $logger, $isGracefulMode);
     }
 }
