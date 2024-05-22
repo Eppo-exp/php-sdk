@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a10329ada13e788039504a20ce57e904",
+    "content-hash": "1322eed5dfe39c9cf82f8341144cdf8e",
     "packages": [
         {
             "name": "composer/semver",
@@ -86,6 +86,137 @@
                 }
             ],
             "time": "2023-08-31T09:50:34+00:00"
+        },
+        {
+            "name": "php-http/discovery",
+            "version": "1.19.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/php-http/discovery.git",
+                "reference": "0700efda8d7526335132360167315fdab3aeb599"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/php-http/discovery/zipball/0700efda8d7526335132360167315fdab3aeb599",
+                "reference": "0700efda8d7526335132360167315fdab3aeb599",
+                "shasum": ""
+            },
+            "require": {
+                "composer-plugin-api": "^1.0|^2.0",
+                "php": "^7.1 || ^8.0"
+            },
+            "conflict": {
+                "nyholm/psr7": "<1.0",
+                "zendframework/zend-diactoros": "*"
+            },
+            "provide": {
+                "php-http/async-client-implementation": "*",
+                "php-http/client-implementation": "*",
+                "psr/http-client-implementation": "*",
+                "psr/http-factory-implementation": "*",
+                "psr/http-message-implementation": "*"
+            },
+            "require-dev": {
+                "composer/composer": "^1.0.2|^2.0",
+                "graham-campbell/phpspec-skip-example-extension": "^5.0",
+                "php-http/httplug": "^1.0 || ^2.0",
+                "php-http/message-factory": "^1.0",
+                "phpspec/phpspec": "^5.1 || ^6.1 || ^7.3",
+                "sebastian/comparator": "^3.0.5 || ^4.0.8",
+                "symfony/phpunit-bridge": "^6.4.4 || ^7.0.1"
+            },
+            "type": "composer-plugin",
+            "extra": {
+                "class": "Http\\Discovery\\Composer\\Plugin",
+                "plugin-optional": true
+            },
+            "autoload": {
+                "psr-4": {
+                    "Http\\Discovery\\": "src/"
+                },
+                "exclude-from-classmap": [
+                    "src/Composer/Plugin.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Márk Sági-Kazár",
+                    "email": "mark.sagikazar@gmail.com"
+                }
+            ],
+            "description": "Finds and installs PSR-7, PSR-17, PSR-18 and HTTPlug implementations",
+            "homepage": "http://php-http.org",
+            "keywords": [
+                "adapter",
+                "client",
+                "discovery",
+                "factory",
+                "http",
+                "message",
+                "psr17",
+                "psr7"
+            ],
+            "support": {
+                "issues": "https://github.com/php-http/discovery/issues",
+                "source": "https://github.com/php-http/discovery/tree/1.19.4"
+            },
+            "time": "2024-03-29T13:00:05+00:00"
+        },
+        {
+            "name": "psr/http-client",
+            "version": "1.0.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/php-fig/http-client.git",
+                "reference": "bb5906edc1c324c9a05aa0873d40117941e5fa90"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/php-fig/http-client/zipball/bb5906edc1c324c9a05aa0873d40117941e5fa90",
+                "reference": "bb5906edc1c324c9a05aa0873d40117941e5fa90",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.0 || ^8.0",
+                "psr/http-message": "^1.0 || ^2.0"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.0.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Psr\\Http\\Client\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "PHP-FIG",
+                    "homepage": "https://www.php-fig.org/"
+                }
+            ],
+            "description": "Common interface for HTTP clients",
+            "homepage": "https://github.com/php-fig/http-client",
+            "keywords": [
+                "http",
+                "http-client",
+                "psr",
+                "psr-18"
+            ],
+            "support": {
+                "source": "https://github.com/php-fig/http-client"
+            },
+            "time": "2023-09-23T14:17:50+00:00"
         },
         {
             "name": "psr/http-message",
@@ -341,6 +472,73 @@
                 "source": "https://github.com/teapot-php/status-code/tree/v1.1.2"
             },
             "time": "2020-11-03T17:14:32+00:00"
+        },
+        {
+            "name": "webclient/ext-redirect",
+            "version": "v2.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/phpwebclient/ext-redirect.git",
+                "reference": "7c71ff08d206775c7f6df31b2f6ba1aec617bbcf"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/phpwebclient/ext-redirect/zipball/7c71ff08d206775c7f6df31b2f6ba1aec617bbcf",
+                "reference": "7c71ff08d206775c7f6df31b2f6ba1aec617bbcf",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.4 || ^8.0",
+                "psr/http-client": "^1.0"
+            },
+            "provide": {
+                "psr/http-client-implementation": "1.0"
+            },
+            "require-dev": {
+                "nyholm/psr7": "^1.5",
+                "phpunit/phpunit": "^6.5 || ^7.5 || ^8.5 || ^9.5",
+                "squizlabs/php_codesniffer": "^3.7",
+                "webclient/fake-http-client": "^2.0"
+            },
+            "suggest": {
+                "psr/http-client-implementation": "Choice your favorite psr-18 implementation"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Webclient\\Extension\\Redirect\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Ivan Dudarev",
+                    "email": "ivan@ddrv.ru",
+                    "homepage": "https://ddrv.ru"
+                }
+            ],
+            "description": "Redirect extension for PSR-18 HTTP client",
+            "keywords": [
+                "client",
+                "http",
+                "http-client",
+                "http-client-extension",
+                "redirect"
+            ],
+            "support": {
+                "issues": "https://github.com/phpwebclient/ext-redirect/issues",
+                "source": "https://github.com/phpwebclient/ext-redirect/tree/v2.0.0"
+            },
+            "funding": [
+                {
+                    "url": "https://www.paypal.me/ddrv",
+                    "type": "custom"
+                }
+            ],
+            "time": "2022-07-21T16:34:23+00:00"
         }
     ],
     "packages-dev": [
@@ -2090,6 +2288,317 @@
             "time": "2024-04-05T04:35:58+00:00"
         },
         {
+            "name": "psr-mock/http",
+            "version": "1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/psr-mock/http.git",
+                "reference": "67e281b6f5ec17d282c1cdd37bb79493bf8adde4"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/psr-mock/http/zipball/67e281b6f5ec17d282c1cdd37bb79493bf8adde4",
+                "reference": "67e281b6f5ec17d282c1cdd37bb79493bf8adde4",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.1",
+                "psr-mock/http-client-implementation": "^1.0",
+                "psr-mock/http-factory-implementation": "^1.0",
+                "psr-mock/http-message-implementation": "^1.0"
+            },
+            "provide": {
+                "psr/http-client-implementation": "^1.0",
+                "psr/http-factory-implementation": "^1.0",
+                "psr/http-message-implementation": "^1.0"
+            },
+            "type": "metapackage",
+            "extra": {
+                "merge-plugin": {
+                    "ignore-duplicates": false,
+                    "include": [
+                        "composer.local.json"
+                    ],
+                    "merge-dev": true,
+                    "merge-extra": false,
+                    "merge-extra-deep": false,
+                    "merge-scripts": false,
+                    "recurse": true,
+                    "replace": true
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "PsrDiscovery\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Evan Sims",
+                    "email": "hello@evansims.com",
+                    "homepage": "https://evansims.com/"
+                }
+            ],
+            "description": "Lightweight mock implementations of PSR-18, PSR-17 and PSR-7 tailored to simplify unit testing.",
+            "homepage": "https://github.com/psr-mock",
+            "keywords": [
+                "discovery",
+                "http-client-implementation",
+                "http-factory-implementation",
+                "http-message-implementation",
+                "psr",
+                "psr-17",
+                "psr-18",
+                "psr-7"
+            ],
+            "support": {
+                "source": "https://github.com/psr-mock/http/tree/1.0.1"
+            },
+            "time": "2024-03-04T21:43:33+00:00"
+        },
+        {
+            "name": "psr-mock/http-client-implementation",
+            "version": "1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/psr-mock/http-client-implementation.git",
+                "reference": "3afdff33b27283890e8ce533cca48aec89eaf5de"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/psr-mock/http-client-implementation/zipball/3afdff33b27283890e8ce533cca48aec89eaf5de",
+                "reference": "3afdff33b27283890e8ce533cca48aec89eaf5de",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.1",
+                "psr/http-client": "^1.0",
+                "psr/http-message": "^1.0"
+            },
+            "provide": {
+                "psr/http-client-implementation": "^1.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.14",
+                "infection/infection": "^0.26",
+                "mockery/mockery": "^1.5",
+                "pestphp/pest": "^2.0",
+                "phpstan/phpstan": "^1.10",
+                "phpstan/phpstan-strict-rules": "^1.5",
+                "rector/rector": "^0.15",
+                "vimeo/psalm": "^5.8",
+                "wikimedia/composer-merge-plugin": "^2.0"
+            },
+            "type": "library",
+            "extra": {
+                "merge-plugin": {
+                    "ignore-duplicates": false,
+                    "include": [
+                        "composer.local.json"
+                    ],
+                    "merge-dev": true,
+                    "merge-extra": false,
+                    "merge-extra-deep": false,
+                    "merge-scripts": false,
+                    "recurse": true,
+                    "replace": true
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "PsrMock\\Psr18\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Evan Sims",
+                    "email": "hello@evansims.com",
+                    "homepage": "https://evansims.com/"
+                }
+            ],
+            "description": "Lightweight PSR-18 HTTP Client implementation provider tailored to simplify mocked testing.",
+            "homepage": "https://github.com/psr-mock/http-client-implementation",
+            "keywords": [
+                "http-client-implementation",
+                "mocking",
+                "psr",
+                "psr-18",
+                "testing"
+            ],
+            "support": {
+                "issues": "https://github.com/psr-mock/http-client-implementation/issues",
+                "source": "https://github.com/psr-mock/http-client-implementation/tree/1.0.1"
+            },
+            "time": "2024-03-04T21:48:32+00:00"
+        },
+        {
+            "name": "psr-mock/http-factory-implementation",
+            "version": "1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/psr-mock/http-factory-implementation.git",
+                "reference": "fa2235c0116b0a4b3e5a0c49e3dce7612726f1c5"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/psr-mock/http-factory-implementation/zipball/fa2235c0116b0a4b3e5a0c49e3dce7612726f1c5",
+                "reference": "fa2235c0116b0a4b3e5a0c49e3dce7612726f1c5",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.1",
+                "psr-mock/http-message-implementation": "^1.0",
+                "psr/http-factory": "^1.0",
+                "psr/http-message": "^1.0"
+            },
+            "provide": {
+                "psr/http-factory-implementation": "^1.0",
+                "psr/http-message-implementation": "^1.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.14",
+                "infection/infection": "^0.26",
+                "mockery/mockery": "^1.5",
+                "pestphp/pest": "^2.0",
+                "phpstan/phpstan": "^1.10",
+                "phpstan/phpstan-strict-rules": "^1.5",
+                "rector/rector": "^0.15",
+                "vimeo/psalm": "^5.8",
+                "wikimedia/composer-merge-plugin": "^2.0"
+            },
+            "type": "library",
+            "extra": {
+                "merge-plugin": {
+                    "ignore-duplicates": false,
+                    "include": [
+                        "composer.local.json"
+                    ],
+                    "merge-dev": true,
+                    "merge-extra": false,
+                    "merge-extra-deep": false,
+                    "merge-scripts": false,
+                    "recurse": true,
+                    "replace": true
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "PsrMock\\Psr17\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Evan Sims",
+                    "email": "hello@evansims.com",
+                    "homepage": "https://evansims.com/"
+                }
+            ],
+            "description": "Lightweight PSR-17 HTTP Factory implementation provider tailored to simplify mocked testing.",
+            "homepage": "https://github.com/psr-mock/http-factory-implementation",
+            "keywords": [
+                "http-factory-implementation",
+                "mocking",
+                "psr",
+                "psr-17",
+                "testing"
+            ],
+            "support": {
+                "issues": "https://github.com/psr-mock/http-factory-implementation/issues",
+                "source": "https://github.com/psr-mock/http-factory-implementation/tree/1.0.1"
+            },
+            "time": "2024-03-04T21:52:23+00:00"
+        },
+        {
+            "name": "psr-mock/http-message-implementation",
+            "version": "1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/psr-mock/http-message-implementation.git",
+                "reference": "d8a108cdf03feadca2028a5728af1f6fed3a34e0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/psr-mock/http-message-implementation/zipball/d8a108cdf03feadca2028a5728af1f6fed3a34e0",
+                "reference": "d8a108cdf03feadca2028a5728af1f6fed3a34e0",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.1",
+                "psr/http-message": "^1.0"
+            },
+            "provide": {
+                "psr/http-message-implementation": "^1.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.14",
+                "infection/infection": "^0.26",
+                "mockery/mockery": "^1.5",
+                "pestphp/pest": "^2.0",
+                "phpstan/phpstan": "^1.10",
+                "phpstan/phpstan-strict-rules": "^1.5",
+                "rector/rector": "^0.15",
+                "vimeo/psalm": "^5.8",
+                "wikimedia/composer-merge-plugin": "^2.0"
+            },
+            "type": "library",
+            "extra": {
+                "merge-plugin": {
+                    "ignore-duplicates": false,
+                    "include": [
+                        "composer.local.json"
+                    ],
+                    "merge-dev": true,
+                    "merge-extra": false,
+                    "merge-extra-deep": false,
+                    "merge-scripts": false,
+                    "recurse": true,
+                    "replace": true
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "PsrMock\\Psr7\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Evan Sims",
+                    "email": "hello@evansims.com",
+                    "homepage": "https://evansims.com/"
+                }
+            ],
+            "description": "Lightweight PSR-7 HTTP Message implementations provider tailored to simplify mocked testing.",
+            "homepage": "https://github.com/psr-mock/http-message-implementation",
+            "keywords": [
+                "http-message-implementation",
+                "mocking",
+                "psr",
+                "psr-7",
+                "testing"
+            ],
+            "support": {
+                "issues": "https://github.com/psr-mock/http-message-implementation/issues",
+                "source": "https://github.com/psr-mock/http-message-implementation/tree/1.0.1"
+            },
+            "time": "2024-03-04T21:57:44+00:00"
+        },
+        {
             "name": "psr/cache",
             "version": "3.0.0",
             "source": {
@@ -2137,58 +2646,6 @@
                 "source": "https://github.com/php-fig/cache/tree/3.0.0"
             },
             "time": "2021-02-03T23:26:27+00:00"
-        },
-        {
-            "name": "psr/http-client",
-            "version": "1.0.3",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/php-fig/http-client.git",
-                "reference": "bb5906edc1c324c9a05aa0873d40117941e5fa90"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/php-fig/http-client/zipball/bb5906edc1c324c9a05aa0873d40117941e5fa90",
-                "reference": "bb5906edc1c324c9a05aa0873d40117941e5fa90",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^7.0 || ^8.0",
-                "psr/http-message": "^1.0 || ^2.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "1.0.x-dev"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Psr\\Http\\Client\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "PHP-FIG",
-                    "homepage": "https://www.php-fig.org/"
-                }
-            ],
-            "description": "Common interface for HTTP clients",
-            "homepage": "https://github.com/php-fig/http-client",
-            "keywords": [
-                "http",
-                "http-client",
-                "psr",
-                "psr-18"
-            ],
-            "support": {
-                "source": "https://github.com/php-fig/http-client"
-            },
-            "time": "2023-09-23T14:17:50+00:00"
         },
         {
             "name": "psr/http-factory",

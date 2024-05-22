@@ -8,14 +8,18 @@ use Eppo\DTO\ExperimentConfiguration;
 use Eppo\DTO\Rule;
 use Eppo\DTO\Variation;
 use Eppo\Exception\HttpRequestException;
-use Eppo\Exception\InvalidArgumentException;
 use Eppo\Exception\InvalidApiKeyException;
+use Eppo\Exception\InvalidArgumentException;
 use Eppo\Logger\LoggerInterface;
 use Exception;
 use GuzzleHttp\Exception\GuzzleException;
+use Http\Discovery\Psr17Factory;
+use Http\Discovery\Psr18ClientDiscovery;
+use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestFactoryInterface;
 use Psr\SimpleCache\CacheInterface;
-use Sarahman\SimpleCache\FileSystemCache;
 use Psr\SimpleCache\InvalidArgumentException as SimpleCacheInvalidArgumentException;
+use Sarahman\SimpleCache\FileSystemCache;
 
 class EppoClient
 {
@@ -70,7 +74,9 @@ class EppoClient
      * @param string $baseUrl
      * @param LoggerInterface|null $assignmentLogger optional assignment logger. Please check Eppo/LoggerLoggerInterface.
      * @param CacheInterface|null $cache optional cache instance. Compatible with psr-16 simple cache. By default, (if nothing passed) EppoClient will use FileSystem cache.
-     *
+     * @param ClientInterface|null $httpClient optional PSR-18 ClientInterface. If nothing is passed, EppoClient will use Discovery to locate a suitable implementation in the project.
+     * @param RequestFactoryInterface|null $requestFactory optional PSR-17 Request Factory implementation. If none is provided, EppoClient will use Discovery
+     * @param bool|null $isGracefulMode
      * @return EppoClient
      * @throws Exception
      */
@@ -79,6 +85,8 @@ class EppoClient
         string $baseUrl = '',
         LoggerInterface $assignmentLogger = null,
         CacheInterface $cache = null,
+        ClientInterface $httpClient = null,
+        RequestFactoryInterface $requestFactory = null,
         ?bool $isGracefulMode = true
     ): EppoClient
     {
@@ -91,9 +99,23 @@ class EppoClient
             if (!$cache) {
                 $cache = new FileSystemCache(__DIR__ . '/../cache');
             }
-            $httpClient = new HttpClient($baseUrl, $apiKey, $sdkParams);
+            
             $configStore = new ConfigurationStore($cache);
-            $configRequester = new ExperimentConfigurationRequester($httpClient, $configStore);
+
+            if (!$httpClient) {
+                $httpClient = Psr18ClientDiscovery::find();
+            }
+            $requestFactory = $requestFactory ?: new Psr17Factory();
+
+            $apiWrapper = new APIRequestWrapper(
+                $apiKey,
+                $sdkParams,
+                $httpClient,
+                $requestFactory,
+                $baseUrl
+            );
+
+            $configRequester = new ExperimentConfigurationRequester($apiWrapper, $configStore);
             $poller = new Poller(
                 self::POLL_INTERVAL_MILLIS,
                 self::JITTER_MILLIS,
