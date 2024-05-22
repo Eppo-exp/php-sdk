@@ -29,7 +29,7 @@ $eppoClient = EppoClient::init(
    "<your_api_key>",
    "<base_url>", // optional, default https://fscdn.eppo.cloud/api
    $assignmentLogger, // optional, must be an instance of Eppo\Logger\LoggerInterface
-   $cache // optional, must be an instance of PSR-16 SimpleInterface. If not passed, FileSystem cache will be used
+   $cache // optional, must be an instance of PSR-16 SimpleCache\CacheInterface. If not passed, FileSystem cache will be used
    $httpClient // optional, must be an instance of PSR-18 ClientInterface. If not passed, Discovery will be used to find a suitable implementation
    $requestFactory // optional, must be an instance of PSR-17 Factory. If not passed, Discovery will be used to find a suitable implementation
 );
@@ -44,7 +44,7 @@ if ($assignment !== 'defaultValue') {
 ```
 
 To make the experience of using the library faster, there is an option to start a background polling for randomization params.
-This way background job will start calling the Eppo api, updating the config in the cache.
+This background job will start calling the Eppo api, updating the config in the cache.
 
 For this, create a file, e.g. `eppo-poller.php` with the contents:
 
