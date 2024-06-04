@@ -26,16 +26,16 @@ use Eppo\EppoClient;
 require __DIR__ . '/vendor/autoload.php';
 
 $eppoClient = EppoClient::init(
-   "<your_api_key>",
-   "<base_url>", // optional, default https://fscdn.eppo.cloud/api
+   '<your_api_key>',
+   '<base_url>', // optional, default https://fscdn.eppo.cloud/api
    $assignmentLogger, // optional, must be an instance of Eppo\Logger\LoggerInterface
    $cache // optional, must be an instance of PSR-16 SimpleCache\CacheInterface. If not passed, FileSystem cache will be used
    $httpClient // optional, must be an instance of PSR-18 ClientInterface. If not passed, Discovery will be used to find a suitable implementation
    $requestFactory // optional, must be an instance of PSR-17 Factory. If not passed, Discovery will be used to find a suitable implementation
 );
 
-$subjectAttributes = [];
-$assignment = $eppoClient->getStringAssignment('experiment_5', 'subject-1', $subjectAttributes, 'defaultValue');
+$subjectAttributes = [ 'tier' => 2 ];
+$assignment = $eppoClient->getStringAssignment('experimentalBackground', 'user123', $subjectAttributes, 'defaultValue');
 
 if ($assignment !== 'defaultValue') {
     // do something
@@ -50,8 +50,8 @@ For this, create a file, e.g. `eppo-poller.php` with the contents:
 
 ```php
 $eppoClient = EppoClient::init(
-   "<your_api_key>",
-   "<base_url>", // optional, default https://fscdn.eppo.cloud/api
+   '<your_api_key>',
+   '<base_url>', // optional, default https://fscdn.eppo.cloud/api
    $assignmentLogger, // optional, must be an instance of Eppo\LoggerInterface
    $cache // optional, must be an instance of PSR-16 SimpleInterface. If not passed, FileSystem cache will be used
    $httpClient // optional, must be an instance of PSR-18 ClientInterface. If not passed, Discovery will be used to find a suitable implementation
