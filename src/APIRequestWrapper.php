@@ -34,12 +34,14 @@ class APIRequestWrapper
 
     private string $resource;
 
-    public function __construct(string $apiKey,
+    public function __construct(
+        string $apiKey,
         array $extraQueryParams,
         ClientInterface $baseHttpClient,
         RequestFactoryInterface $requestFactory,
         ?string $baseUrl = null,
-        ?string $resource = null)
+        ?string $resource = null
+    )
     {
         // Our HTTP Client needs to be able to follow redirects.
         $this->httpClient = new RedirectClientDecorator($baseHttpClient);
