@@ -138,7 +138,7 @@ final class RuleEvaluator
                     // semver
                     return Comparator::lessThan($value, $condition->value);
                 case Operator::MATCHES:
-                    return preg_match('/' . $condition->value . '/i', (string)$value) === 1;
+                    return preg_match('/' . $condition->value . '/', (string)$value) === 1;
                 case Operator::ONE_OF:
                     return self::isOneOf($value, $condition->value);
                 case Operator::NOT_ONE_OF:
@@ -185,7 +185,7 @@ final class RuleEvaluator
     private static function getMatchingStringValues($attributeValue, $conditionValues): array
     {
         return array_values(array_filter($conditionValues, function ($value) use ($attributeValue) {
-            return strtolower($value) === strtolower($attributeValue);
+            return $value === $attributeValue;
         }));
     }
 
