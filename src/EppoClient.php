@@ -207,25 +207,6 @@ class EppoClient
     }
 
     /**
-     * Gets the legacy, string-only assignment for the given subject and experiment.
-     * If there is an issue retrieving the variation, null wil be returned.
-     *
-     * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
-     * @deprecated in favor of the typed get<type>Assignment methods
-     *
-     */
-    public function getAssignment(string $flagKey, string $subjectKey, array $subjectAttributes = [], ?string $defaultValue = null): ?string
-    {
-        try {
-            $assignmentVariation = $this->getAssignmentDetail($flagKey, $subjectKey, $subjectAttributes);
-            return $assignmentVariation?->value;
-        } catch (Exception $exception) {
-            return $this->handleException($exception, $defaultValue);
-        }
-    }
-
-
-    /**
      * Maps a subject to a Variation for the given flag.
      *
      * If there is an expected type for the variation value, a type check is performed as well.

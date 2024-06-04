@@ -58,7 +58,6 @@ class EppoClientTest extends TestCase
         $subjectAttributes = [['foo' => 3]];
         $client = EppoClient::createTestClient($mockConfigRequester, $pollerMock, $mockLogger);
 
-        $this->assertNull($client->getAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes));
         $this->assertNull($client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes));
         $this->assertNull($client->getNumericAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes));
         $this->assertNull($client->getBooleanAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes));
@@ -81,7 +80,6 @@ class EppoClientTest extends TestCase
         $client = EppoClient::createTestClient($mockConfigRequester, $pollerMock, $mockLogger, false);
 
         $this->expectException(Exception::class);
-        $client->getAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes);
         $client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes);
         $client->getNumericAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes);
         $client->getBooleanAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes);
