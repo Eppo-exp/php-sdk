@@ -58,10 +58,10 @@ class EppoClientTest extends TestCase
         $subjectAttributes = [['foo' => 3]];
         $client = EppoClient::createTestClient($mockConfigRequester, $pollerMock, $mockLogger);
 
-        $this->assertNull($client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes));
-        $this->assertNull($client->getNumericAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes));
-        $this->assertNull($client->getBooleanAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes));
-        $this->assertNull($client->getJSONAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes));
+        $this->assertNull($client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes, null));
+        $this->assertNull($client->getNumericAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes, null));
+        $this->assertNull($client->getBooleanAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes, null));
+        $this->assertNull($client->getJSONAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes, null));
     }
 
 
@@ -80,7 +80,7 @@ class EppoClientTest extends TestCase
         $client = EppoClient::createTestClient($mockConfigRequester, $pollerMock, $mockLogger, false);
 
         $this->expectException(Exception::class);
-        $client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes);
+        $client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes, 'defaultValue');
     }
 
     public function testReturnsDefaultWhenExperimentConfigIsAbsent()
@@ -89,9 +89,12 @@ class EppoClientTest extends TestCase
         $pollerMock = $this->getPollerMock();
 
         $client = EppoClient::createTestClient($configLoaderMock, $pollerMock);
-        $this->assertNull($client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10'));
-        $this->assertEquals('DEFAULT', $client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', defaultValue: 'DEFAULT'));
-        $this->assertNull($client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', defaultValue: null));
+        $this->assertNull($client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', [], null));
+        $this->assertEquals(
+            'DEFAULT',
+            $client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', [], 'DEFAULT')
+        );
+        $this->assertNull($client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', [], null));
     }
 
     /**
