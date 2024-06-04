@@ -114,6 +114,7 @@ final class RuleEvaluator
                         return $value >= $condition->value;
                     }
 
+                    // semver
                     return Comparator::greaterThanOrEqualTo($value, $condition->value);
                 case Operator::GT:
                     if (is_numeric($value) && is_numeric($condition->value)) {
