@@ -49,7 +49,7 @@ class EppoClientTest extends TestCase
         MockWebServer::stop();
     }
 
-    public function skipTestGracefulModeDoesNotThrow()
+    public function testGracefulModeDoesNotThrow()
     {
         $pollerMock = $this->getPollerMock();
         $mockConfigRequester = $this->getFlagConfigurationLoaderMock([], new Exception('config loader error'));
@@ -70,7 +70,7 @@ class EppoClientTest extends TestCase
      * @throws \Psr\SimpleCache\InvalidArgumentException
      * @throws ClientExceptionInterface
      */
-    public function skipTestNoGracefulModeThrows()
+    public function testNoGracefulModeThrows()
     {
         $pollerMock = $this->getPollerMock();
         $mockConfigRequester = $this->getFlagConfigurationLoaderMock([], new Exception('config loader error'));
@@ -81,9 +81,6 @@ class EppoClientTest extends TestCase
 
         $this->expectException(Exception::class);
         $client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes);
-        $client->getNumericAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes);
-        $client->getBooleanAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes);
-        $client->getJSONAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes);
     }
 
     public function testReturnsDefaultWhenExperimentConfigIsAbsent()
@@ -104,7 +101,7 @@ class EppoClientTest extends TestCase
      * @throws \Psr\SimpleCache\InvalidArgumentException
      * @throws InvalidApiKeyException
      */
-    public function skipTestRepoTestCases(): void
+    public function testRepoTestCases(): void
     {
         // Load all the test cases.
         $testCases = $this->loadTestCases();
@@ -132,7 +129,8 @@ class EppoClientTest extends TestCase
             VariationType::BOOLEAN => $client->getBooleanAssignment($flag, $subjectKey, $subject, $defaultValue),
             VariationType::NUMERIC => $client->getNumericAssignment($flag, $subjectKey, $subject, $defaultValue),
             VariationType::JSON => $client->getJSONAssignment($flag, $subjectKey, $subject, $defaultValue),
-            VariationType::INTEGER => $client->getIntegerAssignment($flag, $subjectKey, $subject, $defaultValue)
+            VariationType::INTEGER => $client->getIntegerAssignment($flag, $subjectKey, $subject, $defaultValue),
+            default => throw new \Exception('Unexpected match value'),
         };
     }
 
