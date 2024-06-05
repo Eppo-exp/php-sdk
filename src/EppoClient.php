@@ -50,7 +50,7 @@ class EppoClient
      * Initializes EppoClient singleton instance.
      *
      * @param string $apiKey
-     * @param string $baseUrl
+     * @param string|null $baseUrl
      * @param LoggerInterface|null $assignmentLogger optional assignment logger. Please check Eppo/LoggerLoggerInterface.
      * @param CacheInterface|null $cache optional cache instance. Compatible with psr-16 simple cache. By default, (if nothing passed) EppoClient will use FileSystem cache.
      * @param ClientInterface|null $httpClient optional PSR-18 ClientInterface. If nothing is passed, EppoClient will use Discovery to locate a suitable implementation in the project.

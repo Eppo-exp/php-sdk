@@ -174,7 +174,7 @@ final class RuleEvaluator
         if (is_bool($attributeValue)) {
             $attributeValue = $attributeValue ? 'true' : 'false';
         }
-        return count(self::getMatchingStringValues(strval($attributeValue), $conditionValue)) === 0;
+        return count(self::getMatchingStringValues($attributeValue, $conditionValue)) === 0;
     }
 
     /**
@@ -185,7 +185,7 @@ final class RuleEvaluator
     private static function getMatchingStringValues($attributeValue, $conditionValues): array
     {
         return array_values(array_filter($conditionValues, function ($value) use ($attributeValue) {
-            return $value === $attributeValue;
+            return strval($value) === strval($attributeValue);
         }));
     }
 
