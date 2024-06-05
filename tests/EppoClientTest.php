@@ -49,6 +49,10 @@ class EppoClientTest extends TestCase
         MockWebServer::stop();
     }
 
+    /**
+     * @throws ClientExceptionInterface
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
     public function testGracefulModeDoesNotThrow()
     {
         $pollerMock = $this->getPollerMock();
@@ -58,10 +62,24 @@ class EppoClientTest extends TestCase
         $subjectAttributes = [['foo' => 3]];
         $client = EppoClient::createTestClient($mockConfigRequester, $pollerMock, $mockLogger);
 
-        $this->assertNull($client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes, null));
-        $this->assertNull($client->getNumericAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes, null));
-        $this->assertNull($client->getBooleanAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes, null));
-        $this->assertNull($client->getJSONAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes, null));
+        $defaultObj = json_decode('{}', true);
+
+        $this->assertEquals(
+            'default',
+            $client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes, 'default')
+        );
+        $this->assertEquals(
+            100,
+            $client->getNumericAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes, 100)
+        );
+        $this->assertEquals(
+            false,
+            $client->getBooleanAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes, false)
+        );
+        $this->assertEquals(
+            $defaultObj,
+            $client->getJSONAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes, $defaultObj)
+        );
     }
 
 
@@ -89,20 +107,20 @@ class EppoClientTest extends TestCase
         $pollerMock = $this->getPollerMock();
 
         $client = EppoClient::createTestClient($configLoaderMock, $pollerMock);
-        $this->assertNull($client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', [], null));
         $this->assertEquals(
             'DEFAULT',
             $client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', [], 'DEFAULT')
         );
-        $this->assertNull($client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', [], null));
+        $this->assertEquals(
+            100,
+            $client->getIntegerAssignment(self::EXPERIMENT_NAME, 'subject-10', [], 100)
+        );
     }
 
     /**
      * @throws GuzzleException
-     * @throws HttpRequestException
-     * @throws InvalidArgumentException
      * @throws \Psr\SimpleCache\InvalidArgumentException
-     * @throws InvalidApiKeyException
+     * @throws ClientExceptionInterface
      */
     public function testRepoTestCases(): void
     {

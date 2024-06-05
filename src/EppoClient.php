@@ -126,7 +126,7 @@ class EppoClient
      * @throws ClientExceptionInterface
      * @throws Exception
      */
-    private function getTypedAssignment(VariationType $valueType, string $flagKey, string $subjectKey, array $subjectAttributes, array|bool|float|int|string|null $defaultValue): array|bool|float|int|string|null
+    private function getTypedAssignment(VariationType $valueType, string $flagKey, string $subjectKey, array $subjectAttributes, array|bool|float|int|string $defaultValue): array|bool|float|int|string
     {
         try {
             $assignmentVariation = $this->getAssignmentDetail($flagKey, $subjectKey, $subjectAttributes, $valueType);
@@ -150,7 +150,7 @@ class EppoClient
      *
      * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
      */
-    public function getStringAssignment(string $flagKey, string $subjectKey, array $subjectAttributes, ?string $defaultValue): ?string
+    public function getStringAssignment(string $flagKey, string $subjectKey, array $subjectAttributes, string $defaultValue): string
     {
         return $this->getTypedAssignment(VariationType::STRING, $flagKey, $subjectKey, $subjectAttributes, $defaultValue);
     }
@@ -161,7 +161,7 @@ class EppoClient
      *
      * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
      */
-    public function getBooleanAssignment(string $flagKey, string $subjectKey, array $subjectAttributes, ?bool $defaultValue): ?bool
+    public function getBooleanAssignment(string $flagKey, string $subjectKey, array $subjectAttributes, bool $defaultValue): bool
     {
         return $this->getTypedAssignment(VariationType::BOOLEAN, $flagKey, $subjectKey, $subjectAttributes, $defaultValue);
     }
@@ -172,7 +172,7 @@ class EppoClient
      *
      * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
      */
-    public function getNumericAssignment(string $flagKey, string $subjectKey, array $subjectAttributes, ?float $defaultValue): ?float
+    public function getNumericAssignment(string $flagKey, string $subjectKey, array $subjectAttributes, float $defaultValue): float
     {
         return $this->getTypedAssignment(VariationType::NUMERIC, $flagKey, $subjectKey, $subjectAttributes, $defaultValue);
     }
@@ -183,7 +183,7 @@ class EppoClient
      *
      * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
      */
-    public function getIntegerAssignment(string $flagKey, string $subjectKey, array $subjectAttributes, ?int $defaultValue): ?int
+    public function getIntegerAssignment(string $flagKey, string $subjectKey, array $subjectAttributes, int $defaultValue): int
     {
         return $this->getTypedAssignment(VariationType::INTEGER, $flagKey, $subjectKey, $subjectAttributes, $defaultValue);
     }
@@ -201,7 +201,7 @@ class EppoClient
      * @throws ClientExceptionInterface
      * @throws SimpleCacheInvalidArgumentException
      */
-    public function getJSONAssignment(string $flagKey, string $subjectKey, array $subjectAttributes, ?array $defaultValue): ?array
+    public function getJSONAssignment(string $flagKey, string $subjectKey, array $subjectAttributes, array $defaultValue): array
     {
         return $this->getTypedAssignment(VariationType::JSON, $flagKey, $subjectKey, $subjectAttributes, $defaultValue);
     }
