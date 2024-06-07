@@ -8,6 +8,7 @@ use Eppo\DTO\VariationType;
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
 use Eppo\Exception\InvalidArgumentException;
+use Eppo\Logger\AssignmentEvent;
 use Eppo\Logger\LoggerInterface;
 use Exception;
 use Http\Discovery\Psr17Factory;
@@ -21,10 +22,10 @@ use Sarahman\SimpleCache\FileSystemCache;
 
 class EppoClient
 {
-    const SECOND_MILLIS = 1000;
-    const MINUTE_MILLIS = 60 * self::SECOND_MILLIS;
-    const POLL_INTERVAL_MILLIS = 5 * self::MINUTE_MILLIS;
-    const JITTER_MILLIS = 30 * self::SECOND_MILLIS;
+    public const SECOND_MILLIS = 1000;
+    public const MINUTE_MILLIS = 60 * self::SECOND_MILLIS;
+    public const POLL_INTERVAL_MILLIS = 5 * self::MINUTE_MILLIS;
+    public const JITTER_MILLIS = 30 * self::SECOND_MILLIS;
 
     private static ?EppoClient $instance = null;
     private RuleEvaluator $evaluator;
@@ -41,8 +42,7 @@ class EppoClient
         private readonly PollerInterface $poller,
         private readonly ?LoggerInterface $assignmentLogger = null,
         private readonly ?bool $isGracefulMode = true
-    )
-    {
+    ) {
         $this->evaluator = new RuleEvaluator();
     }
 
@@ -67,13 +67,14 @@ class EppoClient
         ClientInterface $httpClient = null,
         RequestFactoryInterface $requestFactory = null,
         ?bool $isGracefulMode = true
-    ): EppoClient
-    {
+    ): EppoClient {
         if (self::$instance === null) {
             // Get SDK metadata to pass as params in the http client.
             $sdkData = new SDKData();
-            $sdkParams = ['sdkVersion' => $sdkData->getSdkVersion(),
-                'sdkName' => $sdkData->getSdkName()];
+            $sdkParams = [
+                'sdkVersion' => $sdkData->getSdkVersion(),
+                'sdkName' => $sdkData->getSdkName()
+            ];
 
             if (!$cache) {
                 $cache = new FileSystemCache(__DIR__ . '/../cache');
@@ -126,8 +127,13 @@ class EppoClient
      * @throws ClientExceptionInterface
      * @throws Exception
      */
-    private function getTypedAssignment(VariationType $valueType, string $flagKey, string $subjectKey, array $subjectAttributes, array|bool|float|int|string $defaultValue): array|bool|float|int|string
-    {
+    private function getTypedAssignment(
+        VariationType $valueType,
+        string $flagKey,
+        string $subjectKey,
+        array $subjectAttributes,
+        array|bool|float|int|string $defaultValue
+    ): array|bool|float|int|string {
         try {
             $assignmentVariation = $this->getAssignmentDetail($flagKey, $subjectKey, $subjectAttributes, $valueType);
             if ($assignmentVariation === null) {
@@ -140,7 +146,7 @@ class EppoClient
                 VariationType::BOOLEAN => boolval($assignmentVariation->value)
             };
         } catch (Exception $exception) {
-            return $this->handleException($exception,  $defaultValue);
+            return $this->handleException($exception, $defaultValue);
         }
     }
 
@@ -150,9 +156,19 @@ class EppoClient
      *
      * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
      */
-    public function getStringAssignment(string $flagKey, string $subjectKey, array $subjectAttributes, string $defaultValue): string
-    {
-        return $this->getTypedAssignment(VariationType::STRING, $flagKey, $subjectKey, $subjectAttributes, $defaultValue);
+    public function getStringAssignment(
+        string $flagKey,
+        string $subjectKey,
+        array $subjectAttributes,
+        string $defaultValue
+    ): string {
+        return $this->getTypedAssignment(
+            VariationType::STRING,
+            $flagKey,
+            $subjectKey,
+            $subjectAttributes,
+            $defaultValue
+        );
     }
 
     /**
@@ -161,9 +177,19 @@ class EppoClient
      *
      * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
      */
-    public function getBooleanAssignment(string $flagKey, string $subjectKey, array $subjectAttributes, bool $defaultValue): bool
-    {
-        return $this->getTypedAssignment(VariationType::BOOLEAN, $flagKey, $subjectKey, $subjectAttributes, $defaultValue);
+    public function getBooleanAssignment(
+        string $flagKey,
+        string $subjectKey,
+        array $subjectAttributes,
+        bool $defaultValue
+    ): bool {
+        return $this->getTypedAssignment(
+            VariationType::BOOLEAN,
+            $flagKey,
+            $subjectKey,
+            $subjectAttributes,
+            $defaultValue
+        );
     }
 
     /**
@@ -172,9 +198,19 @@ class EppoClient
      *
      * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
      */
-    public function getNumericAssignment(string $flagKey, string $subjectKey, array $subjectAttributes, float $defaultValue): float
-    {
-        return $this->getTypedAssignment(VariationType::NUMERIC, $flagKey, $subjectKey, $subjectAttributes, $defaultValue);
+    public function getNumericAssignment(
+        string $flagKey,
+        string $subjectKey,
+        array $subjectAttributes,
+        float $defaultValue
+    ): float {
+        return $this->getTypedAssignment(
+            VariationType::NUMERIC,
+            $flagKey,
+            $subjectKey,
+            $subjectAttributes,
+            $defaultValue
+        );
     }
 
     /**
@@ -183,9 +219,19 @@ class EppoClient
      *
      * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
      */
-    public function getIntegerAssignment(string $flagKey, string $subjectKey, array $subjectAttributes, int $defaultValue): int
-    {
-        return $this->getTypedAssignment(VariationType::INTEGER, $flagKey, $subjectKey, $subjectAttributes, $defaultValue);
+    public function getIntegerAssignment(
+        string $flagKey,
+        string $subjectKey,
+        array $subjectAttributes,
+        int $defaultValue
+    ): int {
+        return $this->getTypedAssignment(
+            VariationType::INTEGER,
+            $flagKey,
+            $subjectKey,
+            $subjectAttributes,
+            $defaultValue
+        );
     }
 
     /**
@@ -201,8 +247,12 @@ class EppoClient
      * @throws ClientExceptionInterface
      * @throws SimpleCacheInvalidArgumentException
      */
-    public function getJSONAssignment(string $flagKey, string $subjectKey, array $subjectAttributes, array $defaultValue): array
-    {
+    public function getJSONAssignment(
+        string $flagKey,
+        string $subjectKey,
+        array $subjectAttributes,
+        array $defaultValue
+    ): array {
         return $this->getTypedAssignment(VariationType::JSON, $flagKey, $subjectKey, $subjectAttributes, $defaultValue);
     }
 
@@ -226,8 +276,12 @@ class EppoClient
      * @throws InvalidArgumentException
      * @throws SimpleCacheInvalidArgumentException
      */
-    private function getAssignmentDetail(string $flagKey, string $subjectKey, array $subjectAttributes = [], VariationType $expectedVariationType = null): ?Variation
-    {
+    private function getAssignmentDetail(
+        string $flagKey,
+        string $subjectKey,
+        array $subjectAttributes = [],
+        VariationType $expectedVariationType = null
+    ): ?Variation {
         Validator::validateNotBlank($subjectKey, 'Invalid argument: subjectKey cannot be blank');
         Validator::validateNotBlank($flagKey, 'Invalid argument: flagKey cannot be blank');
 
@@ -242,7 +296,10 @@ class EppoClient
         $computedVariation = $evaluationResult?->variation ?? null;
 
         // If there is an assignment and the expected type has been expressed, do a type check and log an error if they don't match.
-        if ($computedVariation && $expectedVariationType && !$this->checkExpectedType($expectedVariationType, $computedVariation->value)) {
+        if ($computedVariation && $expectedVariationType && !$this->checkExpectedType(
+                $expectedVariationType,
+                $computedVariation->value
+            )) {
             $actualType = gettype($computedVariation->value);
             $eVarType = $expectedVariationType->value;
             syslog(LOG_ERR, "[EPPO SDK] Variation does not have the expected type, ${eVarType}; found ${actualType}");
@@ -258,16 +315,21 @@ class EppoClient
         if ($computedVariation && $this->assignmentLogger && $evaluationResult->doLog) {
             try {
                 $allocationKey = $evaluationResult->allocationKey;
-                $variationValueToLog = $this->getLogFriendlyValue($computedVariation, $expectedVariationType);
+                $sdkData = (new SDKData())->asArray();
                 $experimentKey = "$flagKey-$allocationKey";
                 $this->assignmentLogger->logAssignment(
-                    $experimentKey,
-                    $variationValueToLog,
-                    $subjectKey,
-                    time(),
-                    $subjectAttributes,
-                    $allocationKey,
-                    $flagKey
+                    new AssignmentEvent
+                    (
+                        $experimentKey,
+                        $evaluationResult->variation->key,
+                        $allocationKey,
+                        $flagKey,
+                        $subjectKey,
+                        time(),
+                        $subjectAttributes,
+                        $sdkData,
+                        $evaluationResult->extraLogging ?? []
+                    )
                 );
             } catch (Exception $exception) {
                 error_log('[Eppo SDK] Error logging assignment event: ' . $exception->getMessage());
@@ -282,32 +344,11 @@ class EppoClient
     {
         return (
             ($expectedVariationType == VariationType::STRING && gettype($typedValue) === "string") ||
-            ($expectedVariationType == VariationType::INTEGER && gettype($typedValue) ===  "integer") ||
-            ($expectedVariationType == VariationType::NUMERIC && in_array(gettype($typedValue), ["integer", "double"])) ||
+            ($expectedVariationType == VariationType::INTEGER && gettype($typedValue) === "integer") ||
+            ($expectedVariationType == VariationType::NUMERIC && in_array(gettype($typedValue), ["integer", "double"]
+                )) ||
             ($expectedVariationType == VariationType::BOOLEAN && gettype($typedValue) === "boolean") ||
             ($expectedVariationType == VariationType::JSON)); // JSON type check un-necessary here.
-    }
-
-    /**
-     * Renders the flag's computed value in a format friendly to loggers.
-     * If no valueType is provided, the variation's unparsed string value is returned
-     */
-    private function getLogFriendlyValue(Variation $variation, VariationType $valueType = null): string
-    {
-        if ($valueType === null || $valueType === VariationType::STRING) {
-            return $variation->value;
-        } elseif ($valueType === VariationType::NUMERIC || $valueType === VariationType::INTEGER) {
-            return strval($variation->value);
-        } elseif ($valueType === VariationType::BOOLEAN || $valueType === VariationType::JSON) {
-            // json_encode renders booleans in human readable "true" and "false".
-            return json_encode($variation->value);
-        } else {
-            $typeString = $valueType->value;
-            syslog(LOG_WARNING,
-                "[EPPO SDK] Unexpected value type $typeString; returning unparsed (raw string) value");
-            return $variation->value;
-        }
-
     }
 
     public function startPolling()
@@ -330,8 +371,10 @@ class EppoClient
     /**
      * @throws Exception
      */
-    private function handleException(Exception $exception, array|bool|float|int|string|null $defaultValue): array|bool|float|int|string|null
-    {
+    private function handleException(
+        Exception $exception,
+        array|bool|float|int|string|null $defaultValue
+    ): array|bool|float|int|string|null {
         if ($this->isGracefulMode) {
             error_log('[Eppo SDK] Error getting assignment: ' . $exception->getMessage());
             return $defaultValue;
@@ -354,8 +397,7 @@ class EppoClient
         PollerInterface $poller,
         ?LoggerInterface $logger = null,
         ?bool $isGracefulMode = true
-    ): EppoClient
-    {
+    ): EppoClient {
         return new EppoClient($configurationLoader, $poller, $logger, $isGracefulMode);
     }
 }

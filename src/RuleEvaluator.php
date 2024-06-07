@@ -45,7 +45,7 @@ final class RuleEvaluator
                 foreach ($allocation->splits as $split) {
                     # Split needs to match all shards
                     if (self::matchesAllShards($split->shards, $subjectKey, $flag->totalShards)) {
-                        return new FlagEvaluation($flag->variations[$split->variationKey], $allocation->doLog, $allocation->key);
+                        return new FlagEvaluation($flag->variations[$split->variationKey], $allocation->doLog, $allocation->key, $split->extraLogging);
                     }
                 }
             }
@@ -157,9 +157,6 @@ final class RuleEvaluator
      */
     private static function isOneOf($attributeValue, $conditionValue): bool
     {
-        if (is_bool($attributeValue)) {
-            $attributeValue = $attributeValue ? 'true' : 'false';
-        }
         return count(self::getMatchingStringValues(strval($attributeValue), $conditionValue)) > 0;
     }
 
@@ -171,9 +168,6 @@ final class RuleEvaluator
      */
     private static function isNotOneOf($attributeValue, $conditionValue): bool
     {
-        if (is_bool($attributeValue)) {
-            $attributeValue = $attributeValue ? 'true' : 'false';
-        }
         return count(self::getMatchingStringValues($attributeValue, $conditionValue)) === 0;
     }
 
@@ -185,10 +179,18 @@ final class RuleEvaluator
     private static function getMatchingStringValues($attributeValue, $conditionValues): array
     {
         return array_values(array_filter($conditionValues, function ($value) use ($attributeValue) {
-            return strval($value) === strval($attributeValue);
+            return strval($value) === self::toString($attributeValue);
         }));
     }
 
+    private static function toString($value): string
+{
+    // PHP already follows the agreed-upon convention of truncating trailing 0s from decimals when they are ints
+    if (is_string($value) || is_numeric($value)) {
+        return strval($value);
+    }
+    return json_encode($value);
+}
     public static function matchesAnyRule(array $rules, array $subject): bool
     {
         if (count($rules) === 0) {

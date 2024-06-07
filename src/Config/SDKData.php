@@ -4,10 +4,12 @@ namespace Eppo\Config;
 
 class SDKData
 {
+    private const SDK_LANGUAGE = "php";
+    private const SDK_NAME = 'eppo/php-sdk';
+
     /** @var string */
     private string $sdkVersion;
 
-    const SDK_NAME = 'eppo/php-sdk';
 
     public function __construct()
     {
@@ -28,5 +30,13 @@ class SDKData
     public function getSdkName(): string
     {
         return self::SDK_NAME;
+    }
+
+    public function asArray(): array {
+        return [
+            "sdkVersion" => $this->sdkVersion,
+            "sdkName" => self::SDK_NAME,
+            "sdkLanguage"=>self::SDK_LANGUAGE
+        ];
     }
 }
