@@ -4,6 +4,8 @@ namespace Eppo\DTO;
 
 class Allocation
 {
+    public bool $doLog;
+
     /**
      * @param string $key
      * @param Rule[] $rules
@@ -14,11 +16,12 @@ class Allocation
      */
     public function __construct(
         public string $key,
-        public array $rules,
+        public ?array $rules,
         public array $splits,
-        public bool $doLog,
+        ?bool $doLog = true,
         public ?int $startAt = null,
         public ?int $endAt = null)
     {
+        $this->doLog = $doLog === null ? true : $doLog;
     }
 }

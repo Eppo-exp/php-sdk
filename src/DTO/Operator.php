@@ -9,6 +9,7 @@ enum Operator: string
     case LT = 'LT';
     case LTE = 'LTE';
     case MATCHES = 'MATCHES';
+    case NOT_MATCHES = 'NOT_MATCHES';
     case ONE_OF = 'ONE_OF';
     case NOT_ONE_OF = 'NOT_ONE_OF';
     case IS_NULL = 'IS_NULL';

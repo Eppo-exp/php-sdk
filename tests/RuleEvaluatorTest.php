@@ -22,6 +22,7 @@ final class RuleEvaluatorTest extends TestCase
     private Rule $ruleWithEmptyConditions;
 
     private Rule $ruleWithMatchesCondition;
+    private Rule $ruleWithNotMatchesCondition;
 
     private Rule $numericRule;
 
@@ -92,6 +93,9 @@ final class RuleEvaluatorTest extends TestCase
         $ruleWithMatchesConditionCondition = new Condition('user_id', 'MATCHES', '[0-9]+');
         $this->ruleWithMatchesCondition = new Rule([$ruleWithMatchesConditionCondition]);
 
+        $ruleWithNotMatchesConditionCondition = new Condition('user_id', 'NOT_MATCHES', '[0-9]+');
+        $this->ruleWithNotMatchesConditionCondition = new Rule([$ruleWithNotMatchesConditionCondition]);
+
         $this->ruleWithPreciseMatchesCondition = new Rule([new Condition('user_id', 'MATCHES', '^[0-9]+$')]);
     }
 
@@ -118,6 +122,21 @@ final class RuleEvaluatorTest extends TestCase
         $this->assertFalse(RuleEvaluator::matchesRule(['user_id' => '123456789A'], $this->ruleWithPreciseMatchesCondition));
         $this->assertFalse(RuleEvaluator::matchesRule(['user_id' => 'A123456789'], $this->ruleWithPreciseMatchesCondition));
         $this->assertTrue(RuleEvaluator::matchesRule(['user_id' => '123456789'], $this->ruleWithPreciseMatchesCondition));
+    }
+
+    public function testStringNotMatch(): void
+    {
+        // Pattern to not match is /[0-9]+/
+        $this->assertTrue(RuleEvaluator::matchesRule(['user_id' => 'abc'], $this->ruleWithNotMatchesConditionCondition));
+        $this->assertFalse(RuleEvaluator::matchesRule([], $this->ruleWithNotMatchesConditionCondition));
+        $this->assertFalse(RuleEvaluator::matchesRule(['user_id' => 'A123456789'], $this->ruleWithNotMatchesConditionCondition));
+        $this->assertFalse(RuleEvaluator::matchesRule(['user_id' => '123456789A'], $this->ruleWithNotMatchesConditionCondition));
+        $this->assertFalse(RuleEvaluator::matchesRule(['user_id' => '123456789'], $this->ruleWithNotMatchesConditionCondition));
+        $this->assertFalse(RuleEvaluator::matchesRule(['user_id' => '12'], $this->ruleWithNotMatchesConditionCondition));
+
+        $this->assertFalse(RuleEvaluator::matchesRule(['user_id' => '123456789A'], $this->ruleWithNotMatchesConditionCondition));
+        $this->assertFalse(RuleEvaluator::matchesRule(['user_id' => 'A123456789'], $this->ruleWithNotMatchesConditionCondition));
+        $this->assertFalse(RuleEvaluator::matchesRule(['user_id' => '123456789'], $this->ruleWithNotMatchesConditionCondition));
     }
 
     public function testNoMatchingShards(): void

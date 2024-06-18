@@ -37,9 +37,10 @@ class UFCParserTest extends TestCase
         $this->assertCount(3, $flag->allocations);
 
         /** @see `../mockdata/ufc-v1.json` */
+        // Has value of `false` for `doLog`
         $secondAllocation = $flag->allocations[1];
         $this->assertEquals('on-for-age-50+', $secondAllocation->key);
-        $this->assertTrue($secondAllocation->doLog);
+        $this->assertFalse($secondAllocation->doLog);
 
         $this->assertCount(1, $secondAllocation->rules);
 
@@ -65,5 +66,12 @@ class UFCParserTest extends TestCase
         $firstRange = $firstShard->ranges[0];
         $this->assertEquals(0, $firstRange->start);
         $this->assertEquals(10000, $firstRange->end);
+
+        // Off-for-all allocation
+        // Has no value for `doLog` or `rules`
+        $offAllocation = $flag->allocations[2];
+        $this->assertEquals('off-for-all', $offAllocation->key);
+        $this->assertTrue($offAllocation->doLog);
+        $this->assertNull($offAllocation->rules);
     }
 }

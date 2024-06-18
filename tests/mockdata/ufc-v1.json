@@ -80,18 +80,16 @@
               ]
             }
           ],
-          "doLog": true
+          "doLog": false
         },
         {
           "key": "off-for-all",
-          "rules": [],
           "splits": [
             {
               "variationKey": "off",
               "shards": []
             }
-          ],
-          "doLog": true
+          ]
         }
       ],
       "totalShards": 10000

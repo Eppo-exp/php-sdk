@@ -72,8 +72,7 @@ class EppoClientTest extends TestCase
             100,
             $client->getNumericAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes, 100)
         );
-        $this->assertEquals(
-            false,
+        $this->assertFalse(
             $client->getBooleanAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes, false)
         );
         $this->assertEquals(

@@ -41,7 +41,7 @@ final class RuleEvaluator
 
 
             $subject = ['id' => $subjectKey, ...$subjectAttributes];
-            if (self::matchesAnyRule($allocation->rules, $subject)) {
+            if ($allocation->rules == null || self::matchesAnyRule($allocation->rules, $subject)) {
                 foreach ($allocation->splits as $split) {
                     # Split needs to match all shards
                     if (self::matchesAllShards($split->shards, $subjectKey, $flag->totalShards)) {
@@ -138,7 +138,9 @@ final class RuleEvaluator
                     // semver
                     return Comparator::lessThan($value, $condition->value);
                 case Operator::MATCHES:
-                    return preg_match('/' . $condition->value . '/', (string)$value) === 1;
+                    return preg_match('/' . $condition->value . '/', self::toString($value)) === 1;
+                case Operator::NOT_MATCHES:
+                    return !(preg_match('/' . $condition->value . '/', self::toString($value)) === 1);
                 case Operator::ONE_OF:
                     return self::isOneOf($value, $condition->value);
                 case Operator::NOT_ONE_OF:
@@ -157,7 +159,7 @@ final class RuleEvaluator
      */
     private static function isOneOf($attributeValue, $conditionValue): bool
     {
-        return count(self::getMatchingStringValues(strval($attributeValue), $conditionValue)) > 0;
+        return count(self::getMatchingStringValues($attributeValue, $conditionValue)) > 0;
     }
 
     /**
@@ -179,18 +181,19 @@ final class RuleEvaluator
     private static function getMatchingStringValues($attributeValue, $conditionValues): array
     {
         return array_values(array_filter($conditionValues, function ($value) use ($attributeValue) {
-            return strval($value) === self::toString($attributeValue);
+            return $value === self::toString($attributeValue);
         }));
     }
 
     private static function toString($value): string
-{
-    // PHP already follows the agreed-upon convention of truncating trailing 0s from decimals when they are ints
-    if (is_string($value) || is_numeric($value)) {
-        return strval($value);
+    {
+        // PHP casts down in precision automatically for numbers (`strval(1.0) => "1"`)
+        if (is_string($value) || is_numeric($value)) {
+            return strval($value);
+        }
+        return json_encode($value);
     }
-    return json_encode($value);
-}
+
     public static function matchesAnyRule(array $rules, array $subject): bool
     {
         if (count($rules) === 0) {

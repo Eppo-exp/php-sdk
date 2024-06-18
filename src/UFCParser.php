@@ -64,7 +64,7 @@ class UFCParser
                     );
                 }, $ruleConfig['conditions']);
                 return new Rule($conditions);
-            }, $allocationConfig['rules']) : [];
+            }, $allocationConfig['rules']) : null;
 
             $splits = array_map(function ($splitConfig) {
 
@@ -90,7 +90,7 @@ class UFCParser
                 $allocationConfig['key'],
                 $rules,
                 $splits,
-                (bool)$allocationConfig['doLog'],
+                !(array_key_exists('doLog', $allocationConfig) && $allocationConfig['doLog'] === false),
                 array_key_exists('startAt', $allocationConfig) ? strtotime($allocationConfig['startAt']) : null,
                 array_key_exists('endAt', $allocationConfig) ? strtotime($allocationConfig['endAt']) : null
             );
