@@ -5,7 +5,6 @@ namespace Eppo\Tests;
 use Eppo\APIRequestWrapper;
 use Eppo\Exception\HttpRequestException;
 use Http\Discovery\Psr17Factory;
-use Http\Mock\Client;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
@@ -20,6 +19,7 @@ class APIRequestWrapperTest extends TestCase
 {
     public function testApiFollowsRedirects(): void
     {
+        // Note: this test also verifies that the correct endpoint is called via mock expectations.
         $http = $this->getRedirectingClientMock();
         $api = new APIRequestWrapper(
             'APIKEY', [], $http, new Psr17Factory()
@@ -108,12 +108,12 @@ class APIRequestWrapperTest extends TestCase
         $httpClientMock = $this->getMockBuilder(ClientInterface::class)->setConstructorArgs([
         ])->getMock();
 
-        $redirectLocation = 'https://geteppo.com/api/randomized_assignment/v3/config?apiKey=APIKEY';
+        $redirectLocation = 'https://geteppo.com/api/flag-config/v1/config?apiKey=APIKEY';
         $redirectHeaders = new Headers();
         $redirectHeaders->setHeader(new Header('Location', $redirectLocation));
 
         $redirectResponse = new Response(statusCode: RFC7231::MOVED_PERMANENTLY, headers: $redirectHeaders);
-        $resourceUri = 'https://fscdn.eppo.cloud/api/randomized_assignment/v3/config?apiKey=APIKEY';
+        $resourceUri = 'https://fscdn.eppo.cloud/api/flag-config/v1/config?apiKey=APIKEY';
 
         $httpClientMock->expects($this->exactly(2))
             ->method('sendRequest')

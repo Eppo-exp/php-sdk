@@ -2,15 +2,12 @@
 
 namespace Eppo\DTO;
 
-
 class Condition
 {
-    /** @var string */
-    public $operator = '';
+    public Operator $operator;
 
-    /** @var string */
-    public $attribute = '';
-
-    /** @var string */
-    public $value = '';
+    public function __construct(public string $attribute, string $operator, public array|bool|float|int|string $value)
+    {
+        $this->operator = Operator::from($operator);
+    }
 }

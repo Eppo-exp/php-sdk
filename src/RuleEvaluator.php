@@ -4,12 +4,57 @@ declare(strict_types=1);
 
 namespace Eppo;
 
-use Eppo\DTO\Condition;
-use Eppo\DTO\Rule;
 use Composer\Semver\Comparator;
+use Eppo\DTO\Condition;
+use Eppo\DTO\Flag;
+use Eppo\DTO\FlagEvaluation;
+use Eppo\DTO\Operator;
+use Eppo\DTO\Rule;
+use Eppo\DTO\Shard;
 
 final class RuleEvaluator
 {
+    /**
+     * Determines which, if any, variation is applicable to the given subject.
+     *
+     * Returns `null` if the flag is disabled or no matching variation can be found.
+     *
+     * @param Flag $flag
+     * @param string $subjectKey
+     * @param array $subjectAttributes
+     * @return FlagEvaluation|null
+     */
+    public static function evaluateFlag(Flag $flag, string $subjectKey, array $subjectAttributes): FlagEvaluation|null
+    {
+        if (!$flag->enabled)
+            return null;
+
+        $now = time();
+        foreach ($flag->allocations as $allocation) {
+            # Skip allocations that are not active
+            if ($allocation->startAt && $now < $allocation->startAt) {
+                continue;
+            }
+            if ($allocation->endAt && $now > $allocation->endAt) {
+                continue;
+            }
+
+
+            $subject = ['id' => $subjectKey, ...$subjectAttributes];
+            if ($allocation->rules == null || self::matchesAnyRule($allocation->rules, $subject)) {
+                foreach ($allocation->splits as $split) {
+                    # Split needs to match all shards
+                    if (self::matchesAllShards($split->shards, $subjectKey, $flag->totalShards)) {
+                        return new FlagEvaluation($flag->variations[$split->variationKey], $allocation->doLog, $allocation->key, $split->extraLogging);
+                    }
+                }
+            }
+        }
+
+        // No allocations matched.
+        return null;
+    }
+
     /**
      * Find the first rule in the given set of rules that matches the given subject attributes.
      *
@@ -36,7 +81,7 @@ final class RuleEvaluator
      *
      * @return bool Returns true if the subject attributes match the rule, and false otherwise.
      */
-    private static function matchesRule(array $subjectAttributes, Rule $rule): bool
+    public static function matchesRule(array $subjectAttributes, Rule $rule): bool
     {
         $conditionEvaluations = self::evaluateRuleConditions($subjectAttributes, $rule->conditions);
         return !in_array(false, $conditionEvaluations, true);
@@ -49,7 +94,7 @@ final class RuleEvaluator
      */
     private static function evaluateRuleConditions(array $subjectAttributes, array $conditions): array
     {
-        return array_map(function($condition) use ($subjectAttributes) {
+        return array_map(function ($condition) use ($subjectAttributes) {
             return self::evaluateCondition($subjectAttributes, $condition);
         }, $conditions);
     }
@@ -62,38 +107,46 @@ final class RuleEvaluator
     private static function evaluateCondition(array $subjectAttributes, Condition $condition): bool
     {
         $value = $subjectAttributes[$condition->attribute] ?? null;
-        if ($value !== null) {
+        if ($value !== null || $condition->operator === Operator::IS_NULL) {
             switch ($condition->operator) {
-                case 'GTE':
+                case Operator::GTE:
                     if (is_numeric($value) && is_numeric($condition->value)) {
                         return $value >= $condition->value;
                     }
 
+                    // semver
                     return Comparator::greaterThanOrEqualTo($value, $condition->value);
-                case 'GT':
+                case Operator::GT:
                     if (is_numeric($value) && is_numeric($condition->value)) {
                         return $value > $condition->value;
                     }
-                    
+
+                    // semver
                     return Comparator::greaterThan($value, $condition->value);
-                case 'LTE':
+                case Operator::LTE:
                     if (is_numeric($value) && is_numeric($condition->value)) {
                         return $value <= $condition->value;
                     }
 
+                    // semver
                     return Comparator::lessThanOrEqualTo($value, $condition->value);
-                case 'LT':
+                case Operator::LT:
                     if (is_numeric($value) && is_numeric($condition->value)) {
                         return $value < $condition->value;
                     }
 
+                    // semver
                     return Comparator::lessThan($value, $condition->value);
-                case 'MATCHES':
-                    return preg_match('/' . $condition->value . '/i', (string) $value) === 1;
-                case 'ONE_OF':
+                case Operator::MATCHES:
+                    return preg_match('/' . $condition->value . '/', self::toString($value)) === 1;
+                case Operator::NOT_MATCHES:
+                    return !(preg_match('/' . $condition->value . '/', self::toString($value)) === 1);
+                case Operator::ONE_OF:
                     return self::isOneOf($value, $condition->value);
-                case 'NOT_ONE_OF':
+                case Operator::NOT_ONE_OF:
                     return self::isNotOneOf($value, $condition->value);
+                case Operator::IS_NULL:
+                    return ($value === null) == $condition->value;
             }
         }
         return false;
@@ -106,10 +159,7 @@ final class RuleEvaluator
      */
     private static function isOneOf($attributeValue, $conditionValue): bool
     {
-        if (is_bool($attributeValue)) {
-            $attributeValue = $attributeValue ? 'true' : 'false';
-        }
-        return count(self::getMatchingStringValues(strval($attributeValue), $conditionValue)) > 0;
+        return count(self::getMatchingStringValues($attributeValue, $conditionValue)) > 0;
     }
 
     /**
@@ -120,10 +170,7 @@ final class RuleEvaluator
      */
     private static function isNotOneOf($attributeValue, $conditionValue): bool
     {
-        if (is_bool($attributeValue)) {
-            $attributeValue = $attributeValue ? 'true' : 'false';
-        }
-        return count(self::getMatchingStringValues(strval($attributeValue), $conditionValue)) === 0;
+        return count(self::getMatchingStringValues($attributeValue, $conditionValue)) === 0;
     }
 
     /**
@@ -133,8 +180,59 @@ final class RuleEvaluator
      */
     private static function getMatchingStringValues($attributeValue, $conditionValues): array
     {
-        return array_values(array_filter($conditionValues, function($value) use ($attributeValue) {
-            return strtolower($value) === strtolower($attributeValue);
+        return array_values(array_filter($conditionValues, function ($value) use ($attributeValue) {
+            return $value === self::toString($attributeValue);
         }));
     }
+
+    private static function toString($value): string
+    {
+        // PHP casts down in precision automatically for numbers (`strval(1.0) => "1"`)
+        if (is_string($value) || is_numeric($value)) {
+            return strval($value);
+        }
+        return json_encode($value);
+    }
+
+    public static function matchesAnyRule(array $rules, array $subject): bool
+    {
+        if (count($rules) === 0) {
+            return true;
+        }
+        foreach ($rules as $rule) {
+            if (self::matchesRule($subject, $rule)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @param Shard[] $shards
+     * @param string $subjectKey
+     * @param int $totalShards
+     */
+    public static function matchesAllShards(array $shards, string $subjectKey, int $totalShards): bool
+    {
+        foreach ($shards as $shard) {
+            if (!self::matchesShard($shard, $subjectKey, $totalShards)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static function matchesShard(Shard $shard, $subjectKey, int $totalShards): bool
+    {
+        $hashKey = $shard->salt . '-' . $subjectKey;
+        $subjectBucket = Sharder::getShard($hashKey, $totalShards);
+
+        foreach ($shard->ranges as $range) {
+            if (Sharder::isShardInRange($subjectBucket, $range)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

@@ -17,9 +17,10 @@ use Webclient\Extension\Redirect\RedirectClientDecorator;
  * can be retried and identify when invalid API credentials are used.
  */
 class APIRequestWrapper
-{    /** @var string */
-    const RAC_ENDPOINT = '/api/randomized_assignment/v3/config';
-    const CONFIG_BASE = 'https://fscdn.eppo.cloud';
+{
+    /** @var string */
+    const UFC_ENDPOINT = '/flag-config/v1/config';
+    const CONFIG_BASE = 'https://fscdn.eppo.cloud/api';
 
     private string $baseUrl;
 
@@ -33,18 +34,20 @@ class APIRequestWrapper
 
     private string $resource;
 
-    public function __construct(string $apiKey,
+    public function __construct(
+        string $apiKey,
         array $extraQueryParams,
         ClientInterface $baseHttpClient,
         RequestFactoryInterface $requestFactory,
-        string $baseUrl = self::CONFIG_BASE,
-        string $resource = self::RAC_ENDPOINT)
+        ?string $baseUrl = null,
+        ?string $resource = null
+    )
     {
         // Our HTTP Client needs to be able to follow redirects.
         $this->httpClient = new RedirectClientDecorator($baseHttpClient);
-        $this->baseUrl = $baseUrl;
+        $this->baseUrl = $baseUrl ?? self::CONFIG_BASE;
         $this->requestFactory = $requestFactory;
-        $this->resource = $resource;
+        $this->resource = $resource ?? self::UFC_ENDPOINT;
         $this->queryParams = [
             'apiKey' => $apiKey, ...$extraQueryParams
         ];
@@ -66,7 +69,7 @@ class APIRequestWrapper
             $this->handleHttpError($response->getStatusCode(), $response->getBody());
         }
 
-        return $response->getBody();
+        return $response->getBody()->getContents();
     }
 
     /**
