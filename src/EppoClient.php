@@ -8,6 +8,9 @@ use Eppo\DTO\VariationType;
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
 use Eppo\Exception\InvalidArgumentException;
+use Eppo\Exception\EppoClientInitializationException;
+use Eppo\Flags\ConfigurationStore;
+use Eppo\Flags\FlagConfigurationLoader;
 use Eppo\Logger\AssignmentEvent;
 use Eppo\Logger\LoggerInterface;
 use Exception;
@@ -49,15 +52,11 @@ class EppoClient
     /**
      * Initializes EppoClient singleton instance.
      *
-     * @param string $apiKey
-     * @param string|null $baseUrl
      * @param LoggerInterface|null $assignmentLogger optional assignment logger. Please check Eppo/LoggerLoggerInterface.
      * @param CacheInterface|null $cache optional cache instance. Compatible with psr-16 simple cache. By default, (if nothing passed) EppoClient will use FileSystem cache.
      * @param ClientInterface|null $httpClient optional PSR-18 ClientInterface. If nothing is passed, EppoClient will use Discovery to locate a suitable implementation in the project.
      * @param RequestFactoryInterface|null $requestFactory optional PSR-17 Request Factory implementation. If none is provided, EppoClient will use Discovery
-     * @param bool|null $isGracefulMode
-     * @return EppoClient
-     * @throws Exception
+     * @throws EppoClientInitializationException
      */
     public static function init(
         string $apiKey,
@@ -77,7 +76,11 @@ class EppoClient
             ];
 
             if (!$cache) {
-                $cache = new FileSystemCache(__DIR__ . '/../cache');
+                try {
+                    $cache = new FileSystemCache(__DIR__ . '/../cache');
+                } catch (Exception $e) {
+                    throw new EppoClientInitializationException("Unable to initialize Eppo Client: " . $e->getMessage(), $e);
+                }
             }
 
             $configStore = new ConfigurationStore($cache);
@@ -105,6 +108,15 @@ class EppoClient
             );
 
             self::$instance = new self($configLoader, $poller, $assignmentLogger, $isGracefulMode);
+
+            // Load configuration on startup.
+            try {
+                $configLoader->fetchAndStoreConfigurations();
+            } catch (HttpRequestException $e) {
+                throw new EppoClientInitializationException("Unable to initialize Eppo Client: " . $e->getMessage(), $e);
+            } catch (InvalidApiKeyException $e) {
+                throw new EppoClientInitializationException("Invalid API key provided");
+            }
         }
 
         return self::$instance;
@@ -285,7 +297,7 @@ class EppoClient
         Validator::validateNotBlank($subjectKey, 'Invalid argument: subjectKey cannot be blank');
         Validator::validateNotBlank($flagKey, 'Invalid argument: flagKey cannot be blank');
 
-        $flag = $this->configurationLoader->getConfiguration($flagKey);
+        $flag = $this->configurationLoader->get($flagKey);
 
         if (!$flag) {
             syslog(LOG_WARNING, "[EPPO SDK] No assigned variation; flag not found ${flagKey}");

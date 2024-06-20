@@ -4,13 +4,10 @@ namespace Eppo\Tests;
 
 use Eppo\APIRequestWrapper;
 use Eppo\Config\SDKData;
-use Eppo\ConfigurationStore;
 use Eppo\DTO\VariationType;
 use Eppo\EppoClient;
-use Eppo\Exception\HttpRequestException;
-use Eppo\Exception\InvalidApiKeyException;
-use Eppo\Exception\InvalidArgumentException;
-use Eppo\FlagConfigurationLoader;
+use Eppo\Flags\ConfigurationStore;
+use Eppo\Flags\FlagConfigurationLoader;
 use Eppo\Logger\LoggerInterface;
 use Eppo\PollerInterface;
 use Eppo\Tests\WebServer\MockWebServer;
@@ -184,7 +181,7 @@ class EppoClientTest extends TestCase
 
         if ($mockedThrowable) {
             $configStoreMock->expects($this->any())
-                ->method('getConfiguration')
+                ->method('get')
                 ->with(self::EXPERIMENT_NAME)
                 ->willThrowException($mockedThrowable);
         }

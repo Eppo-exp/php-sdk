@@ -2,3 +2,4 @@
 vendor
 tests/data
 cache
+.phpunit.result.cache
