@@ -225,7 +225,7 @@ class EppoClientTest extends TestCase
 
         if ($mockedResponse) {
             $configStoreMock->expects($this->any())
-                ->method('getConfiguration')
+                ->method('get')
                 ->with(self::EXPERIMENT_NAME)
                 ->willReturn($mockedResponse);
         }

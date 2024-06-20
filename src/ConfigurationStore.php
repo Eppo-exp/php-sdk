@@ -19,33 +19,6 @@ class ConfigurationStore implements IConfigurationStore
         $this->cache = $cache;
     }
 
-    /**
-     * @param string $key
-     *
-     * @return array
-     *
-     * @throws InvalidArgumentException
-     */
-    public function getConfiguration(string $key): array
-    {
-        $value = $this->cache->get($key);
-        return $value ? json_decode($value, true) : [];
-    }
-
-    /**
-     * @param array $configs
-     *
-     * @return void
-     *
-     * @throws InvalidArgumentException
-     */
-    public function setConfigurations(array $configs)
-    {
-        foreach ($configs as $key => $value) {
-            $this->cache->set("OLD: " . $key, json_encode($value), 200);
-        }
-    }
-
     public function setFlag(Flag $flag): void
     {
         try {
