@@ -4,14 +4,14 @@ namespace Eppo\Tests;
 
 use Eppo\APIRequestWrapper;
 use Eppo\Config\SDKData;
+use Eppo\ConfigurationStore;
 use Eppo\DTO\VariationType;
 use Eppo\EppoClient;
 use Eppo\Exception\EppoClientException;
 use Eppo\Exception\EppoClientInitializationException;
 use Eppo\Exception\HttpRequestException;
-use Eppo\Flags\ConfigurationStore;
-use Eppo\Flags\FlagConfigurationLoader;
-use Eppo\Flags\IConfigurationStore;
+use Eppo\FlagConfigurationLoader;
+use Eppo\IConfigurationStore;
 use Eppo\Logger\LoggerInterface;
 use Eppo\PollerInterface;
 use Eppo\Tests\WebServer\MockWebServer;

@@ -1,12 +1,10 @@
 <?php
 
-namespace Eppo\Flags;
+namespace Eppo;
 
-use Eppo\APIRequestWrapper;
 use Eppo\DTO\Flag;
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
-use Eppo\UFCParser;
 
 class FlagConfigurationLoader implements IFlags
 {

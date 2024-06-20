@@ -4,8 +4,8 @@ namespace Eppo\Tests;
 
 use Eppo\APIRequestWrapper;
 use Eppo\DTO\Flag;
-use Eppo\Flags\FlagConfigurationLoader;
-use Eppo\Flags\IConfigurationStore;
+use Eppo\FlagConfigurationLoader;
+use Eppo\IConfigurationStore;
 use Eppo\UFCParser;
 use Http\Discovery\Psr17Factory;
 use Http\Discovery\Psr18Client;

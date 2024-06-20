@@ -1,6 +1,6 @@
 <?php
 
-namespace Eppo\Flags;
+namespace Eppo;
 
 use Eppo\DTO\Flag;
 

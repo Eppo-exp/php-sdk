@@ -10,8 +10,6 @@ use Eppo\Exception\EppoClientInitializationException;
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
 use Eppo\Exception\InvalidArgumentException;
-use Eppo\Flags\ConfigurationStore;
-use Eppo\Flags\FlagConfigurationLoader;
 use Eppo\Logger\AssignmentEvent;
 use Eppo\Logger\LoggerInterface;
 use Exception;
