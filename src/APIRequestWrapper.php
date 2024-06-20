@@ -96,7 +96,6 @@ class APIRequestWrapper
         throw new HttpRequestException($error, $status, $isRecoverable);
     }
 
-
     /**
      * @param int $status
      *
