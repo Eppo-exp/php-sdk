@@ -4,9 +4,9 @@ namespace Eppo\Tests;
 
 use Eppo\APIRequestWrapper;
 use Eppo\Exception\HttpRequestException;
+use Eppo\Exception\InvalidApiKeyException;
 use Http\Discovery\Psr17Factory;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use PsrMock\Psr7\Collections\Headers;
 use PsrMock\Psr7\Entities\Header;
@@ -27,9 +27,6 @@ class APIRequestWrapperTest extends TestCase
         $api->get();
     }
 
-    /**
-     * @throws ClientExceptionInterface
-     */
     public function testUnauthorizedClient(): void
     {
         $http = $this->getHttpClientMock(RFC7235::UNAUTHORIZED, '');
@@ -37,16 +34,26 @@ class APIRequestWrapperTest extends TestCase
             '', [], $http, new Psr17Factory()
         );
 
-        $this->expectException(HttpRequestException::class);
+        $this->expectException(InvalidApiKeyException::class);
 
         $result = $api->get();
 
         $this->assertTrue($api->isUnauthorized);
     }
 
-    /**
-     * @throws ClientExceptionInterface
-     */
+    public function testThrowsHttpError(): void
+    {
+        $http = $this->getHttpClientMock(RFC7231::INTERNAL_SERVER_ERROR, '');
+        $api = new APIRequestWrapper(
+            '', [], $http, new Psr17Factory()
+        );
+
+        $this->expectException(HttpRequestException::class);
+        $this->expectExceptionCode(RFC7231::INTERNAL_SERVER_ERROR);
+
+        $api->get();
+    }
+
     public function testRecoverableHttpError(): void
     {
         $this->assertStatusRecoverable(true, RFC7231::CONFLICT);
@@ -55,18 +62,12 @@ class APIRequestWrapperTest extends TestCase
         $this->assertStatusRecoverable(true, RFC7231::INTERNAL_SERVER_ERROR);
     }
 
-    /**
-     * @throws ClientExceptionInterface
-     */
     public function testUnrecoverableHttpError(): void
     {
         $this->assertStatusRecoverable(false, RFC7235::UNAUTHORIZED);
         $this->assertStatusRecoverable(false, RFC7231::NOT_FOUND);
     }
 
-    /**
-     * @throws ClientExceptionInterface
-     */
     private function assertStatusRecoverable(bool $recoverable, int $status): void
     {
         $http = $this->getHttpClientMock($status, '');
@@ -79,6 +80,8 @@ class APIRequestWrapperTest extends TestCase
             $this->fail('Exception not thrown');
         } catch (HttpRequestException $e) {
             $this->assertEquals($recoverable, $e->isRecoverable);
+        } catch (InvalidApiKeyException $e) {
+            $this->assertEquals("", $e->getMessage());
         }
     }
 
