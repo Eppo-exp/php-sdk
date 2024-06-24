@@ -25,7 +25,9 @@ class ConfigurationStore implements IConfigurationStore
             $this->cache->set($flag->key, serialize($flag));
         } catch (InvalidArgumentException $e) {
             $key = $flag->key;
-            syslog(LOG_WARNING, "[EPPO SDK] Invalid flag key ${key}: " . $e->getMessage());
+
+            // Simple cache throws exceptions when a keystring is not a legal value.
+            syslog(LOG_WARNING, "[EPPO SDK] Illegal key value ${key}: " . $e->getMessage());
         }
     }
 
