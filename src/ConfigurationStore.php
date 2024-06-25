@@ -35,7 +35,9 @@ class ConfigurationStore implements IConfigurationStore
             $inflated = unserialize($result);
             return $inflated === false ? null : $inflated;
         } catch (InvalidArgumentException $e) {
-            syslog(LOG_WARNING, "[EPPO SDK] Invalid flag key ${key}: " . $e->getMessage());
+
+            // Simple cache throws exceptions when a keystring is not a legal value (characters {}()/@: are illegal)
+            syslog(LOG_WARNING, "[EPPO SDK] Illegal flag key ${key}: " . $e->getMessage());
             return null;
         }
     }
@@ -46,8 +48,8 @@ class ConfigurationStore implements IConfigurationStore
         } catch (InvalidArgumentException $e) {
             $key = $flag->key;
 
-            // Simple cache throws exceptions when a keystring is not a legal value.
-            syslog(LOG_WARNING, "[EPPO SDK] Illegal key value ${key}: " . $e->getMessage());
+            // Simple cache throws exceptions when a keystring is not a legal value (characters {}()/@: are illegal)
+            syslog(LOG_WARNING, "[EPPO SDK] Illegal flag key ${key}: " . $e->getMessage());
         }
     }
 

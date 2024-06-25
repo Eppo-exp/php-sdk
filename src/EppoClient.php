@@ -137,6 +137,32 @@ class EppoClient
     }
 
     /**
+     * @throws EppoClientException
+     */
+    private function getTypedAssignment(
+        VariationType $valueType,
+        string $flagKey,
+        string $subjectKey,
+        array $subjectAttributes,
+        array|bool|float|int|string $defaultValue
+    ): array|bool|float|int|string {
+        try {
+            $assignmentVariation = $this->getAssignmentDetail($flagKey, $subjectKey, $subjectAttributes, $valueType);
+            if ($assignmentVariation === null) {
+                return $defaultValue;
+            }
+            return match ($valueType) {
+                VariationType::JSON, VariationType::STRING => $assignmentVariation->value,
+                VariationType::NUMERIC => doubleval($assignmentVariation->value),
+                VariationType::INTEGER => intval($assignmentVariation->value),
+                VariationType::BOOLEAN => boolval($assignmentVariation->value)
+            };
+        } catch (Exception $exception) {
+            return $this->handleException($exception, $defaultValue);
+        }
+    }
+
+    /**
      * Gets the assigned string variation for the given subject and experiment
      * If there is an issue retrieving the variation or the retrieved variation is not a string, null wil be returned.
      *
@@ -179,6 +205,48 @@ class EppoClient
     }
 
     /**
+     * Gets the assigned numeric variation as a float for the given subject and experiment
+     * If there is an issue retrieving the variation or the retrieved variation is not an integer or float (double), null wil be returned.
+     *
+     * @throws EppoClientException
+     */
+    public function getNumericAssignment(
+        string $flagKey,
+        string $subjectKey,
+        array $subjectAttributes,
+        float $defaultValue
+    ): float {
+        return $this->getTypedAssignment(
+            VariationType::NUMERIC,
+            $flagKey,
+            $subjectKey,
+            $subjectAttributes,
+            $defaultValue
+        );
+    }
+
+    /**
+     * Gets the assigned variation as an integer for the given subject and experiment
+     * If there is an issue retrieving the variation or the retrieved variation is not an integer, null wil be returned.
+     *
+     * @throws EppoClientException
+     */
+    public function getIntegerAssignment(
+        string $flagKey,
+        string $subjectKey,
+        array $subjectAttributes,
+        int $defaultValue
+    ): int {
+        return $this->getTypedAssignment(
+            VariationType::INTEGER,
+            $flagKey,
+            $subjectKey,
+            $subjectAttributes,
+            $defaultValue
+        );
+    }
+
+    /**
      * Gets the assigned JSON variation, as parsed by PHP's json_decode, for the given subject and experiment.
      * If there is an issue retrieving the variation or the retrieved variation is not valid JSON, null wil be returned.
      *
@@ -197,32 +265,6 @@ class EppoClient
         array $defaultValue
     ): array {
         return $this->getTypedAssignment(VariationType::JSON, $flagKey, $subjectKey, $subjectAttributes, $defaultValue);
-    }
-
-    /**
-     * @throws EppoClientException
-     */
-    private function getTypedAssignment(
-        VariationType $valueType,
-        string $flagKey,
-        string $subjectKey,
-        array $subjectAttributes,
-        array|bool|float|int|string $defaultValue
-    ): array|bool|float|int|string {
-        try {
-            $assignmentVariation = $this->getAssignmentDetail($flagKey, $subjectKey, $subjectAttributes, $valueType);
-            if ($assignmentVariation === null) {
-                return $defaultValue;
-            }
-            return match ($valueType) {
-                VariationType::JSON, VariationType::STRING => $assignmentVariation->value,
-                VariationType::NUMERIC => doubleval($assignmentVariation->value),
-                VariationType::INTEGER => intval($assignmentVariation->value),
-                VariationType::BOOLEAN => boolval($assignmentVariation->value)
-            };
-        } catch (Exception $exception) {
-            return $this->handleException($exception, $defaultValue);
-        }
     }
 
     /**
@@ -345,49 +387,6 @@ class EppoClient
             return $defaultValue;
         }
         throw EppoClientException::From($exception);
-    }
-
-
-    /**
-     * Gets the assigned numeric variation as a float for the given subject and experiment
-     * If there is an issue retrieving the variation or the retrieved variation is not an integer or float (double), null wil be returned.
-     *
-     * @throws EppoClientException
-     */
-    public function getNumericAssignment(
-        string $flagKey,
-        string $subjectKey,
-        array $subjectAttributes,
-        float $defaultValue
-    ): float {
-        return $this->getTypedAssignment(
-            VariationType::NUMERIC,
-            $flagKey,
-            $subjectKey,
-            $subjectAttributes,
-            $defaultValue
-        );
-    }
-
-    /**
-     * Gets the assigned variation as an integer for the given subject and experiment
-     * If there is an issue retrieving the variation or the retrieved variation is not an integer, null wil be returned.
-     *
-     * @throws EppoClientException
-     */
-    public function getIntegerAssignment(
-        string $flagKey,
-        string $subjectKey,
-        array $subjectAttributes,
-        int $defaultValue
-    ): int {
-        return $this->getTypedAssignment(
-            VariationType::INTEGER,
-            $flagKey,
-            $subjectKey,
-            $subjectAttributes,
-            $defaultValue
-        );
     }
 
     /**
