@@ -2,27 +2,34 @@
 
 namespace Eppo;
 
+use Eppo\Cache\CacheType;
+use Eppo\Cache\ICacheFactory;
 use Eppo\DTO\Flag;
+use Eppo\Exception\EppoClientException;
 use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 
 class ConfigurationStore implements IConfigurationStore
 {
-    /** @var CacheInterface */
-    private $cache;
+    private CacheInterface $flagCache;
+
+    private CacheInterface $metadataCache;
+
+    const FLAG_TIMESTAMP = "flagTimestamp";
 
     /**
-     * @param CacheInterface $cache
+     * @param ICacheFactory $cacheFactory
      */
-    public function __construct(CacheInterface $cache)
+    public function __construct(ICacheFactory $cacheFactory)
     {
-        $this->cache = $cache;
+        $this->flagCache = $cacheFactory->createCache(CacheType::FLAG);
+        $this->metadataCache = $cacheFactory->createCache(CacheType::META);
     }
 
-    public function setFlag(Flag $flag): void
+    private function setFlag(Flag $flag): void
     {
         try {
-            $this->cache->set($flag->key, serialize($flag));
+            $this->flagCache->set($flag->key, serialize($flag));
         } catch (InvalidArgumentException $e) {
             $key = $flag->key;
 
@@ -31,8 +38,18 @@ class ConfigurationStore implements IConfigurationStore
         }
     }
 
+    /**
+     * @throws EppoClientException
+     */
     public function setFlags(array $flags): void
     {
+        // Set last fetch timestamp.
+        try {
+            $this->metadataCache->set(self::FLAG_TIMESTAMP, time());
+        } catch (InvalidArgumentException $e) {
+            throw EppoClientException::From($e);
+        }
+
         foreach($flags as $flag) {
             $this->setFlag($flag);
         }
@@ -41,7 +58,7 @@ class ConfigurationStore implements IConfigurationStore
     public function get(string $key): ?Flag
     {
         try {
-            $result = $this->cache->get($key);
+            $result = $this->flagCache->get($key);
             if ($result == null) return null;
 
             $inflated = unserialize($result);
@@ -50,5 +67,18 @@ class ConfigurationStore implements IConfigurationStore
             syslog(LOG_WARNING, "[EPPO SDK] Invalid flag key ${key}: " . $e->getMessage());
             return null;
         }
+    }
+
+    public function getFlagCacheAge(): int
+    {
+        try {
+            $lastFetch = $this->metadataCache->get(self::FLAG_TIMESTAMP);
+            if ($lastFetch == null) {
+                return -1;
+            }
+        } catch (InvalidArgumentException $e) {
+            return -1;
+        }
+        return time() - $lastFetch;
     }
 }

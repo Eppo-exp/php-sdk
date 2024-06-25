@@ -2,6 +2,8 @@
 
 namespace Eppo;
 
+use Eppo\Cache\DefaultCacheFactory;
+use Eppo\Cache\ICacheFactory;
 use Eppo\Config\SDKData;
 use Eppo\DTO\Variation;
 use Eppo\DTO\VariationType;
@@ -17,8 +19,6 @@ use Http\Discovery\Psr17Factory;
 use Http\Discovery\Psr18ClientDiscovery;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
-use Psr\SimpleCache\CacheInterface;
-use Sarahman\SimpleCache\FileSystemCache;
 
 class EppoClient
 {
@@ -50,7 +50,7 @@ class EppoClient
      * Initializes EppoClient singleton instance.
      *
      * @param LoggerInterface|null $assignmentLogger optional assignment logger. Please check Eppo/LoggerLoggerInterface.
-     * @param CacheInterface|null $cache optional cache instance. Compatible with psr-16 simple cache. By default, (if nothing passed) EppoClient will use FileSystem cache.
+     * @param ICacheFactory|null $cacheFactory optional cache factory instance. Compatible with psr-16 simple cache. By default, (if nothing passed) EppoClient will use FileSystem cache.
      * @param ClientInterface|null $httpClient optional PSR-18 ClientInterface. If nothing is passed, EppoClient will use Discovery to locate a suitable implementation in the project.
      * @param RequestFactoryInterface|null $requestFactory optional PSR-17 Request Factory implementation. If none is provided, EppoClient will use Discovery
      * @throws EppoClientInitializationException
@@ -59,7 +59,7 @@ class EppoClient
         string $apiKey,
         ?string $baseUrl = null,
         LoggerInterface $assignmentLogger = null,
-        CacheInterface $cache = null,
+        ICacheFactory $cacheFactory = null,
         ClientInterface $httpClient = null,
         RequestFactoryInterface $requestFactory = null,
         ?bool $isGracefulMode = true
@@ -72,18 +72,11 @@ class EppoClient
                 'sdkName' => $sdkData->getSdkName()
             ];
 
-            if (!$cache) {
-                try {
-                    $cache = new FileSystemCache(__DIR__ . '/../cache');
-                } catch (Exception $e) {
-                    throw new EppoClientInitializationException(
-                        "Unable to initialize Eppo Client: " . $e->getMessage(),
-                        $e
-                    );
-                }
+            if (!$cacheFactory) {
+                $cacheFactory = new DefaultCacheFactory();
             }
 
-            $configStore = new ConfigurationStore($cache);
+            $configStore = new ConfigurationStore($cacheFactory);
 
             if (!$httpClient) {
                 $httpClient = Psr18ClientDiscovery::find();
@@ -114,6 +107,25 @@ class EppoClient
     }
 
     /**
+     * @throws EppoClientInitializationException
+     */
+    private static function createAndInitClient(
+        FlagConfigurationLoader $configLoader,
+        PollerInterface $poller,
+        ?LoggerInterface $assignmentLogger,
+        ?bool $isGracefulMode
+    ): EppoClient {
+        try {
+            $configLoader->maybeReloadConfiguration();
+        } catch (HttpRequestException|InvalidApiKeyException $e) {
+            throw new EppoClientInitializationException(
+                "Unable to initialize Eppo Client: " . $e->getMessage()
+            );
+        }
+        return new self($configLoader, $poller, $assignmentLogger, $isGracefulMode);
+    }
+
+    /**
      * Gets singleton instance of the EppoClient.
      * Run EppoClient->init before using this.
      *
@@ -125,25 +137,44 @@ class EppoClient
     }
 
     /**
+     * Only used for unit-tests.
+     * For production use please use only singleton instance.
+     *
+     * @param FlagConfigurationLoader $configurationLoader
+     * @param PollerInterface $poller
+     * @param LoggerInterface|null $logger
+     * @param bool|null $isGracefulMode
+     * @return EppoClient
      * @throws EppoClientInitializationException
      */
-    private static function createAndInitClient(
-        FlagConfigurationLoader $configLoader,
+    public static function createTestClient(
+        FlagConfigurationLoader $configurationLoader,
         PollerInterface $poller,
-        ?LoggerInterface $assignmentLogger,
-        ?bool $isGracefulMode
+        ?LoggerInterface $logger = null,
+        ?bool $isGracefulMode = true
     ): EppoClient {
-        $instance = new self($configLoader, $poller, $assignmentLogger, $isGracefulMode);
+        return self::createAndInitClient($configurationLoader, $poller, $logger, $isGracefulMode);
+    }
 
-        // Load configuration on startup.
-        try {
-            $configLoader->fetchAndStoreConfigurations();
-        } catch (HttpRequestException $e) {
-            throw new EppoClientInitializationException("Unable to initialize Eppo Client: " . $e->getMessage(), 0, $e);
-        } catch (InvalidApiKeyException $e) {
-            throw new EppoClientInitializationException("Invalid API key provided");
-        }
-        return $instance;
+    /**
+     * Gets the assigned string variation for the given subject and experiment
+     * If there is an issue retrieving the variation or the retrieved variation is not a string, null wil be returned.
+     *
+     * @throws EppoClientException
+     */
+    public function getStringAssignment(
+        string $flagKey,
+        string $subjectKey,
+        array $subjectAttributes,
+        string $defaultValue
+    ): string {
+        return $this->getTypedAssignment(
+            VariationType::STRING,
+            $flagKey,
+            $subjectKey,
+            $subjectAttributes,
+            $defaultValue
+        );
     }
 
     /**
@@ -173,24 +204,107 @@ class EppoClient
     }
 
     /**
-     * Gets the assigned string variation for the given subject and experiment
-     * If there is an issue retrieving the variation or the retrieved variation is not a string, null wil be returned.
+     * Maps a subject to a Variation for the given flag.
      *
-     * @throws EppoClientException
+     * If there is an expected type for the variation value, a type check is performed as well.
+     *
+     * Returns null if the subject has no allocation for the flag.
+     *
+     * @param string $flagKey a feature flag identifier
+     * @param string $subjectKey an identifier for the experiment. Ex: a user ID
+     * @param array $subjectAttributes optional attributes to use in the evaluation of experiment targeting rules. These attributes are also included in the loggin callback.
+     * @param VariationType|null $expectedVariationType
+     * @return Variation|null the Variation DTO assigned to the subject, or null if there is no assignment,
+     * an error was encountered, or an expected type was provided that didn't match the variation's typed
+     * value.
+     * @throws InvalidArgumentException
      */
-    public function getStringAssignment(
+    private function getAssignmentDetail(
         string $flagKey,
         string $subjectKey,
-        array $subjectAttributes,
-        string $defaultValue
-    ): string {
-        return $this->getTypedAssignment(
-            VariationType::STRING,
-            $flagKey,
-            $subjectKey,
-            $subjectAttributes,
-            $defaultValue
-        );
+        array $subjectAttributes = [],
+        VariationType $expectedVariationType = null
+    ): ?Variation {
+        Validator::validateNotBlank($subjectKey, 'Invalid argument: subjectKey cannot be blank');
+        Validator::validateNotBlank($flagKey, 'Invalid argument: flagKey cannot be blank');
+
+        $flag = $this->configurationLoader->get($flagKey);
+
+        if (!$flag) {
+            syslog(LOG_WARNING, "[EPPO SDK] No assigned variation; flag not found ${flagKey}");
+            return null;
+        }
+
+        $evaluationResult = $this->evaluator->evaluateFlag($flag, $subjectKey, $subjectAttributes);
+        $computedVariation = $evaluationResult?->variation ?? null;
+
+        // If there is an assignment and the expected type has been expressed, do a type check and log an error if they don't match.
+        if ($computedVariation && $expectedVariationType && !$this->checkExpectedType(
+                $expectedVariationType,
+                $computedVariation->value
+            )) {
+            $actualType = gettype($computedVariation->value);
+            $eVarType = $expectedVariationType->value;
+            syslog(LOG_ERR, "[EPPO SDK] Variation does not have the expected type, ${eVarType}; found ${actualType}");
+            return null;
+        }
+
+        if (!$flag->enabled) {
+            syslog(LOG_INFO, "[EPPO SDK] No assigned variation; flag is disabled.");
+            return null;
+        }
+
+        // If an assignment was made, log it using the user-provided logger callback.
+        if ($computedVariation && $this->assignmentLogger && $evaluationResult->doLog) {
+            try {
+                $allocationKey = $evaluationResult->allocationKey;
+                $sdkData = (new SDKData())->asArray();
+                $experimentKey = "$flagKey-$allocationKey";
+                $this->assignmentLogger->logAssignment(
+                    new AssignmentEvent
+                    (
+                        $experimentKey,
+                        $evaluationResult->variation->key,
+                        $allocationKey,
+                        $flagKey,
+                        $subjectKey,
+                        time(),
+                        $subjectAttributes,
+                        $sdkData,
+                        $evaluationResult->extraLogging ?? []
+                    )
+                );
+            } catch (Exception $exception) {
+                error_log('[Eppo SDK] Error logging assignment event: ' . $exception->getMessage());
+            }
+        }
+
+        return $computedVariation;
+    }
+
+    private function checkExpectedType(VariationType $expectedVariationType, $typedValue): bool
+    {
+        return (
+            ($expectedVariationType == VariationType::STRING && gettype($typedValue) === "string") ||
+            ($expectedVariationType == VariationType::INTEGER && gettype($typedValue) === "integer") ||
+            ($expectedVariationType == VariationType::NUMERIC && in_array(gettype($typedValue), ["integer", "double"]
+                )) ||
+            ($expectedVariationType == VariationType::BOOLEAN && gettype($typedValue) === "boolean") ||
+            ($expectedVariationType == VariationType::JSON)); // JSON type check un-necessary here.
+    }
+
+    /**
+     * @throws EppoClientException
+     */
+    private function handleException(
+        Exception $exception,
+        array|bool|float|int|string|null $defaultValue
+    ): array|bool|float|int|string|null {
+        if ($this->isGracefulMode) {
+            error_log('[Eppo SDK] Error getting assignment: ' . $exception->getMessage());
+            return $defaultValue;
+        }
+        throw EppoClientException::From($exception);
     }
 
     /**
@@ -277,97 +391,6 @@ class EppoClient
         return $this->getTypedAssignment(VariationType::JSON, $flagKey, $subjectKey, $subjectAttributes, $defaultValue);
     }
 
-    /**
-     * Maps a subject to a Variation for the given flag.
-     *
-     * If there is an expected type for the variation value, a type check is performed as well.
-     *
-     * Returns null if the subject has no allocation for the flag.
-     *
-     * @param string $flagKey a feature flag identifier
-     * @param string $subjectKey an identifier for the experiment. Ex: a user ID
-     * @param array $subjectAttributes optional attributes to use in the evaluation of experiment targeting rules. These attributes are also included in the loggin callback.
-     * @param VariationType|null $expectedVariationType
-     * @return Variation|null the Variation DTO assigned to the subject, or null if there is no assignment,
-     * an error was encountered, or an expected type was provided that didn't match the variation's typed
-     * value.
-     * @throws InvalidArgumentException
-     */
-    private function getAssignmentDetail(
-        string $flagKey,
-        string $subjectKey,
-        array $subjectAttributes = [],
-        VariationType $expectedVariationType = null
-    ): ?Variation {
-        Validator::validateNotBlank($subjectKey, 'Invalid argument: subjectKey cannot be blank');
-        Validator::validateNotBlank($flagKey, 'Invalid argument: flagKey cannot be blank');
-
-        $flag = $this->configurationLoader->get($flagKey);
-
-        if (!$flag) {
-            syslog(LOG_WARNING, "[EPPO SDK] No assigned variation; flag not found ${flagKey}");
-            return null;
-        }
-
-        $evaluationResult = $this->evaluator->evaluateFlag($flag, $subjectKey, $subjectAttributes);
-        $computedVariation = $evaluationResult?->variation ?? null;
-
-        // If there is an assignment and the expected type has been expressed, do a type check and log an error if they don't match.
-        if ($computedVariation && $expectedVariationType && !$this->checkExpectedType(
-                $expectedVariationType,
-                $computedVariation->value
-            )) {
-            $actualType = gettype($computedVariation->value);
-            $eVarType = $expectedVariationType->value;
-            syslog(LOG_ERR, "[EPPO SDK] Variation does not have the expected type, ${eVarType}; found ${actualType}");
-            return null;
-        }
-
-        if (!$flag->enabled) {
-            syslog(LOG_INFO, "[EPPO SDK] No assigned variation; flag is disabled.");
-            return null;
-        }
-
-        // If an assignment was made, log it using the user-provided logger callback.
-        if ($computedVariation && $this->assignmentLogger && $evaluationResult->doLog) {
-            try {
-                $allocationKey = $evaluationResult->allocationKey;
-                $sdkData = (new SDKData())->asArray();
-                $experimentKey = "$flagKey-$allocationKey";
-                $this->assignmentLogger->logAssignment(
-                    new AssignmentEvent
-                    (
-                        $experimentKey,
-                        $evaluationResult->variation->key,
-                        $allocationKey,
-                        $flagKey,
-                        $subjectKey,
-                        time(),
-                        $subjectAttributes,
-                        $sdkData,
-                        $evaluationResult->extraLogging ?? []
-                    )
-                );
-            } catch (Exception $exception) {
-                error_log('[Eppo SDK] Error logging assignment event: ' . $exception->getMessage());
-            }
-        }
-
-        return $computedVariation;
-    }
-
-
-    private function checkExpectedType(VariationType $expectedVariationType, $typedValue): bool
-    {
-        return (
-            ($expectedVariationType == VariationType::STRING && gettype($typedValue) === "string") ||
-            ($expectedVariationType == VariationType::INTEGER && gettype($typedValue) === "integer") ||
-            ($expectedVariationType == VariationType::NUMERIC && in_array(gettype($typedValue), ["integer", "double"]
-                )) ||
-            ($expectedVariationType == VariationType::BOOLEAN && gettype($typedValue) === "boolean") ||
-            ($expectedVariationType == VariationType::JSON)); // JSON type check un-necessary here.
-    }
-
     public function startPolling(): void
     {
         $this->poller->start();
@@ -383,40 +406,5 @@ class EppoClient
      */
     protected function __clone()
     {
-    }
-
-    /**
-     * @throws EppoClientException
-     */
-    private function handleException(
-        Exception $exception,
-        array|bool|float|int|string|null $defaultValue
-    ): array|bool|float|int|string|null {
-        if ($this->isGracefulMode) {
-            error_log('[Eppo SDK] Error getting assignment: ' . $exception->getMessage());
-            return $defaultValue;
-        }
-        throw EppoClientException::From($exception);
-    }
-
-    /**
-     * Only used for unit-tests.
-     * For production use please use only singleton instance.
-     *
-     * @param FlagConfigurationLoader $configurationLoader
-     * @param PollerInterface $poller
-     * @param LoggerInterface|null $logger
-     * @param bool|null $isGracefulMode
-     * @return EppoClient
-     * @throws EppoClientInitializationException
-     */
-    public static function createTestClient(
-        FlagConfigurationLoader $configurationLoader,
-        PollerInterface $poller,
-        ?LoggerInterface $logger = null,
-        ?bool $isGracefulMode = true
-    ): EppoClient {
-
-        return self::createAndInitClient($configurationLoader, $poller, $logger, $isGracefulMode);
     }
 }

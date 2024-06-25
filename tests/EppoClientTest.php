@@ -3,6 +3,7 @@
 namespace Eppo\Tests;
 
 use Eppo\APIRequestWrapper;
+use Eppo\Cache\DefaultCacheFactory;
 use Eppo\Config\SDKData;
 use Eppo\ConfigurationStore;
 use Eppo\DTO\VariationType;
@@ -43,6 +44,11 @@ class EppoClientTest extends TestCase
     public static function tearDownAfterClass(): void
     {
         MockWebServer::stop();
+    }
+
+    public function setUp(): void
+    {
+        DefaultCacheFactory::clearCaches();
     }
 
     public function testGracefulModeDoesNotThrow()
@@ -111,6 +117,7 @@ class EppoClientTest extends TestCase
             ->willThrowException(new HttpRequestException());
 
         $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
+        $configStore->expects($this->any())->method('getFlagCacheAge')->willReturn(-1);
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
 
         $this->expectException(EppoClientInitializationException::class);
@@ -128,6 +135,7 @@ class EppoClientTest extends TestCase
             ->willThrowException(new HttpRequestException());
 
         $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
+        $configStore->expects($this->any())->method('getFlagCacheAge')->willReturn(-1);
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
 
         $this->expectException(EppoClientInitializationException::class);
@@ -202,7 +210,7 @@ class EppoClientTest extends TestCase
         array $mockedResponse,
         ?Throwable $mockedThrowable = null
     ): FlagConfigurationLoader {
-        $cache = new FileSystemCache();
+        $cache = new DefaultCacheFactory();
         $sdkData = new SDKData();
 
         $sdkParams = [

@@ -6,15 +6,6 @@ use Eppo\DTO\Flag;
 
 interface IConfigurationStore extends IFlags
 {
-
-    /**
-     * Sets a flag configuration in the data store
-     *
-     * @param Flag $flag
-     * @return void
-     */
-    public function setFlag(Flag $flag): void;
-
     /**
      * Sets multiple flags in the data store.
      *
@@ -22,4 +13,11 @@ interface IConfigurationStore extends IFlags
      * @return void
      */
     public function setFlags(array $flags): void;
+
+    /**
+     * Gets the age of the cache
+     *
+     * @return int The age of the cache in seconds. -1 if there has been no cache set.
+     */
+    public function getFlagCacheAge(): int;
 }

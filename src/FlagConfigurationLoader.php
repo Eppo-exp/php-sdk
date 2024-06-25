@@ -12,9 +12,22 @@ class FlagConfigurationLoader implements IFlags
 
     public function __construct(
         private readonly APIRequestWrapper $apiRequestWrapper,
-        private readonly IConfigurationStore $configurationStore
+        private readonly IConfigurationStore $configurationStore,
+        private readonly int $cacheAgeLimit = 30
     ) {
         $this->parser = new UFCParser();
+    }
+
+    /**
+     * @throws HttpRequestException
+     * @throws InvalidApiKeyException
+     */
+    public function maybeReloadConfiguration(): void
+    {
+        $cacheAge = $this->configurationStore->getFlagCacheAge();
+        if ($cacheAge < 0 || $cacheAge >= $this->cacheAgeLimit) {
+            $this->fetchAndStoreConfigurations();
+        }
     }
 
     /**
@@ -36,6 +49,7 @@ class FlagConfigurationLoader implements IFlags
 
     public function get(string $key): ?Flag
     {
+        $this->maybeReloadConfiguration();
         return $this->configurationStore->get($key);
     }
 }
