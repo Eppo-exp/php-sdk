@@ -137,26 +137,6 @@ class EppoClient
     }
 
     /**
-     * Only used for unit-tests.
-     * For production use please use only singleton instance.
-     *
-     * @param FlagConfigurationLoader $configurationLoader
-     * @param PollerInterface $poller
-     * @param LoggerInterface|null $logger
-     * @param bool|null $isGracefulMode
-     * @return EppoClient
-     * @throws EppoClientInitializationException
-     */
-    public static function createTestClient(
-        FlagConfigurationLoader $configurationLoader,
-        PollerInterface $poller,
-        ?LoggerInterface $logger = null,
-        ?bool $isGracefulMode = true
-    ): EppoClient {
-        return self::createAndInitClient($configurationLoader, $poller, $logger, $isGracefulMode);
-    }
-
-    /**
      * Gets the assigned string variation for the given subject and experiment
      * If there is an issue retrieving the variation or the retrieved variation is not a string, null wil be returned.
      *
@@ -175,6 +155,48 @@ class EppoClient
             $subjectAttributes,
             $defaultValue
         );
+    }
+
+    /**
+     * Gets the assigned boolean variation for the given subject and experiment
+     * If there is an issue retrieving the variation or the retrieved variation is not a boolean, null wil be returned.
+     *
+     * @throws EppoClientException
+     */
+    public function getBooleanAssignment(
+        string $flagKey,
+        string $subjectKey,
+        array $subjectAttributes,
+        bool $defaultValue
+    ): bool {
+        return $this->getTypedAssignment(
+            VariationType::BOOLEAN,
+            $flagKey,
+            $subjectKey,
+            $subjectAttributes,
+            $defaultValue
+        );
+    }
+
+    /**
+     * Gets the assigned JSON variation, as parsed by PHP's json_decode, for the given subject and experiment.
+     * If there is an issue retrieving the variation or the retrieved variation is not valid JSON, null wil be returned.
+     *
+     * @param string $flagKey
+     * @param string $subjectKey
+     * @param array $subjectAttributes
+     * @param array $defaultValue
+     * @return array the parsed variation JSON
+     *
+     * @throws EppoClientException
+     */
+    public function getJSONAssignment(
+        string $flagKey,
+        string $subjectKey,
+        array $subjectAttributes,
+        array $defaultValue
+    ): array {
+        return $this->getTypedAssignment(VariationType::JSON, $flagKey, $subjectKey, $subjectAttributes, $defaultValue);
     }
 
     /**
@@ -293,6 +315,24 @@ class EppoClient
             ($expectedVariationType == VariationType::JSON)); // JSON type check un-necessary here.
     }
 
+
+    public function startPolling(): void
+    {
+        $this->poller->start();
+    }
+
+    public function stopPolling(): void
+    {
+        $this->poller->stop();
+    }
+
+    /**
+     * Singletons should not be cloneable.
+     */
+    protected function __clone()
+    {
+    }
+
     /**
      * @throws EppoClientException
      */
@@ -307,26 +347,6 @@ class EppoClient
         throw EppoClientException::From($exception);
     }
 
-    /**
-     * Gets the assigned boolean variation for the given subject and experiment
-     * If there is an issue retrieving the variation or the retrieved variation is not a boolean, null wil be returned.
-     *
-     * @throws EppoClientException
-     */
-    public function getBooleanAssignment(
-        string $flagKey,
-        string $subjectKey,
-        array $subjectAttributes,
-        bool $defaultValue
-    ): bool {
-        return $this->getTypedAssignment(
-            VariationType::BOOLEAN,
-            $flagKey,
-            $subjectKey,
-            $subjectAttributes,
-            $defaultValue
-        );
-    }
 
     /**
      * Gets the assigned numeric variation as a float for the given subject and experiment
@@ -371,40 +391,22 @@ class EppoClient
     }
 
     /**
-     * Gets the assigned JSON variation, as parsed by PHP's json_decode, for the given subject and experiment.
-     * If there is an issue retrieving the variation or the retrieved variation is not valid JSON, null wil be returned.
+     * Only used for unit-tests.
+     * For production use please use only singleton instance.
      *
-     * @param string $flagKey
-     * @param string $subjectKey
-     * @param array $subjectAttributes
-     * @param array $defaultValue
-     * @return array the parsed variation JSON
-     *
-     * @throws EppoClientException
+     * @param FlagConfigurationLoader $configurationLoader
+     * @param PollerInterface $poller
+     * @param LoggerInterface|null $logger
+     * @param bool|null $isGracefulMode
+     * @return EppoClient
+     * @throws EppoClientInitializationException
      */
-    public function getJSONAssignment(
-        string $flagKey,
-        string $subjectKey,
-        array $subjectAttributes,
-        array $defaultValue
-    ): array {
-        return $this->getTypedAssignment(VariationType::JSON, $flagKey, $subjectKey, $subjectAttributes, $defaultValue);
-    }
-
-    public function startPolling(): void
-    {
-        $this->poller->start();
-    }
-
-    public function stopPolling(): void
-    {
-        $this->poller->stop();
-    }
-
-    /**
-     * Singletons should not be cloneable.
-     */
-    protected function __clone()
-    {
+    public static function createTestClient(
+        FlagConfigurationLoader $configurationLoader,
+        PollerInterface $poller,
+        ?LoggerInterface $logger = null,
+        ?bool $isGracefulMode = true
+    ): EppoClient {
+        return self::createAndInitClient($configurationLoader, $poller, $logger, $isGracefulMode);
     }
 }

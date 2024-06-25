@@ -18,6 +18,12 @@ class FlagConfigurationLoader implements IFlags
         $this->parser = new UFCParser();
     }
 
+    public function get(string $key): ?Flag
+    {
+        $this->maybeReloadConfiguration();
+        return $this->configurationStore->get($key);
+    }
+
     /**
      * @throws HttpRequestException
      * @throws InvalidApiKeyException
@@ -45,11 +51,5 @@ class FlagConfigurationLoader implements IFlags
 
         $inflated = array_map(fn($object) => $this->parser->parseFlag($object), $responseData['flags']);
         $this->configurationStore->setFlags($inflated);
-    }
-
-    public function get(string $key): ?Flag
-    {
-        $this->maybeReloadConfiguration();
-        return $this->configurationStore->get($key);
     }
 }

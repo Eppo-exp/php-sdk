@@ -26,6 +26,19 @@ class ConfigurationStore implements IConfigurationStore
         $this->metadataCache = $cacheFactory->createCache(CacheType::META);
     }
 
+    public function get(string $key): ?Flag
+    {
+        try {
+            $result = $this->flagCache->get($key);
+            if ($result == null) return null;
+
+            $inflated = unserialize($result);
+            return $inflated === false ? null : $inflated;
+        } catch (InvalidArgumentException $e) {
+            syslog(LOG_WARNING, "[EPPO SDK] Invalid flag key ${key}: " . $e->getMessage());
+            return null;
+        }
+    }
     private function setFlag(Flag $flag): void
     {
         try {
@@ -52,20 +65,6 @@ class ConfigurationStore implements IConfigurationStore
 
         foreach($flags as $flag) {
             $this->setFlag($flag);
-        }
-    }
-
-    public function get(string $key): ?Flag
-    {
-        try {
-            $result = $this->flagCache->get($key);
-            if ($result == null) return null;
-
-            $inflated = unserialize($result);
-            return $inflated === false ? null : $inflated;
-        } catch (InvalidArgumentException $e) {
-            syslog(LOG_WARNING, "[EPPO SDK] Invalid flag key ${key}: " . $e->getMessage());
-            return null;
         }
     }
 
