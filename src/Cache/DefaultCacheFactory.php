@@ -13,7 +13,7 @@ class DefaultCacheFactory
      */
     public static  function create(): CacheInterface
     {
-        return new FileSystemCache(__DIR__ . '/../../.cache/');
+        return new FileSystemCache(sys_get_temp_dir() . DIRECTORY_SEPARATOR . ".EppoCache");
     }
 
     /**
