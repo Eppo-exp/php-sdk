@@ -14,5 +14,5 @@ interface IFlags
      * @param string $key
      * @return ?Flag
      */
-    public function get(string $key): ?Flag;
+    public function getFlag(string $key): ?Flag;
 }

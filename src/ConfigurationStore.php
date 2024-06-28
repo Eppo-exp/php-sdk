@@ -3,7 +3,6 @@
 namespace Eppo;
 
 use Eppo\Cache\CacheType;
-use Eppo\Cache\ICacheFactory;
 use Eppo\DTO\Flag;
 use Eppo\Exception\EppoClientException;
 use Psr\SimpleCache\CacheInterface;
@@ -11,9 +10,8 @@ use Psr\SimpleCache\InvalidArgumentException;
 
 class ConfigurationStore implements IConfigurationStore
 {
-    private CacheInterface $cache;
+    private CacheInterface $rootCache;
     private CacheInterface $flagCache;
-
     private CacheInterface $metadataCache;
 
     const FLAG_TIMESTAMP = "flagTimestamp";
@@ -23,11 +21,12 @@ class ConfigurationStore implements IConfigurationStore
      */
     public function __construct(CacheInterface $cache)
     {
+        $this->rootCache = $cache;
         $this->flagCache = new Cache\NamespaceCache(CacheType::FLAG, $cache);
         $this->metadataCache = new Cache\NamespaceCache(CacheType::META, $cache);
     }
 
-    public function get(string $key): ?Flag
+    public function getFlag(string $key): ?Flag
     {
         try {
             $result = $this->flagCache->get($key);
@@ -57,21 +56,29 @@ class ConfigurationStore implements IConfigurationStore
     /**
      * @throws EppoClientException
      */
-    public function setFlags(array $flags): void
+    public function setConfigurations(array $flags) : void
     {
-        // Set last fetch timestamp.
         try {
+            // Clear all stored config before setting data.
+            $this->rootCache->clear();
+
+            // Set last fetch timestamp.
             $this->metadataCache->set(self::FLAG_TIMESTAMP, time());
+            $this->setFlags($flags);
         } catch (InvalidArgumentException $e) {
             throw EppoClientException::From($e);
         }
 
+    }
+
+    private function setFlags(array $flags): void
+    {
         foreach($flags as $flag) {
             $this->setFlag($flag);
         }
     }
 
-    public function getFlagCacheAge(): int
+    public function getFlagCacheAgeSeconds(): int
     {
         try {
             $lastFetch = $this->metadataCache->get(self::FLAG_TIMESTAMP);

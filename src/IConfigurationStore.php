@@ -12,12 +12,12 @@ interface IConfigurationStore extends IFlags
      * @param Flag[] $flags
      * @return void
      */
-    public function setFlags(array $flags): void;
+    public function setConfigurations(array $flags): void;
 
     /**
      * Gets the age of the cache
      *
      * @return int The age of the cache in seconds. -1 if there has been no cache set.
      */
-    public function getFlagCacheAge(): int;
+    public function getFlagCacheAgeSeconds(): int;
 }

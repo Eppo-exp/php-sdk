@@ -18,19 +18,23 @@ class FlagConfigurationLoader implements IFlags
         $this->parser = new UFCParser();
     }
 
-    public function get(string $key): ?Flag
+    /**
+     * @throws InvalidApiKeyException
+     * @throws HttpRequestException
+     */
+    public function getFlag(string $key): ?Flag
     {
-        $this->maybeReloadConfiguration();
-        return $this->configurationStore->get($key);
+        $this->reloadConfigurationIfExpired();
+        return $this->configurationStore->getFlag($key);
     }
 
     /**
      * @throws HttpRequestException
      * @throws InvalidApiKeyException
      */
-    public function maybeReloadConfiguration(): void
+    public function reloadConfigurationIfExpired(): void
     {
-        $cacheAge = $this->configurationStore->getFlagCacheAge();
+        $cacheAge = $this->configurationStore->getFlagCacheAgeSeconds();
         if ($cacheAge < 0 || $cacheAge >= $this->cacheAgeLimit) {
             $this->fetchAndStoreConfigurations();
         }
@@ -43,13 +47,12 @@ class FlagConfigurationLoader implements IFlags
     public function fetchAndStoreConfigurations(): void
     {
         $responseData = json_decode($this->apiRequestWrapper->get(), true);
-
         if (!$responseData) {
             syslog(LOG_WARNING, "[Eppo SDK] Empty or invalid response from the configuration server.");
             return;
         }
 
         $inflated = array_map(fn($object) => $this->parser->parseFlag($object), $responseData['flags']);
-        $this->configurationStore->setFlags($inflated);
+        $this->configurationStore->setConfigurations($inflated);
     }
 }

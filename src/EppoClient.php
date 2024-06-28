@@ -121,7 +121,7 @@ class EppoClient
         ?bool $isGracefulMode
     ): EppoClient {
         try {
-            $configLoader->maybeReloadConfiguration();
+            $configLoader->reloadConfigurationIfExpired();
         } catch (HttpRequestException|InvalidApiKeyException $e) {
             throw new EppoClientInitializationException(
                 "Unable to initialize Eppo Client: " . $e->getMessage()
@@ -297,7 +297,7 @@ class EppoClient
         Validator::validateNotBlank($subjectKey, 'Invalid argument: subjectKey cannot be blank');
         Validator::validateNotBlank($flagKey, 'Invalid argument: flagKey cannot be blank');
 
-        $flag = $this->configurationLoader->get($flagKey);
+        $flag = $this->configurationLoader->getFlag($flagKey);
 
         if (!$flag) {
             syslog(LOG_WARNING, "[EPPO SDK] No assigned variation; flag not found ${flagKey}");

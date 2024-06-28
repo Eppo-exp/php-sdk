@@ -42,17 +42,17 @@ class FlagConfigurationLoaderTest extends TestCase
 
         $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
         $configStore->expects($this->once())
-            ->method('get')->with(self::FLAG_KEY)
+            ->method('getFlag')->with(self::FLAG_KEY)
             ->willReturn($flags[self::FLAG_KEY]);
 
         $configStore->expects($this->once())
-            ->method('setFlags')->with($flags);
+            ->method('setConfigurations')->with($flags);
 
         $loader = new FlagConfigurationLoader($apiWrapper, $configStore);
         $loader->fetchAndStoreConfigurations();
 
 
-        $flag = $loader->get(self::FLAG_KEY);
+        $flag = $loader->getFlag(self::FLAG_KEY);
         $this->assertInstanceOf(Flag::class, $flag);
         $this->assertEquals(self::FLAG_KEY, $flag->key);
         $this->assertEquals($flags[self::FLAG_KEY], $flag);
@@ -77,7 +77,7 @@ class FlagConfigurationLoaderTest extends TestCase
             ->willReturn($flagsRaw);
 
 
-        $flag = $loader->get(self::FLAG_KEY);
+        $flag = $loader->getFlag(self::FLAG_KEY);
 
         // Assert: non-null flag, api called only once via Mock `expects` above.
         $this->assertNotNull($flag);
@@ -101,8 +101,8 @@ class FlagConfigurationLoaderTest extends TestCase
             ->method('get')
             ->willReturn($flagsRaw);
 
-        $flag = $loader->get(self::FLAG_KEY);
-        $flagAgain = $loader->get(self::FLAG_KEY);
+        $flag = $loader->getFlag(self::FLAG_KEY);
+        $flagAgain = $loader->getFlag(self::FLAG_KEY);
 
         // Assert: non-null flag, api called only once via Mock `expects` above.
         $this->assertNotNull($flag);

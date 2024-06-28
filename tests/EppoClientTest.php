@@ -96,7 +96,7 @@ class EppoClientTest extends TestCase
         $flags = $this->getMockBuilder(FlagConfigurationLoader::class)->disableOriginalConstructor()->getMock();
 
         $flags->expects($this->once())
-            ->method('get')
+            ->method('getFlag')
             ->with(self::EXPERIMENT_NAME)
             ->willThrowException(new Exception());
         $client = EppoClient::createTestClient($flags, $pollerMock, $mockLogger, false);
@@ -115,7 +115,7 @@ class EppoClientTest extends TestCase
             ->willThrowException(new HttpRequestException());
 
         $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
-        $configStore->expects($this->any())->method('getFlagCacheAge')->willReturn(-1);
+        $configStore->expects($this->any())->method('getFlagCacheAgeSeconds')->willReturn(-1);
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
 
         $this->expectException(EppoClientInitializationException::class);
@@ -133,7 +133,7 @@ class EppoClientTest extends TestCase
             ->willThrowException(new HttpRequestException());
 
         $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
-        $configStore->expects($this->any())->method('getFlagCacheAge')->willReturn(-1);
+        $configStore->expects($this->any())->method('getFlagCacheAgeSeconds')->willReturn(-1);
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
 
         $this->expectException(EppoClientInitializationException::class);
@@ -231,14 +231,14 @@ class EppoClientTest extends TestCase
 
         if ($mockedResponse) {
             $configStoreMock->expects($this->any())
-                ->method('get')
+                ->method('getFlag')
                 ->with(self::EXPERIMENT_NAME)
                 ->willReturn($mockedResponse);
         }
 
         if ($mockedThrowable) {
             $configStoreMock->expects($this->any())
-                ->method('get')
+                ->method('getFlag')
                 ->with(self::EXPERIMENT_NAME)
                 ->willThrowException($mockedThrowable);
         }
