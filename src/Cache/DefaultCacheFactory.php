@@ -6,19 +6,14 @@ use Exception;
 use Psr\SimpleCache\CacheInterface;
 use Sarahman\SimpleCache\FileSystemCache;
 
-class DefaultCacheFactory implements ICacheFactory
+class DefaultCacheFactory
 {
-
-    public function __construct()
-    {
-    }
-
     /**
      * @throws Exception
      */
-    public function createCache(CacheType $type): CacheInterface
+    public static  function create(): CacheInterface
     {
-        return new FileSystemCache(__DIR__ . '/../../cache/' . $type->value);
+        return new FileSystemCache(__DIR__ . '/../../cache/');
     }
 
     /**
@@ -29,14 +24,11 @@ class DefaultCacheFactory implements ICacheFactory
      *
      * @return void
      */
-    public static function clearCaches(): void
+    public static function clearCache(): void
     {
-        $factory = new DefaultCacheFactory();
-        foreach ([CacheType::FLAG, CacheType::META] as $type) {
-            try {
-                $factory->createCache($type)->clear();
-            } catch (Exception $e) {
-            }
+        try {
+            DefaultCacheFactory::create()->clear();
+        } catch (Exception $e) {
         }
     }
 }

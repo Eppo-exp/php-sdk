@@ -3,7 +3,6 @@
 namespace Eppo;
 
 use Eppo\Cache\DefaultCacheFactory;
-use Eppo\Cache\ICacheFactory;
 use Eppo\Config\SDKData;
 use Eppo\DTO\Variation;
 use Eppo\DTO\VariationType;
@@ -19,6 +18,7 @@ use Http\Discovery\Psr17Factory;
 use Http\Discovery\Psr18ClientDiscovery;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
+use Psr\SimpleCache\CacheInterface;
 
 class EppoClient
 {
@@ -50,16 +50,17 @@ class EppoClient
      * Initializes EppoClient singleton instance.
      *
      * @param LoggerInterface|null $assignmentLogger optional assignment logger. Please check Eppo/LoggerLoggerInterface.
-     * @param ICacheFactory|null $cacheFactory optional cache factory instance. Compatible with psr-16 simple cache. By default, (if nothing passed) EppoClient will use FileSystem cache.
+     * @param CacheInterface|null $cache optional Compatible with psr-16 simple cache. By default, (if nothing passed) EppoClient will use FileSystem cache.
      * @param ClientInterface|null $httpClient optional PSR-18 ClientInterface. If nothing is passed, EppoClient will use Discovery to locate a suitable implementation in the project.
      * @param RequestFactoryInterface|null $requestFactory optional PSR-17 Request Factory implementation. If none is provided, EppoClient will use Discovery
      * @throws EppoClientInitializationException
+     * @throws EppoClientException
      */
     public static function init(
         string $apiKey,
         ?string $baseUrl = null,
         LoggerInterface $assignmentLogger = null,
-        ICacheFactory $cacheFactory = null,
+        CacheInterface $cache = null,
         ClientInterface $httpClient = null,
         RequestFactoryInterface $requestFactory = null,
         ?bool $isGracefulMode = true
@@ -72,11 +73,15 @@ class EppoClient
                 'sdkName' => $sdkData->getSdkName()
             ];
 
-            if (!$cacheFactory) {
-                $cacheFactory = new DefaultCacheFactory();
+            if (!$cache) {
+                try {
+                    $cache = (new DefaultCacheFactory())->create();
+                } catch (Exception $e) {
+                    throw EppoClientInitializationException::From($e);
+                }
             }
 
-            $configStore = new ConfigurationStore($cacheFactory);
+            $configStore = new ConfigurationStore($cache);
 
             if (!$httpClient) {
                 $httpClient = Psr18ClientDiscovery::find();

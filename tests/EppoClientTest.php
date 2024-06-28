@@ -37,8 +37,6 @@ class EppoClientTest extends TestCase
         } catch (Exception $exception) {
             self::fail('Failed to start mocked web server: ' . $exception->getMessage());
         }
-
-
     }
 
     public static function tearDownAfterClass(): void
@@ -48,7 +46,7 @@ class EppoClientTest extends TestCase
 
     public function setUp(): void
     {
-        DefaultCacheFactory::clearCaches();
+        DefaultCacheFactory::clearCache();
     }
 
     public function testGracefulModeDoesNotThrow()
@@ -210,7 +208,7 @@ class EppoClientTest extends TestCase
         array $mockedResponse,
         ?Throwable $mockedThrowable = null
     ): FlagConfigurationLoader {
-        $cache = new DefaultCacheFactory();
+        $cache = (new DefaultCacheFactory())->create();
         $sdkData = new SDKData();
 
         $sdkParams = [

@@ -22,11 +22,7 @@ class FlagConfigurationLoaderTest extends TestCase
 
 
     public function setUp(): void {
-        DefaultCacheFactory::clearCaches();
-    }
-
-    public function tearDown(): void {
-        DefaultCacheFactory::clearCaches();
+        DefaultCacheFactory::clearCache();
     }
 
     public function testLoadsConfiguration(): void
@@ -71,8 +67,9 @@ class FlagConfigurationLoaderTest extends TestCase
 
         $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->disableOriginalConstructor()->getMock();
 
+        $cache = DefaultCacheFactory::create();
         // Act: Create a new FCL and retrieve a flag
-        $loader = new FlagConfigurationLoader($apiWrapper, new ConfigurationStore(new DefaultCacheFactory()));
+        $loader = new FlagConfigurationLoader($apiWrapper, new ConfigurationStore($cache));
 
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->once())
@@ -95,8 +92,9 @@ class FlagConfigurationLoaderTest extends TestCase
 
         $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->disableOriginalConstructor()->getMock();
 
+        $cache = DefaultCacheFactory::create();
         // Act: Create a new FCL with a 0sec ttl and retrieve a flag
-        $loader = new FlagConfigurationLoader($apiWrapper, new ConfigurationStore(new DefaultCacheFactory()), cacheAgeLimit: 0);
+        $loader = new FlagConfigurationLoader($apiWrapper, new ConfigurationStore($cache), cacheAgeLimit: 0);
 
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->exactly(2))
