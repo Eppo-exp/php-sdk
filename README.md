@@ -32,19 +32,26 @@ use Eppo\EppoClient;
 
 require __DIR__ . '/vendor/autoload.php';
 
-$eppoClient = EppoClient::init("SDK-KEY-FROM-DASHBOARD");
+$eppoClient = EppoClient::init(
+   '<your_api_key>',
+   '<base_url>', // optional, default https://fscdn.eppo.cloud/api
+   $assignmentLogger, // optional, must be an instance of Eppo\Logger\LoggerInterface
+   $cache // optional, must be an instance of PSR-16 SimpleCache\CacheInterface. If not passed, FileSystem cache will be used
+   $httpClient // optional, must be an instance of PSR-18 ClientInterface. If not passed, Discovery will be used to find a suitable implementation
+   $requestFactory // optional, must be an instance of PSR-17 Factory. If not passed, Discovery will be used to find a suitable implementation
+);
 ```
 
 
 #### Assign anywhere
 
 ```php
-$assignment = $eppoClient->getStringAssignment(
-    'new-user-onboarding', 
-    $user->id, 
-    ['country' => $user->country], 
-    'control'
-);
+$subjectAttributes = [ 'tier' => 2 ];
+$assignment = $eppoClient->getStringAssignment('experimentalBackground', 'user123', $subjectAttributes, 'defaultValue');
+
+if ($assignment !== 'defaultValue') {
+    // do something
+}
 ```
 
 ## Assignment functions
@@ -60,6 +67,7 @@ getJSONAssignment(...)
 ```
 
 Each function has the same signature, but returns the type in the function name. For booleans use `getBooleanAssignment`, which has the following signature:
+
 
 ```php
 function getBooleanAssignment(
@@ -110,6 +118,29 @@ class Logger implements LoggerInterface {
 }
 ```
 
-## Philosophy
+## Background Polling
+To make the experience of using the library faster, there is an option to start a background polling for randomization params.
+This background job will start calling the Eppo API, updating the config in the cache.
 
+$eppoClient = EppoClient::init(
+   '<your_api_key>',
+   '<base_url>', // optional, default https://fscdn.eppo.cloud/api
+   $assignmentLogger, // optional, must be an instance of Eppo\LoggerInterface
+   $cache // optional, must be an instance of PSR-16 SimpleInterface. If not passed, FileSystem cache will be used
+   $httpClient // optional, must be an instance of PSR-18 ClientInterface. If not passed, Discovery will be used to find a suitable implementation
+   $requestFactory // optional, must be an instance of PSR-17 Factory. If not passed, Discovery will be used to find a suitable implementation
+);
+This will start an indefinite process of polling the Eppo-api.
+
+## Troubleshooting
+### HTTP
+This package uses the `php-http/discovery` package to automatically locate implementations of the various HTTP related 
+PSR interfaces (ex: `ClientInterface`, `RequstFactory`, etc.). If your project does not depend on any library which can 
+fulfill this need, you may see an exception such as follows.
+>Fatal error: Uncaught Http\Discovery\Exception\DiscoveryFailedException: Could not find resource using any discovery strategy.
+
+To solve this, simply require a suitable package, such as _guzzle_
+>composer require guzzlehttp/guzzle:^7.0
+
+## Philosophy
 Eppo's SDKs are built for simplicity, speed and reliability. Flag configurations are compressed and distributed over a global CDN (Fastly), typically reaching your servers in under 15ms. Server SDKs continue polling Eppo’s API at 30-second intervals. Configurations are then cached locally, ensuring that each assignment is made instantly. Evaluation logic within each SDK consists of a few lines of simple numeric and string comparisons. The typed functions listed above are all developers need to understand, abstracting away the complexity of the Eppo's underlying (and expanding) feature set.

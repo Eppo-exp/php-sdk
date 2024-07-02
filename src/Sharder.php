@@ -4,7 +4,7 @@ namespace Eppo;
 
 use Eppo\DTO\ShardRange;
 
-final class Shard
+final class Sharder
 {
     /**
      * @param string $input

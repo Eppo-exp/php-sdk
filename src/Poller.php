@@ -48,7 +48,7 @@ class Poller implements PollerInterface {
             if (!$error->isRecoverable) {
                 $this->stop();
             }
-            error_log("Error polling configurations: " . $error->getMessage());
+            error_log("[Eppo SDK] Error polling configurations: " . $error->getMessage());
         }
 
         $intervalWithJitter = $this->interval - mt_rand(0, $this->jitterMillis);
