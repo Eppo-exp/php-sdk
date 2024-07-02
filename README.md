@@ -1,7 +1,5 @@
 # Eppo PHP SDK
 
-[![Test and lint SDK](https://github.com/Eppo-exp/php-sdk/actions/workflows/run-tests.yml/badge.svg)](https://github.com/Eppo-exp/php-sdk/actions/workflows/run-tests.yml)
-
 [Eppo](https://www.geteppo.com/) is a modular flagging and experimentation analysis tool. Eppo's PHP SDK is built to make assignments in multi-user server side contexts, compatible with PHP 7.3 and above. Before proceeding you'll need an Eppo account.
 
 ## Features
@@ -82,16 +80,19 @@ function getBooleanAssignment(
 
 The `init` function accepts the following optional configuration arguments.
 
-| Option | Type | Description | Default |
-| ------ | ----- | ----- | ----- | 
-| **`cache`**  | Instance of PSD-16 SimpleInterface | Cache used to store flag configuration. If not passed, FileSystem cache will be used | `null` |
+| Option                 | Type                               | Description                                                                                         | Default |
+|------------------------|------------------------------------|-----------------------------------------------------------------------------------------------------|---------| 
+| **`cache`**            | Instance of PSD-16 SimpleInterface | Cache used to store flag configuration. If not passed, FileSystem cache will be used                | `null`  |
+| **`assignmentLogger`** | AssignmentLogger                   | Logs assignment events back to data warehoouse                                                      | `null`  |
+| **`httpClient`**       | ClientInterface                    | For making HTTP requests. If not passed, Discovery will attempt to autoload an applicable pacakge   | `null` |
+| **`requestFactory`**   | RequestFactoryInterface           | Instance of PSR-17 Factory. If not passed, Discovery will be used to find a suitable implementation | null    |
 
 
 ## Assignment logger 
 
 To use the Eppo SDK for experiments that require analysis, pass in a callback logging function to the `init` function on SDK initialization. The SDK invokes the callback to capture assignment data whenever a variation is assigned. The assignment data is needed in the warehouse to perform analysis.
 
-The code below illustrates an example implementation of a logging callback using [Segment](https://segment.com/), but you can use any system you'd like. The only requirement is that the SDK receives a `logAssignment` callback function. Here we define an implementation of the Eppo `IAssignmentLogger` interface containing a single function named `logAssignment`:
+The code below illustrates an example implementation of a logging callback using [Segment](https://segment.com/), but you can use any system you'd like. The only requirement is that the SDK receives a `logAssignment` callback function. Here we define an implementation of the Eppo `AssignmentLogger` interface containing a single function named `logAssignment`:
 
 ```php
 <?php
@@ -122,6 +123,9 @@ class Logger implements LoggerInterface {
 To make the experience of using the library faster, there is an option to start a background polling for randomization params.
 This background job will start calling the Eppo API, updating the config in the cache.
 
+For this, create a file, e.g. `eppo-poller.php` with the contents:
+
+```php
 $eppoClient = EppoClient::init(
    '<your_api_key>',
    '<base_url>', // optional, default https://fscdn.eppo.cloud/api
@@ -130,6 +134,15 @@ $eppoClient = EppoClient::init(
    $httpClient // optional, must be an instance of PSR-18 ClientInterface. If not passed, Discovery will be used to find a suitable implementation
    $requestFactory // optional, must be an instance of PSR-17 Factory. If not passed, Discovery will be used to find a suitable implementation
 );
+
+$eppoClient->startPolling();
+```
+after this, run this script by:
+
+```shell
+php eppo-poller.php
+```
+
 This will start an indefinite process of polling the Eppo-api.
 
 ## Troubleshooting
