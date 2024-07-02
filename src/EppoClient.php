@@ -2,9 +2,12 @@
 
 namespace Eppo;
 
+use Eppo\Cache\DefaultCacheFactory;
 use Eppo\Config\SDKData;
 use Eppo\DTO\Variation;
 use Eppo\DTO\VariationType;
+use Eppo\Exception\EppoClientException;
+use Eppo\Exception\EppoClientInitializationException;
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
 use Eppo\Exception\InvalidArgumentException;
@@ -13,12 +16,9 @@ use Eppo\Logger\LoggerInterface;
 use Exception;
 use Http\Discovery\Psr17Factory;
 use Http\Discovery\Psr18ClientDiscovery;
-use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\SimpleCache\CacheInterface;
-use Psr\SimpleCache\InvalidArgumentException as SimpleCacheInvalidArgumentException;
-use Sarahman\SimpleCache\FileSystemCache;
 
 class EppoClient
 {
@@ -49,15 +49,12 @@ class EppoClient
     /**
      * Initializes EppoClient singleton instance.
      *
-     * @param string $apiKey
-     * @param string|null $baseUrl
      * @param LoggerInterface|null $assignmentLogger optional assignment logger. Please check Eppo/LoggerLoggerInterface.
-     * @param CacheInterface|null $cache optional cache instance. Compatible with psr-16 simple cache. By default, (if nothing passed) EppoClient will use FileSystem cache.
+     * @param CacheInterface|null $cache optional Compatible with psr-16 simple cache. By default, (if nothing passed) EppoClient will use FileSystem cache.
      * @param ClientInterface|null $httpClient optional PSR-18 ClientInterface. If nothing is passed, EppoClient will use Discovery to locate a suitable implementation in the project.
      * @param RequestFactoryInterface|null $requestFactory optional PSR-17 Request Factory implementation. If none is provided, EppoClient will use Discovery
-     * @param bool|null $isGracefulMode
-     * @return EppoClient
-     * @throws Exception
+     * @throws EppoClientInitializationException
+     * @throws EppoClientException
      */
     public static function init(
         string $apiKey,
@@ -77,7 +74,11 @@ class EppoClient
             ];
 
             if (!$cache) {
-                $cache = new FileSystemCache(__DIR__ . '/../cache');
+                try {
+                    $cache = (new DefaultCacheFactory())->create();
+                } catch (Exception $e) {
+                    throw EppoClientInitializationException::From($e);
+                }
             }
 
             $configStore = new ConfigurationStore($cache);
@@ -104,10 +105,29 @@ class EppoClient
                 }
             );
 
-            self::$instance = new self($configLoader, $poller, $assignmentLogger, $isGracefulMode);
+            self::$instance = self::createAndInitClient($configLoader, $poller, $assignmentLogger, $isGracefulMode);
         }
 
         return self::$instance;
+    }
+
+    /**
+     * @throws EppoClientInitializationException
+     */
+    private static function createAndInitClient(
+        FlagConfigurationLoader $configLoader,
+        PollerInterface $poller,
+        ?LoggerInterface $assignmentLogger,
+        ?bool $isGracefulMode
+    ): EppoClient {
+        try {
+            $configLoader->reloadConfigurationIfExpired();
+        } catch (HttpRequestException|InvalidApiKeyException $e) {
+            throw new EppoClientInitializationException(
+                "Unable to initialize Eppo Client: " . $e->getMessage()
+            );
+        }
+        return new self($configLoader, $poller, $assignmentLogger, $isGracefulMode);
     }
 
     /**
@@ -121,11 +141,8 @@ class EppoClient
         return self::$instance;
     }
 
-
     /**
-     * @throws SimpleCacheInvalidArgumentException
-     * @throws ClientExceptionInterface
-     * @throws Exception
+     * @throws EppoClientException
      */
     private function getTypedAssignment(
         VariationType $valueType,
@@ -154,7 +171,7 @@ class EppoClient
      * Gets the assigned string variation for the given subject and experiment
      * If there is an issue retrieving the variation or the retrieved variation is not a string, null wil be returned.
      *
-     * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
+     * @throws EppoClientException
      */
     public function getStringAssignment(
         string $flagKey,
@@ -175,7 +192,7 @@ class EppoClient
      * Gets the assigned boolean variation for the given subject and experiment
      * If there is an issue retrieving the variation or the retrieved variation is not a boolean, null wil be returned.
      *
-     * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
+     * @throws EppoClientException
      */
     public function getBooleanAssignment(
         string $flagKey,
@@ -196,7 +213,7 @@ class EppoClient
      * Gets the assigned numeric variation as a float for the given subject and experiment
      * If there is an issue retrieving the variation or the retrieved variation is not an integer or float (double), null wil be returned.
      *
-     * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
+     * @throws EppoClientException
      */
     public function getNumericAssignment(
         string $flagKey,
@@ -217,7 +234,7 @@ class EppoClient
      * Gets the assigned variation as an integer for the given subject and experiment
      * If there is an issue retrieving the variation or the retrieved variation is not an integer, null wil be returned.
      *
-     * @throws SimpleCacheInvalidArgumentException|ClientExceptionInterface
+     * @throws EppoClientException
      */
     public function getIntegerAssignment(
         string $flagKey,
@@ -241,11 +258,10 @@ class EppoClient
      * @param string $flagKey
      * @param string $subjectKey
      * @param array $subjectAttributes
-     * @param array|null $defaultValue
-     * @return array|null the parsed variation JSON
+     * @param array $defaultValue
+     * @return array the parsed variation JSON
      *
-     * @throws ClientExceptionInterface
-     * @throws SimpleCacheInvalidArgumentException
+     * @throws EppoClientException
      */
     public function getJSONAssignment(
         string $flagKey,
@@ -270,11 +286,7 @@ class EppoClient
      * @return Variation|null the Variation DTO assigned to the subject, or null if there is no assignment,
      * an error was encountered, or an expected type was provided that didn't match the variation's typed
      * value.
-     * @throws ClientExceptionInterface
-     * @throws HttpRequestException
-     * @throws InvalidApiKeyException
      * @throws InvalidArgumentException
-     * @throws SimpleCacheInvalidArgumentException
      */
     private function getAssignmentDetail(
         string $flagKey,
@@ -285,7 +297,7 @@ class EppoClient
         Validator::validateNotBlank($subjectKey, 'Invalid argument: subjectKey cannot be blank');
         Validator::validateNotBlank($flagKey, 'Invalid argument: flagKey cannot be blank');
 
-        $flag = $this->configurationLoader->getConfiguration($flagKey);
+        $flag = $this->configurationLoader->getFlag($flagKey);
 
         if (!$flag) {
             syslog(LOG_WARNING, "[EPPO SDK] No assigned variation; flag not found ${flagKey}");
@@ -339,7 +351,6 @@ class EppoClient
         return $computedVariation;
     }
 
-
     private function checkExpectedType(VariationType $expectedVariationType, $typedValue): bool
     {
         return (
@@ -351,12 +362,13 @@ class EppoClient
             ($expectedVariationType == VariationType::JSON)); // JSON type check un-necessary here.
     }
 
-    public function startPolling()
+
+    public function startPolling(): void
     {
         $this->poller->start();
     }
 
-    public function stopPolling()
+    public function stopPolling(): void
     {
         $this->poller->stop();
     }
@@ -369,7 +381,7 @@ class EppoClient
     }
 
     /**
-     * @throws Exception
+     * @throws EppoClientException
      */
     private function handleException(
         Exception $exception,
@@ -379,7 +391,7 @@ class EppoClient
             error_log('[Eppo SDK] Error getting assignment: ' . $exception->getMessage());
             return $defaultValue;
         }
-        throw $exception;
+        throw EppoClientException::From($exception);
     }
 
     /**
@@ -391,6 +403,7 @@ class EppoClient
      * @param LoggerInterface|null $logger
      * @param bool|null $isGracefulMode
      * @return EppoClient
+     * @throws EppoClientInitializationException
      */
     public static function createTestClient(
         FlagConfigurationLoader $configurationLoader,
@@ -398,6 +411,6 @@ class EppoClient
         ?LoggerInterface $logger = null,
         ?bool $isGracefulMode = true
     ): EppoClient {
-        return new EppoClient($configurationLoader, $poller, $logger, $isGracefulMode);
+        return self::createAndInitClient($configurationLoader, $poller, $logger, $isGracefulMode);
     }
 }
