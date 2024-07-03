@@ -5,56 +5,54 @@ namespace Eppo;
 use Eppo\DTO\Flag;
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
-use Psr\Http\Client\ClientExceptionInterface;
-use Psr\SimpleCache\InvalidArgumentException;
 
-class FlagConfigurationLoader
+class FlagConfigurationLoader implements IFlags
 {
     private UFCParser $parser;
-    public function __construct(private readonly APIRequestWrapper $apiRequestWrapper, private readonly ConfigurationStore $configurationStore)
-    {
+
+    public function __construct(
+        private readonly APIRequestWrapper $apiRequestWrapper,
+        private readonly IConfigurationStore $configurationStore,
+        private readonly int $cacheAgeLimit = 30
+    ) {
         $this->parser = new UFCParser();
     }
 
     /**
-     * @throws ClientExceptionInterface
-     * @throws InvalidArgumentException
-     * @throws HttpRequestException
      * @throws InvalidApiKeyException
+     * @throws HttpRequestException
      */
-    public function getConfiguration(string $flagKey): ?Flag
+    public function getFlag(string $key): ?Flag
     {
-        if ($this->apiRequestWrapper->isUnauthorized) {
-            throw new InvalidApiKeyException();
-        }
-
-        $configuration = $this->configurationStore->getConfiguration($flagKey);
-
-        if (!$configuration) {
-            $configurations = $this->fetchAndStoreConfigurations();
-            if (!$configurations || !count($configurations) || !array_key_exists($flagKey, $configurations)) {
-                return null;
-            }
-
-            $configuration = $configurations[$flagKey];
-        }
-
-        return $this->parser->parseFlag($configuration);
+        $this->reloadConfigurationIfExpired();
+        return $this->configurationStore->getFlag($key);
     }
 
     /**
-     * @throws InvalidArgumentException
      * @throws HttpRequestException
-     * @throws ClientExceptionInterface
+     * @throws InvalidApiKeyException
      */
-    public function fetchAndStoreConfigurations(): array
+    public function reloadConfigurationIfExpired(): void
+    {
+        $cacheAge = $this->configurationStore->getFlagCacheAgeSeconds();
+        if ($cacheAge < 0 || $cacheAge >= $this->cacheAgeLimit) {
+            $this->fetchAndStoreConfigurations();
+        }
+    }
+
+    /**
+     * @throws HttpRequestException
+     * @throws InvalidApiKeyException
+     */
+    public function fetchAndStoreConfigurations(): void
     {
         $responseData = json_decode($this->apiRequestWrapper->get(), true);
         if (!$responseData) {
-            return [];
+            syslog(LOG_WARNING, "[Eppo SDK] Empty or invalid response from the configuration server.");
+            return;
         }
 
-        $this->configurationStore->setConfigurations($responseData['flags']);
-        return $responseData['flags'];
+        $inflated = array_map(fn($object) => $this->parser->parseFlag($object), $responseData['flags']);
+        $this->configurationStore->setConfigurations($inflated);
     }
 }

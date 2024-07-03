@@ -3,22 +3,23 @@
 namespace Eppo\Tests;
 
 use Eppo\APIRequestWrapper;
+use Eppo\Cache\DefaultCacheFactory;
 use Eppo\Config\SDKData;
 use Eppo\ConfigurationStore;
 use Eppo\DTO\VariationType;
 use Eppo\EppoClient;
+use Eppo\Exception\EppoClientException;
+use Eppo\Exception\EppoClientInitializationException;
 use Eppo\Exception\HttpRequestException;
-use Eppo\Exception\InvalidApiKeyException;
-use Eppo\Exception\InvalidArgumentException;
 use Eppo\FlagConfigurationLoader;
+use Eppo\IConfigurationStore;
 use Eppo\Logger\LoggerInterface;
 use Eppo\PollerInterface;
 use Eppo\Tests\WebServer\MockWebServer;
 use Exception;
-use GuzzleHttp\Exception\GuzzleException;
+use Http\Discovery\Psr17Factory;
 use Http\Discovery\Psr18Client;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Client\ClientExceptionInterface;
 use PsrMock\Psr17\RequestFactory;
 use Sarahman\SimpleCache\FileSystemCache;
 use Throwable;
@@ -36,12 +37,6 @@ class EppoClientTest extends TestCase
         } catch (Exception $exception) {
             self::fail('Failed to start mocked web server: ' . $exception->getMessage());
         }
-
-        try {
-            EppoClient::init('dummy', 'http://localhost:4000', isGracefulMode: false);
-        } catch (Exception $exception) {
-            self::fail('Failed to initialize EppoClient: ' . $exception->getMessage());
-        }
     }
 
     public static function tearDownAfterClass(): void
@@ -49,10 +44,11 @@ class EppoClientTest extends TestCase
         MockWebServer::stop();
     }
 
-    /**
-     * @throws ClientExceptionInterface
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     */
+    public function setUp(): void
+    {
+        DefaultCacheFactory::clearCache();
+    }
+
     public function testGracefulModeDoesNotThrow()
     {
         $pollerMock = $this->getPollerMock();
@@ -81,23 +77,67 @@ class EppoClientTest extends TestCase
         );
     }
 
-
-    /**
-     * @throws GuzzleException
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     * @throws ClientExceptionInterface
-     */
-    public function testNoGracefulModeThrows()
+    public function testNoGracefulModeThrowsOnGetAssignment()
     {
         $pollerMock = $this->getPollerMock();
-        $mockConfigRequester = $this->getFlagConfigurationLoaderMock([], new Exception('config loader error'));
+
+        $apiRequestWrapper = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs(
+            ['', [], new Psr18Client(), new Psr17Factory()])->getMock();
+
+        $apiRequestWrapper->expects($this->any())
+            ->method('get')
+            ->willThrowException(new HttpRequestException());
+
+        $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
 
-        $subjectAttributes = [['foo' => 3]];
-        $client = EppoClient::createTestClient($mockConfigRequester, $pollerMock, $mockLogger, false);
+        $this->expectException(EppoClientException::class);
 
-        $this->expectException(Exception::class);
-        $client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', $subjectAttributes, 'defaultValue');
+        $flags = $this->getMockBuilder(FlagConfigurationLoader::class)->disableOriginalConstructor()->getMock();
+
+        $flags->expects($this->once())
+            ->method('getFlag')
+            ->with(self::EXPERIMENT_NAME)
+            ->willThrowException(new Exception());
+        $client = EppoClient::createTestClient($flags, $pollerMock, $mockLogger, false);
+        $result = $client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', [], "default");
+    }
+
+    public function testNoGracefulModeThrowsOnInit()
+    {
+        $pollerMock = $this->getPollerMock();
+
+        $apiRequestWrapper = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs(
+            ['', [], new Psr18Client(), new Psr17Factory()])->getMock();
+
+        $apiRequestWrapper->expects($this->any())
+            ->method('get')
+            ->willThrowException(new HttpRequestException());
+
+        $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
+        $configStore->expects($this->any())->method('getFlagCacheAgeSeconds')->willReturn(-1);
+        $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
+
+        $this->expectException(EppoClientInitializationException::class);
+        $client = EppoClient::createTestClient(new FlagConfigurationLoader($apiRequestWrapper, $configStore), $pollerMock, $mockLogger, false);
+    }
+    public function testGracefulModeThrowsOnInit()
+    {
+        $pollerMock = $this->getPollerMock();
+
+        $apiRequestWrapper = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs(
+            ['', [], new Psr18Client(), new Psr17Factory()])->getMock();
+
+        $apiRequestWrapper->expects($this->any())
+            ->method('get')
+            ->willThrowException(new HttpRequestException());
+
+        $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
+        $configStore->expects($this->any())->method('getFlagCacheAgeSeconds')->willReturn(-1);
+        $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
+
+        $this->expectException(EppoClientInitializationException::class);
+        $client = EppoClient::createTestClient(new FlagConfigurationLoader($apiRequestWrapper, $configStore), $pollerMock, $mockLogger);
     }
 
     public function testReturnsDefaultWhenExperimentConfigIsAbsent()
@@ -116,51 +156,65 @@ class EppoClientTest extends TestCase
         );
     }
 
-    /**
-     * @throws GuzzleException
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     * @throws ClientExceptionInterface
-     */
     public function testRepoTestCases(): void
     {
+        try {
+            EppoClient::init('dummy', 'http://localhost:4000', isGracefulMode: false);
+        } catch (Exception $exception) {
+            self::fail('Failed to initialize EppoClient: ' . $exception->getMessage());
+        }
+
         // Load all the test cases.
         $testCases = $this->loadTestCases();
         $client = EppoClient::getInstance();
 
         foreach ($testCases as $testFile => $test) {
             foreach ($test['subjects'] as $subject) {
-                $result = $this->getTypedAssignment($client, VariationType::from($test['variationType']),
-                    $test['flag'], $subject['subjectKey'], $subject['subjectAttributes'], $test['defaultValue']);
+                $result = $this->getTypedAssignment(
+                    $client,
+                    VariationType::from($test['variationType']),
+                    $test['flag'],
+                    $subject['subjectKey'],
+                    $subject['subjectAttributes'],
+                    $test['defaultValue']
+                );
                 $this->assertEquals($subject['assignment'], $result, "$testFile ${test['flag']}");
             }
         }
     }
 
     /**
-     * @throws GuzzleException
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     * @throws Exception|ClientExceptionInterface
+     * @throws EppoClientException
      */
-    private function getTypedAssignment(EppoClient $client, VariationType $type, string $flag, string $subjectKey, array $subject,
-        array|bool|float|int|string $defaultValue): array|bool|float|int|string|null
-    {
+    private function getTypedAssignment(
+        EppoClient $client,
+        VariationType $type,
+        string $flag,
+        string $subjectKey,
+        array $subject,
+        array|bool|float|int|string $defaultValue
+    ): array|bool|float|int|string|null {
         return match ($type) {
             VariationType::STRING => $client->getStringAssignment($flag, $subjectKey, $subject, $defaultValue),
             VariationType::BOOLEAN => $client->getBooleanAssignment($flag, $subjectKey, $subject, $defaultValue),
             VariationType::NUMERIC => $client->getNumericAssignment($flag, $subjectKey, $subject, $defaultValue),
             VariationType::JSON => $client->getJSONAssignment($flag, $subjectKey, $subject, $defaultValue),
             VariationType::INTEGER => $client->getIntegerAssignment($flag, $subjectKey, $subject, $defaultValue),
-            default => throw new \Exception('Unexpected match value'),
+            default => throw new Exception('Unexpected match value'),
         };
     }
 
-    private function getFlagConfigurationLoaderMock(array $mockedResponse, ?Throwable $mockedThrowable = null): FlagConfigurationLoader
-    {
-        $cache = new FileSystemCache();
+    private function getFlagConfigurationLoaderMock(
+        array $mockedResponse,
+        ?Throwable $mockedThrowable = null
+    ): FlagConfigurationLoader {
+        $cache = (new DefaultCacheFactory())->create();
         $sdkData = new SDKData();
 
-        $sdkParams = ["sdkVersion" => $sdkData->getSdkVersion(),
-            "sdkName" => $sdkData->getSdkName()];
+        $sdkParams = [
+            "sdkVersion" => $sdkData->getSdkVersion(),
+            "sdkName" => $sdkData->getSdkName()
+        ];
 
 
         $apiRequestWrapper = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs([
@@ -177,14 +231,14 @@ class EppoClientTest extends TestCase
 
         if ($mockedResponse) {
             $configStoreMock->expects($this->any())
-                ->method('getConfiguration')
+                ->method('getFlag')
                 ->with(self::EXPERIMENT_NAME)
                 ->willReturn($mockedResponse);
         }
 
         if ($mockedThrowable) {
             $configStoreMock->expects($this->any())
-                ->method('getConfiguration')
+                ->method('getFlag')
                 ->with(self::EXPERIMENT_NAME)
                 ->willThrowException($mockedThrowable);
         }
@@ -219,7 +273,9 @@ class EppoClientTest extends TestCase
         $tests = [];
 
         foreach ($files as $file) {
-            if ($file === '.' || $file === '..') continue;
+            if ($file === '.' || $file === '..') {
+                continue;
+            }
             $tests[$file] = json_decode(file_get_contents(self::TEST_DATA_PATH . '/' . $file), true);
         }
         return $tests;
