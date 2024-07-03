@@ -23,11 +23,11 @@ class BanditVariationIndexer implements IBanditVariationIndexer
      */
     public function __construct(array $banditVariations)
     {
-        foreach ($banditVariations as $banditKey => $listOfVariations) {
+        foreach ($banditVariations as $listOfVariations) {
             foreach ($listOfVariations as $banditVariation) {
-                if (!array_key_exists($banditVariation->flagKey, $this->_banditFlags)) {
-                    $this->_banditFlags[$banditVariation->flagKey] = [];
-                }
+
+                // If this flag key has not already been indexed, index it now
+                $this->_banditFlags[$banditVariation->flagKey] ??= [];
 
                 // If there is already an entry for this flag/variation and it is not the current bandit key, throw exception.
                 if (array_key_exists(
@@ -38,6 +38,8 @@ class BanditVariationIndexer implements IBanditVariationIndexer
                         "Variation '{$banditVariation->variationValue}' is already in use for flag '{$banditVariation->flagKey}'."
                     );
                 }
+
+                // Update the index for this triple (flagKey, variationValue) => banditKey
                 $this->_banditFlags[$banditVariation->flagKey][$banditVariation->variationValue] = $banditVariation->key;
             }
         }
