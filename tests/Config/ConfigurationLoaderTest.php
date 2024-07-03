@@ -18,8 +18,7 @@ class ConfigurationLoaderTest extends TestCase
     /** @var string */
     const FLAG_KEY = 'kill-switch';
 
-    const MOCK_RESPONSE_FILENAME = __DIR__ . '/mockdata/ufc-v1.json';
-
+    const MOCK_RESPONSE_FILENAME = __DIR__ . '/../mockdata/ufc-v1.json';
 
     public function setUp(): void {
         DefaultCacheFactory::clearCache();
