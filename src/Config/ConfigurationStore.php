@@ -12,12 +12,12 @@ use Psr\SimpleCache\InvalidArgumentException;
 
 class ConfigurationStore implements IConfigurationStore
 {
-    const BANDIT_VARIATION_KEY = 'BANDIT_VARIATIONS';
     private CacheInterface $rootCache;
     private CacheInterface $flagCache;
     private CacheInterface $metadataCache;
 
     const FLAG_TIMESTAMP = "flagTimestamp";
+    const BANDIT_VARIATION_KEY = 'banditVariations';
 
     /**
      * @param CacheInterface $cache
