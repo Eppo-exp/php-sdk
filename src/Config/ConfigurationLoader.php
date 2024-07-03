@@ -1,10 +1,13 @@
 <?php
 
-namespace Eppo;
+namespace Eppo\Config;
 
+use Eppo\APIRequestWrapper;
 use Eppo\DTO\Flag;
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
+use Eppo\IFlags;
+use Eppo\UFCParser;
 
 class ConfigurationLoader implements IFlags
 {

@@ -4,15 +4,15 @@ namespace Eppo\Tests;
 
 use Eppo\APIRequestWrapper;
 use Eppo\Cache\DefaultCacheFactory;
+use Eppo\Config\ConfigurationLoader;
+use Eppo\Config\ConfigurationStore;
+use Eppo\Config\IConfigurationStore;
 use Eppo\Config\SDKData;
-use Eppo\ConfigurationStore;
 use Eppo\DTO\VariationType;
 use Eppo\EppoClient;
 use Eppo\Exception\EppoClientException;
 use Eppo\Exception\EppoClientInitializationException;
 use Eppo\Exception\HttpRequestException;
-use Eppo\ConfigurationLoader;
-use Eppo\IConfigurationStore;
 use Eppo\Logger\LoggerInterface;
 use Eppo\PollerInterface;
 use Eppo\Tests\WebServer\MockWebServer;
@@ -21,7 +21,6 @@ use Http\Discovery\Psr17Factory;
 use Http\Discovery\Psr18Client;
 use PHPUnit\Framework\TestCase;
 use PsrMock\Psr17\RequestFactory;
-use Sarahman\SimpleCache\FileSystemCache;
 use Throwable;
 
 class EppoClientTest extends TestCase

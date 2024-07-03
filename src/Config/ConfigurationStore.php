@@ -1,7 +1,8 @@
 <?php
 
-namespace Eppo;
+namespace Eppo\Config;
 
+use Eppo\Cache;
 use Eppo\Cache\CacheType;
 use Eppo\DTO\Flag;
 use Eppo\Exception\EppoClientException;

@@ -1,9 +1,9 @@
 <?php
 
-namespace Eppo\Tests;
+namespace Eppo\Tests\Config;
 
 use Eppo\Cache\DefaultCacheFactory;
-use Eppo\ConfigurationStore;
+use Eppo\Config\ConfigurationStore;
 use Eppo\DTO\Flag;
 use Eppo\DTO\VariationType;
 use PHPUnit\Framework\TestCase;

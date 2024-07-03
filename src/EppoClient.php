@@ -3,6 +3,8 @@
 namespace Eppo;
 
 use Eppo\Cache\DefaultCacheFactory;
+use Eppo\Config\ConfigurationLoader;
+use Eppo\Config\ConfigurationStore;
 use Eppo\Config\SDKData;
 use Eppo\DTO\Variation;
 use Eppo\DTO\VariationType;

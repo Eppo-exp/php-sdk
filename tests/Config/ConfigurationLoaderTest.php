@@ -1,13 +1,13 @@
 <?php
 
-namespace Eppo\Tests;
+namespace Eppo\Tests\Config;
 
 use Eppo\APIRequestWrapper;
 use Eppo\Cache\DefaultCacheFactory;
-use Eppo\ConfigurationStore;
+use Eppo\Config\ConfigurationLoader;
+use Eppo\Config\ConfigurationStore;
+use Eppo\Config\IConfigurationStore;
 use Eppo\DTO\Flag;
-use Eppo\ConfigurationLoader;
-use Eppo\IConfigurationStore;
 use Eppo\UFCParser;
 use Http\Discovery\Psr17Factory;
 use Http\Discovery\Psr18Client;

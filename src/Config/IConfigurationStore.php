@@ -1,8 +1,9 @@
 <?php
 
-namespace Eppo;
+namespace Eppo\Config;
 
 use Eppo\DTO\Flag;
+use Eppo\IFlags;
 
 interface IConfigurationStore extends IFlags
 {
