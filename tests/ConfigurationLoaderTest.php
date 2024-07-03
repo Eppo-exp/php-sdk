@@ -13,7 +13,7 @@ use Http\Discovery\Psr17Factory;
 use Http\Discovery\Psr18Client;
 use PHPUnit\Framework\TestCase;
 
-class FlagConfigurationLoaderTest extends TestCase
+class ConfigurationLoaderTest extends TestCase
 {
     /** @var string */
     const FLAG_KEY = 'kill-switch';
