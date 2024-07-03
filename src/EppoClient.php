@@ -32,13 +32,13 @@ class EppoClient
 
 
     /**
-     * @param FlagConfigurationLoader $configurationLoader
+     * @param ConfigurationLoader $configurationLoader
      * @param PollerInterface $poller
      * @param LoggerInterface|null $assignmentLogger optional assignment logger. Please check Eppo/LoggerLoggerInterface
      * @param bool|null $isGracefulMode
      */
     protected function __construct(
-        private readonly FlagConfigurationLoader $configurationLoader,
+        private readonly ConfigurationLoader $configurationLoader,
         private readonly PollerInterface $poller,
         private readonly ?LoggerInterface $assignmentLogger = null,
         private readonly ?bool $isGracefulMode = true
@@ -96,7 +96,7 @@ class EppoClient
                 $baseUrl
             );
 
-            $configLoader = new FlagConfigurationLoader($apiWrapper, $configStore);
+            $configLoader = new ConfigurationLoader($apiWrapper, $configStore);
             $poller = new Poller(
                 self::POLL_INTERVAL_MILLIS,
                 self::JITTER_MILLIS,
@@ -115,7 +115,7 @@ class EppoClient
      * @throws EppoClientInitializationException
      */
     private static function createAndInitClient(
-        FlagConfigurationLoader $configLoader,
+        ConfigurationLoader $configLoader,
         PollerInterface $poller,
         ?LoggerInterface $assignmentLogger,
         ?bool $isGracefulMode
@@ -398,7 +398,7 @@ class EppoClient
      * Only used for unit-tests.
      * For production use please use only singleton instance.
      *
-     * @param FlagConfigurationLoader $configurationLoader
+     * @param ConfigurationLoader $configurationLoader
      * @param PollerInterface $poller
      * @param LoggerInterface|null $logger
      * @param bool|null $isGracefulMode
@@ -406,7 +406,7 @@ class EppoClient
      * @throws EppoClientInitializationException
      */
     public static function createTestClient(
-        FlagConfigurationLoader $configurationLoader,
+        ConfigurationLoader $configurationLoader,
         PollerInterface $poller,
         ?LoggerInterface $logger = null,
         ?bool $isGracefulMode = true

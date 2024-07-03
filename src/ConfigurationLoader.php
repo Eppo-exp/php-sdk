@@ -6,7 +6,7 @@ use Eppo\DTO\Flag;
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
 
-class FlagConfigurationLoader implements IFlags
+class ConfigurationLoader implements IFlags
 {
     private UFCParser $parser;
 

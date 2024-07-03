@@ -6,7 +6,7 @@ use Eppo\APIRequestWrapper;
 use Eppo\Cache\DefaultCacheFactory;
 use Eppo\ConfigurationStore;
 use Eppo\DTO\Flag;
-use Eppo\FlagConfigurationLoader;
+use Eppo\ConfigurationLoader;
 use Eppo\IConfigurationStore;
 use Eppo\UFCParser;
 use Http\Discovery\Psr17Factory;
@@ -48,7 +48,7 @@ class FlagConfigurationLoaderTest extends TestCase
         $configStore->expects($this->once())
             ->method('setConfigurations')->with($flags);
 
-        $loader = new FlagConfigurationLoader($apiWrapper, $configStore);
+        $loader = new ConfigurationLoader($apiWrapper, $configStore);
         $loader->fetchAndStoreConfigurations();
 
 
@@ -69,7 +69,7 @@ class FlagConfigurationLoaderTest extends TestCase
 
         $cache = DefaultCacheFactory::create();
         // Act: Create a new FCL and retrieve a flag
-        $loader = new FlagConfigurationLoader($apiWrapper, new ConfigurationStore($cache));
+        $loader = new ConfigurationLoader($apiWrapper, new ConfigurationStore($cache));
 
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->once())
@@ -94,7 +94,7 @@ class FlagConfigurationLoaderTest extends TestCase
 
         $cache = DefaultCacheFactory::create();
         // Act: Create a new FCL with a 0sec ttl and retrieve a flag
-        $loader = new FlagConfigurationLoader($apiWrapper, new ConfigurationStore($cache), cacheAgeLimit: 0);
+        $loader = new ConfigurationLoader($apiWrapper, new ConfigurationStore($cache), cacheAgeLimit: 0);
 
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->exactly(2))

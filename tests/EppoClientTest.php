@@ -11,7 +11,7 @@ use Eppo\EppoClient;
 use Eppo\Exception\EppoClientException;
 use Eppo\Exception\EppoClientInitializationException;
 use Eppo\Exception\HttpRequestException;
-use Eppo\FlagConfigurationLoader;
+use Eppo\ConfigurationLoader;
 use Eppo\IConfigurationStore;
 use Eppo\Logger\LoggerInterface;
 use Eppo\PollerInterface;
@@ -93,7 +93,7 @@ class EppoClientTest extends TestCase
 
         $this->expectException(EppoClientException::class);
 
-        $flags = $this->getMockBuilder(FlagConfigurationLoader::class)->disableOriginalConstructor()->getMock();
+        $flags = $this->getMockBuilder(ConfigurationLoader::class)->disableOriginalConstructor()->getMock();
 
         $flags->expects($this->once())
             ->method('getFlag')
@@ -119,7 +119,7 @@ class EppoClientTest extends TestCase
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
 
         $this->expectException(EppoClientInitializationException::class);
-        $client = EppoClient::createTestClient(new FlagConfigurationLoader($apiRequestWrapper, $configStore), $pollerMock, $mockLogger, false);
+        $client = EppoClient::createTestClient(new ConfigurationLoader($apiRequestWrapper, $configStore), $pollerMock, $mockLogger, false);
     }
     public function testGracefulModeThrowsOnInit()
     {
@@ -137,7 +137,7 @@ class EppoClientTest extends TestCase
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
 
         $this->expectException(EppoClientInitializationException::class);
-        $client = EppoClient::createTestClient(new FlagConfigurationLoader($apiRequestWrapper, $configStore), $pollerMock, $mockLogger);
+        $client = EppoClient::createTestClient(new ConfigurationLoader($apiRequestWrapper, $configStore), $pollerMock, $mockLogger);
     }
 
     public function testReturnsDefaultWhenExperimentConfigIsAbsent()
@@ -207,7 +207,7 @@ class EppoClientTest extends TestCase
     private function getFlagConfigurationLoaderMock(
         array $mockedResponse,
         ?Throwable $mockedThrowable = null
-    ): FlagConfigurationLoader {
+    ): ConfigurationLoader {
         $cache = (new DefaultCacheFactory())->create();
         $sdkData = new SDKData();
 
@@ -243,7 +243,7 @@ class EppoClientTest extends TestCase
                 ->willThrowException($mockedThrowable);
         }
 
-        return new FlagConfigurationLoader($apiRequestWrapper, $configStoreMock);
+        return new ConfigurationLoader($apiRequestWrapper, $configStoreMock);
     }
 
     private function getPollerMock()
