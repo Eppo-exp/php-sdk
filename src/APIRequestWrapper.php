@@ -3,6 +3,7 @@
 namespace Eppo;
 
 use Eppo\Exception\HttpRequestException;
+use Eppo\Exception\InvalidApiKeyException;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -41,30 +42,35 @@ class APIRequestWrapper
         RequestFactoryInterface $requestFactory,
         ?string $baseUrl = null,
         ?string $resource = null
-    )
-    {
+    ) {
         // Our HTTP Client needs to be able to follow redirects.
         $this->httpClient = new RedirectClientDecorator($baseHttpClient);
         $this->baseUrl = $baseUrl ?? self::CONFIG_BASE;
         $this->requestFactory = $requestFactory;
         $this->resource = $resource ?? self::UFC_ENDPOINT;
         $this->queryParams = [
-            'apiKey' => $apiKey, ...$extraQueryParams
+            'apiKey' => $apiKey,
+            ...$extraQueryParams
         ];
     }
 
     /**
-     * @throws ClientExceptionInterface|HttpRequestException
+     * @throws HttpRequestException|InvalidApiKeyException
      */
     public function get(): string
     {
-        // Prepare the URL with query params
-        $resourceURI = $this->baseUrl . '/' . ltrim($this->resource, '/') . '?' . http_build_query($this->queryParams);
+        try {
+            // Prepare the URL with query params
+            $resourceURI = $this->baseUrl . '/' . ltrim($this->resource, '/') . '?' . http_build_query(
+                    $this->queryParams
+                );
 
-        $request = $this->requestFactory->createRequest('GET', $resourceURI);
+            $request = $this->requestFactory->createRequest('GET', $resourceURI);
 
-        $response = $this->httpClient->sendRequest($request);
-
+            $response = $this->httpClient->sendRequest($request);
+        } catch (ClientExceptionInterface $e) {
+            throw new HttpRequestException($e, 0, false);
+        }
         if ($response->getStatusCode() >= 400) {
             $this->handleHttpError($response->getStatusCode(), $response->getBody());
         }
@@ -77,11 +83,16 @@ class APIRequestWrapper
      * @param string $error
      *
      * @throws HttpRequestException
+     * @throws InvalidApiKeyException
      */
     private function handleHttpError(int $status, string $error)
     {
         $this->isUnauthorized = $status === 401;
         $isRecoverable = $this->isHttpErrorRecoverable($status);
+        if ($this->isUnauthorized) {
+            throw new InvalidApiKeyException();
+        }
+
         throw new HttpRequestException($error, $status, $isRecoverable);
     }
 
