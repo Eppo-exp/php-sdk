@@ -2,6 +2,7 @@
 
 namespace Eppo\Config;
 
+use Eppo\Bandits\BanditVariationIndexer;
 use Eppo\Cache;
 use Eppo\Cache\CacheType;
 use Eppo\DTO\Flag;
@@ -11,6 +12,7 @@ use Psr\SimpleCache\InvalidArgumentException;
 
 class ConfigurationStore implements IConfigurationStore
 {
+    const BANDIT_VARIATION_KEY = 'BANDIT_VARIATIONS';
     private CacheInterface $rootCache;
     private CacheInterface $flagCache;
     private CacheInterface $metadataCache;
@@ -55,9 +57,11 @@ class ConfigurationStore implements IConfigurationStore
     }
 
     /**
+     * @param array $flags
+     * @param BanditVariationIndexer|null $banditVariations
      * @throws EppoClientException
      */
-    public function setConfigurations(array $flags) : void
+    public function setConfigurations(array $flags, BanditVariationIndexer $banditVariations = null) : void
     {
         try {
             // Clear all stored config before setting data.
@@ -66,6 +70,7 @@ class ConfigurationStore implements IConfigurationStore
             // Set last fetch timestamp.
             $this->metadataCache->set(self::FLAG_TIMESTAMP, time());
             $this->setFlags($flags);
+            $this->metadataCache->set(self::BANDIT_VARIATION_KEY, serialize($banditVariations));
         } catch (InvalidArgumentException $e) {
             throw EppoClientException::From($e);
         }
@@ -90,5 +95,18 @@ class ConfigurationStore implements IConfigurationStore
             return -1;
         }
         return time() - $lastFetch;
+    }
+
+    /**
+     * @throws EppoClientException
+     */
+    public function getBanditVariations(): BanditVariationIndexer
+    {
+        try {
+            return unserialize($this->metadataCache->get(self::BANDIT_VARIATION_KEY));
+        } catch (InvalidArgumentException $e) {
+            // We know that the key does not contain illegal characters so we should not end up here.
+            throw EppoClientException::From($e);
+        }
     }
 }
