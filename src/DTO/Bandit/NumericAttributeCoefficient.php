@@ -4,7 +4,6 @@ namespace Eppo\DTO\Bandit;
 
 class NumericAttributeCoefficient
 {
-
     public function __construct(
         public readonly string $attributeKey,
         public readonly float $coefficient,

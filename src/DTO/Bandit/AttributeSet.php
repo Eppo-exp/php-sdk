@@ -2,8 +2,6 @@
 
 namespace Eppo\DTO\Bandit;
 
-
-
 class AttributeSet
 {
     /**
@@ -13,7 +11,8 @@ class AttributeSet
     public function __construct(public array $numericAttributes = [], public array $categoricalAttributes = [])
     {
     }
-    public static function fromArray(array $attributes): self {
+    public static function fromArray(array $attributes): self
+    {
         $categoricalAttributes = [];
         $numericAttributes = [];
         foreach ($attributes as $key => $value) {
