@@ -2,9 +2,7 @@
 
 namespace Eppo\DTO\Bandit;
 
-use Eppo\DTO\IDeserializable;
-
-class CategoricalAttributeCoefficient implements IDeserializable
+class CategoricalAttributeCoefficient
 {
     public string $attributeKey;
     public float $missingValueCoefficient;
@@ -21,7 +19,7 @@ class CategoricalAttributeCoefficient implements IDeserializable
         $this->valueCoefficients = $valueCoefficients;
     }
 
-    public static function fromJson($json): IDeserializable
+    public static function fromJson($json): CategoricalAttributeCoefficient
     {
         return new self($json['attributeKey'], $json['missingValueCoefficient'], $json['valueCoefficients']);
     }

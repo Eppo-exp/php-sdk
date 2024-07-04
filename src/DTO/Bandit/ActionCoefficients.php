@@ -2,9 +2,7 @@
 
 namespace Eppo\DTO\Bandit;
 
-use Eppo\DTO\IDeserializable;
-
-class ActionCoefficients implements IDeserializable
+class ActionCoefficients
 {
     /**
      * @param string $actionKey
@@ -15,16 +13,16 @@ class ActionCoefficients implements IDeserializable
      * @param CategoricalAttributeCoefficient[] $actionCategoricalCoefficients
      */
     public function __construct(
-        public string $actionKey,
-        public float $intercept,
-        public array $subjectNumericCoefficients = [],
-        public array $subjectCategoricalCoefficients = [],
-        public array $actionNumericCoefficients = [],
-        public array $actionCategoricalCoefficients = []
+        public readonly string $actionKey,
+        public readonly float $intercept,
+        public readonly array $subjectNumericCoefficients = [],
+        public readonly array $subjectCategoricalCoefficients = [],
+        public readonly array $actionNumericCoefficients = [],
+        public readonly array $actionCategoricalCoefficients = []
     ) {
     }
 
-    public static function arrayFromJson($coefficients)
+    public static function arrayFromJson($coefficients): array
     {
         $res = [];
         foreach ($coefficients as $key => $coefficient) {
@@ -33,7 +31,7 @@ class ActionCoefficients implements IDeserializable
         return $res;
     }
 
-    public static function fromJson($json): IDeserializable
+    public static function fromJson($json): ActionCoefficients
     {
         return new ActionCoefficients(
             $json['actionKey'],

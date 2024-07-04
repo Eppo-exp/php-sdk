@@ -2,9 +2,8 @@
 
 namespace Eppo\DTO\Bandit;
 
-use Eppo\DTO\IDeserializable;
 
-class BanditModelData implements IDeserializable
+class BanditModelData
 {
     /**
      * @param float $gamma
@@ -13,10 +12,10 @@ class BanditModelData implements IDeserializable
      * @param float $actionProbabilityFloor
      */
     public function __construct(
-        public float $gamma,
-        public array $coefficients,
-        public float $defaultActionScore,
-        public float $actionProbabilityFloor
+        public readonly float $gamma,
+        public readonly array $coefficients,
+        public readonly float $defaultActionScore,
+        public readonly float $actionProbabilityFloor
     ) {
     }
 

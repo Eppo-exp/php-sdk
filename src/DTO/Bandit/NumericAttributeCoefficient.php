@@ -2,20 +2,17 @@
 
 namespace Eppo\DTO\Bandit;
 
-use Eppo\DTO\IDeserializable;
+class NumericAttributeCoefficient
+{
 
-class NumericAttributeCoefficient implements IDeserializable {
-    public string $AttributeKey;
-    public float $Coefficient;
-    public float $MissingValueCoefficient;
-
-    public function __construct(string $attributeKey, float $coefficient, float $missingValueCoefficient) {
-        $this->AttributeKey = $attributeKey;
-        $this->Coefficient = $coefficient;
-        $this->MissingValueCoefficient = $missingValueCoefficient;
+    public function __construct(
+        public readonly string $attributeKey,
+        public readonly float $coefficient,
+        public readonly float $missingValueCoefficient
+    ) {
     }
 
-    public static function fromJson($json): IDeserializable
+    public static function fromJson($json): NumericAttributeCoefficient
     {
         return new self($json['attributeKey'], $json['coefficient'], $json['missingValueCoefficient']);
     }

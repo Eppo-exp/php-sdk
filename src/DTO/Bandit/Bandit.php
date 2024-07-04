@@ -6,14 +6,14 @@ use DateTime;
 use Eppo\DTO\IDeserializable;
 use Eppo\Exception\EppoClientException;
 
-class Bandit implements IDeserializable
+class Bandit
 {
     public function __construct(
-        string $banditKey,
-        string $modelName,
-        DateTime $updatedAt,
-        string $modelVersion,
-        BanditModelData $modelData
+        public readonly string $banditKey,
+        public readonly string $modelName,
+        public readonly DateTime $updatedAt,
+        public readonly string $modelVersion,
+        public readonly BanditModelData $modelData
     ) {
     }
 
