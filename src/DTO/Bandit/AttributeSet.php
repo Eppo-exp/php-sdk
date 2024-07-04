@@ -8,9 +8,12 @@ class AttributeSet
      * @param array<string, float> $numericAttributes
      * @param array<string, string|float|bool|int> $categoricalAttributes
      */
-    public function __construct(public array $numericAttributes = [], public array $categoricalAttributes = [])
-    {
+    public function __construct(
+        public readonly array $numericAttributes = [],
+        public readonly array $categoricalAttributes = []
+    ) {
     }
+
     public static function fromArray(array $attributes): self
     {
         $categoricalAttributes = [];
