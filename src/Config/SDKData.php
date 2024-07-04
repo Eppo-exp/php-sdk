@@ -32,11 +32,12 @@ class SDKData
         return self::SDK_NAME;
     }
 
-    public function asArray(): array {
+    public function asArray(): array
+    {
         return [
             "sdkVersion" => $this->sdkVersion,
             "sdkName" => self::SDK_NAME,
-            "sdkLanguage"=>self::SDK_LANGUAGE
+            "sdkLanguage" => self::SDK_LANGUAGE
         ];
     }
 }

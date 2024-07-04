@@ -4,7 +4,8 @@ namespace Eppo;
 
 use Eppo\Exception\HttpRequestException;
 
-class Poller implements PollerInterface {
+class Poller implements PollerInterface
+{
     /** @var bool */
     private $stopped = false;
 
@@ -22,22 +23,26 @@ class Poller implements PollerInterface {
      * @param int $jitterMillis
      * @param callable $callback
      */
-    public function __construct(int $interval, int $jitterMillis, callable $callback) {
+    public function __construct(int $interval, int $jitterMillis, callable $callback)
+    {
         $this->interval = $interval;
         $this->jitterMillis = $jitterMillis;
         $this->callback = $callback;
     }
 
-    public function start(): void {
+    public function start(): void
+    {
         $this->stopped = false;
         $this->poll();
     }
 
-    public function stop(): void {
+    public function stop(): void
+    {
         $this->stopped = true;
     }
 
-    private function poll(): void {
+    private function poll(): void
+    {
         if ($this->stopped) {
             return;
         }

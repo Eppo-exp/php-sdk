@@ -14,7 +14,7 @@ class ConfigurationStore implements IConfigurationStore
     private CacheInterface $flagCache;
     private CacheInterface $metadataCache;
 
-    const FLAG_TIMESTAMP = "flagTimestamp";
+    private const FLAG_TIMESTAMP = "flagTimestamp";
 
     /**
      * @param CacheInterface $cache
@@ -30,12 +30,13 @@ class ConfigurationStore implements IConfigurationStore
     {
         try {
             $result = $this->flagCache->get($key);
-            if ($result == null) return null;
+            if ($result == null) {
+                return null;
+            }
 
             $inflated = unserialize($result);
             return $inflated === false ? null : $inflated;
         } catch (InvalidArgumentException $e) {
-
             // Simple cache throws exceptions when a keystring is not a legal value (characters {}()/@: are illegal)
             syslog(LOG_WARNING, "[EPPO SDK] Illegal flag key ${key}: " . $e->getMessage());
             return null;
@@ -56,7 +57,7 @@ class ConfigurationStore implements IConfigurationStore
     /**
      * @throws EppoClientException
      */
-    public function setConfigurations(array $flags) : void
+    public function setConfigurations(array $flags): void
     {
         try {
             // Clear all stored config before setting data.
@@ -66,14 +67,13 @@ class ConfigurationStore implements IConfigurationStore
             $this->metadataCache->set(self::FLAG_TIMESTAMP, time());
             $this->setFlags($flags);
         } catch (InvalidArgumentException $e) {
-            throw EppoClientException::From($e);
+            throw EppoClientException::from($e);
         }
-
     }
 
     private function setFlags(array $flags): void
     {
-        foreach($flags as $flag) {
+        foreach ($flags as $flag) {
             $this->setFlag($flag);
         }
     }
