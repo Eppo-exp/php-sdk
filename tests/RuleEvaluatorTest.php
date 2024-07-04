@@ -12,17 +12,14 @@ use Eppo\DTO\Split;
 use Eppo\DTO\Variation;
 use Eppo\DTO\VariationType;
 use Eppo\RuleEvaluator;
-use Google\Api\Distribution\Range;
 use PHPUnit\Framework\TestCase;
 
 final class RuleEvaluatorTest extends TestCase
 {
-    const SUBJECTKEY = 'Elvis';
-    const TOTALSHARDS = 10;
-    private Rule $ruleWithEmptyConditions;
+    private const SUBJECT_KEY = 'Elvis';
+    private const TOTAL_SHARDS = 10;
 
     private Rule $ruleWithMatchesCondition;
-    private Rule $ruleWithNotMatchesCondition;
 
     private Rule $numericRule;
 
@@ -58,9 +55,9 @@ final class RuleEvaluatorTest extends TestCase
     {
         parent::__construct($name, $data, $dataName);
 
-        $this->ruleWithEmptyConditions = new Rule([]);
         $this->rockAndRollLegendRule = new Rule(
-            [new Condition('age', 'GTE', 40),
+            [
+                new Condition('age', 'GTE', 40),
                 new Condition('occupation', 'MATCHES', 'musician'),
                 new Condition('albumCount', 'GTE', 50)
             ]
@@ -68,18 +65,22 @@ final class RuleEvaluatorTest extends TestCase
 
         $this->subject = ['age' => 42, 'albumCount' => 57, 'occupation' => 'musician'];
 
-        $this->matchingSplits = [new Split('match', [new Shard("na", [new ShardRange(0, self::TOTALSHARDS)])], [])];
+        $this->matchingSplits = [new Split('match', [new Shard("na", [new ShardRange(0, self::TOTAL_SHARDS)])], [])];
         $this->musicSplits = [new Split('music', [new Shard("na", [new ShardRange(2, 4)])], [])];
-        $this->nonMatchingSplits = [new Split('match', [
-            new Shard("na", [
-                new ShardRange(0, 4),
-                new ShardRange(5, 9)]),
-            new Shard('cl', [])], [])];
+        $this->nonMatchingSplits = [
+            new Split('match', [
+                new Shard("na", [
+                    new ShardRange(0, 4),
+                    new ShardRange(5, 9)
+                ]),
+                new Shard('cl', [])
+            ], [])
+        ];
 
         $this->matchVariation = new Variation('match', 'foo');
         $numericRuleCondition1 = new Condition('albumCount', 'LTE', 100);
-        $numericRuleCondition2 = new Condition('albumCount', 'GTE', self::TOTALSHARDS);
-        $numericRuleCondition3 = new Condition('albumCount', 'LTE', self::TOTALSHARDS);
+        $numericRuleCondition2 = new Condition('albumCount', 'GTE', self::TOTAL_SHARDS);
+        $numericRuleCondition3 = new Condition('albumCount', 'LTE', self::TOTAL_SHARDS);
 
         $this->numericRule = new Rule([$numericRuleCondition1, $numericRuleCondition2]);
         $this->nonMatchNumericRule = new Rule([$numericRuleCondition1, $numericRuleCondition3]);
@@ -119,58 +120,96 @@ final class RuleEvaluatorTest extends TestCase
         $this->assertTrue(RuleEvaluator::matchesRule(['user_id' => '123456789'], $this->ruleWithMatchesCondition));
         $this->assertTrue(RuleEvaluator::matchesRule(['user_id' => '12'], $this->ruleWithMatchesCondition));
 
-        $this->assertFalse(RuleEvaluator::matchesRule(['user_id' => '123456789A'], $this->ruleWithPreciseMatchesCondition));
-        $this->assertFalse(RuleEvaluator::matchesRule(['user_id' => 'A123456789'], $this->ruleWithPreciseMatchesCondition));
-        $this->assertTrue(RuleEvaluator::matchesRule(['user_id' => '123456789'], $this->ruleWithPreciseMatchesCondition));
+        $this->assertFalse(
+            RuleEvaluator::matchesRule(['user_id' => '123456789A'], $this->ruleWithPreciseMatchesCondition)
+        );
+        $this->assertFalse(
+            RuleEvaluator::matchesRule(['user_id' => 'A123456789'], $this->ruleWithPreciseMatchesCondition)
+        );
+        $this->assertTrue(RuleEvaluator::matchesRule(
+            ['user_id' => '123456789'],
+            $this->ruleWithPreciseMatchesCondition
+        ));
     }
 
     public function testStringNotMatch(): void
     {
         // Pattern to not match is /[0-9]+/
-        $this->assertTrue(RuleEvaluator::matchesRule(['user_id' => 'abc'], $this->ruleWithNotMatchesConditionCondition));
+        $this->assertTrue(RuleEvaluator::matchesRule(
+            ['user_id' => 'abc'],
+            $this->ruleWithNotMatchesConditionCondition
+        ));
         $this->assertFalse(RuleEvaluator::matchesRule([], $this->ruleWithNotMatchesConditionCondition));
-        $this->assertFalse(RuleEvaluator::matchesRule(['user_id' => 'A123456789'], $this->ruleWithNotMatchesConditionCondition));
-        $this->assertFalse(RuleEvaluator::matchesRule(['user_id' => '123456789A'], $this->ruleWithNotMatchesConditionCondition));
-        $this->assertFalse(RuleEvaluator::matchesRule(['user_id' => '123456789'], $this->ruleWithNotMatchesConditionCondition));
-        $this->assertFalse(RuleEvaluator::matchesRule(['user_id' => '12'], $this->ruleWithNotMatchesConditionCondition));
+        $this->assertFalse(
+            RuleEvaluator::matchesRule(['user_id' => 'A123456789'], $this->ruleWithNotMatchesConditionCondition)
+        );
+        $this->assertFalse(
+            RuleEvaluator::matchesRule(['user_id' => '123456789A'], $this->ruleWithNotMatchesConditionCondition)
+        );
+        $this->assertFalse(
+            RuleEvaluator::matchesRule(['user_id' => '123456789'], $this->ruleWithNotMatchesConditionCondition)
+        );
+        $this->assertFalse(RuleEvaluator::matchesRule(
+            ['user_id' => '12'],
+            $this->ruleWithNotMatchesConditionCondition
+        ));
 
-        $this->assertFalse(RuleEvaluator::matchesRule(['user_id' => '123456789A'], $this->ruleWithNotMatchesConditionCondition));
-        $this->assertFalse(RuleEvaluator::matchesRule(['user_id' => 'A123456789'], $this->ruleWithNotMatchesConditionCondition));
-        $this->assertFalse(RuleEvaluator::matchesRule(['user_id' => '123456789'], $this->ruleWithNotMatchesConditionCondition));
+        $this->assertFalse(
+            RuleEvaluator::matchesRule(['user_id' => '123456789A'], $this->ruleWithNotMatchesConditionCondition)
+        );
+        $this->assertFalse(
+            RuleEvaluator::matchesRule(['user_id' => 'A123456789'], $this->ruleWithNotMatchesConditionCondition)
+        );
+        $this->assertFalse(
+            RuleEvaluator::matchesRule(['user_id' => '123456789'], $this->ruleWithNotMatchesConditionCondition)
+        );
     }
 
     public function testNoMatchingShards(): void
     {
-        $this->assertFalse(RuleEvaluator::matchesAllShards(
-            $this->nonMatchingSplits[0]->shards, self::SUBJECTKEY, self::TOTALSHARDS)
+        $this->assertFalse(
+            RuleEvaluator::matchesAllShards(
+                $this->nonMatchingSplits[0]->shards,
+                self::SUBJECT_KEY,
+                self::TOTAL_SHARDS
+            )
         );
     }
 
     // matches rule and some shards
     public function testSomeMatchingShards(): void
     {
-        $this->assertFalse(RuleEvaluator::matchesAllShards(
-            [...$this->matchingSplits[0]->shards, ...$this->nonMatchingSplits[0]->shards],
-            self::SUBJECTKEY, self::TOTALSHARDS)
+        $this->assertFalse(
+            RuleEvaluator::matchesAllShards(
+                [...$this->matchingSplits[0]->shards, ...$this->nonMatchingSplits[0]->shards],
+                self::SUBJECT_KEY,
+                self::TOTAL_SHARDS
+            )
         );
     }
 
     public function testMatchesShards(): void
     {
-        $this->assertTrue(RuleEvaluator::matchesAllShards(
-            $this->matchingSplits[0]->shards, self::SUBJECTKEY, self::TOTALSHARDS)
+        $this->assertTrue(
+            RuleEvaluator::matchesAllShards(
+                $this->matchingSplits[0]->shards,
+                self::SUBJECT_KEY,
+                self::TOTAL_SHARDS
+            )
         );
     }
 
     // Flag Evaluation
     public function testFlagEvaluation(): void
     {
-        $allocations = [new Allocation(
-            'rock',
-            [$this->rockAndRollLegendRule],
-            $this->musicSplits,
-            false
-        )];
+        $allocations = [
+            new Allocation(
+                'rock',
+                [$this->rockAndRollLegendRule],
+                $this->musicSplits,
+                false
+            )
+        ];
         $variations = [
             'music' => new Variation('music', 'rockandroll'),
             'football' => new Variation('football', 'football'),
@@ -183,9 +222,10 @@ final class RuleEvaluatorTest extends TestCase
             $allocations,
             VariationType::STRING,
             $variations,
-            10);
+            10
+        );
 
-        $result = RuleEvaluator::evaluateFlag($bigFlag, self::SUBJECTKEY, $this->subject);
+        $result = RuleEvaluator::evaluateFlag($bigFlag, self::SUBJECT_KEY, $this->subject);
         $this->assertNotNull($result);
         $this->assertEquals('music', $result->variation->key);
         $this->assertEquals('rockandroll', $result->variation->value);
@@ -193,8 +233,8 @@ final class RuleEvaluatorTest extends TestCase
 
     public function testDisabledFlag(): void
     {
-        $flag = new Flag('disabled', false, [], VariationType::BOOLEAN, [], self::TOTALSHARDS);
-        $this->assertNull(RuleEvaluator::evaluateFlag($flag, self::SUBJECTKEY, []));
+        $flag = new Flag('disabled', false, [], VariationType::BOOLEAN, [], self::TOTAL_SHARDS);
+        $this->assertNull(RuleEvaluator::evaluateFlag($flag, self::SUBJECT_KEY, []));
     }
 
     public function testFlagWithInactiveAllocations(): void
@@ -203,22 +243,36 @@ final class RuleEvaluatorTest extends TestCase
         $overAlloc = new Allocation('over', [], $this->matchingSplits, false, endAt: $now - 10000);
         $hasntStartedAlloc = new Allocation('hasntStarted', [], $this->matchingSplits, false, $now + 1000 * 60);
 
-        $flag = new Flag('inactive_allocs', true, [$overAlloc, $hasntStartedAlloc], VariationType::BOOLEAN, [$this->matchVariation->key => $this->matchVariation], self::TOTALSHARDS);
-        $this->assertNull(RuleEvaluator::evaluateFlag($flag, self::SUBJECTKEY, $this->subject));
+        $flag = new Flag(
+            'inactive_allocs',
+            true,
+            [$overAlloc, $hasntStartedAlloc],
+            VariationType::BOOLEAN,
+            [$this->matchVariation->key => $this->matchVariation],
+            self::TOTAL_SHARDS
+        );
+        $this->assertNull(RuleEvaluator::evaluateFlag($flag, self::SUBJECT_KEY, $this->subject));
     }
 
     public function testFlagWithoutAllocations(): void
     {
-        $flag = new Flag('no_allocs', true, [], VariationType::BOOLEAN, [], self::TOTALSHARDS);
-        $this->assertNull(RuleEvaluator::evaluateFlag($flag, self::SUBJECTKEY, $this->subject));
+        $flag = new Flag('no_allocs', true, [], VariationType::BOOLEAN, [], self::TOTAL_SHARDS);
+        $this->assertNull(RuleEvaluator::evaluateFlag($flag, self::SUBJECT_KEY, $this->subject));
     }
 
     public function testMatchesVariationWithoutRules(): void
     {
         $allocation1 = new Allocation('alloc1', [], $this->matchingSplits, false);
         $basicVariation = new Variation('foo', 'bar');
-        $flag = new Flag('matches', true, [$allocation1], VariationType::STRING, ["match" => $basicVariation], self::TOTALSHARDS);
-        $result = RuleEvaluator::evaluateFlag($flag, self::SUBJECTKEY, $this->subject);
+        $flag = new Flag(
+            'matches',
+            true,
+            [$allocation1],
+            VariationType::STRING,
+            ["match" => $basicVariation],
+            self::TOTAL_SHARDS
+        );
+        $result = RuleEvaluator::evaluateFlag($flag, self::SUBJECT_KEY, $this->subject);
         $this->assertNotNull($result);
         $this->assertEquals('bar', $result->variation->value);
     }
@@ -230,6 +284,8 @@ final class RuleEvaluatorTest extends TestCase
 
     public function testMatchesSecondRule(): void
     {
-        $this->assertTrue(RuleEvaluator::matchesAnyRule([$this->nonMatchNumericRule, $this->numericRule], $this->subject));
+        $this->assertTrue(
+            RuleEvaluator::matchesAnyRule([$this->nonMatchNumericRule, $this->numericRule], $this->subject)
+        );
     }
 }

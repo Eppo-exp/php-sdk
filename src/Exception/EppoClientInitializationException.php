@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Eppo\Exception;
 
 use Exception;

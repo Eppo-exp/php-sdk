@@ -22,7 +22,10 @@ class APIRequestWrapperTest extends TestCase
         // Note: this test also verifies that the correct endpoint is called via mock expectations.
         $http = $this->getRedirectingClientMock();
         $api = new APIRequestWrapper(
-            'APIKEY', [], $http, new Psr17Factory()
+            'APIKEY',
+            [],
+            $http,
+            new Psr17Factory()
         );
         $api->get();
     }
@@ -31,7 +34,10 @@ class APIRequestWrapperTest extends TestCase
     {
         $http = $this->getHttpClientMock(RFC7235::UNAUTHORIZED, '');
         $api = new APIRequestWrapper(
-            '', [], $http, new Psr17Factory()
+            '',
+            [],
+            $http,
+            new Psr17Factory()
         );
 
         $this->expectException(InvalidApiKeyException::class);
@@ -45,7 +51,10 @@ class APIRequestWrapperTest extends TestCase
     {
         $http = $this->getHttpClientMock(RFC7231::INTERNAL_SERVER_ERROR, '');
         $api = new APIRequestWrapper(
-            '', [], $http, new Psr17Factory()
+            '',
+            [],
+            $http,
+            new Psr17Factory()
         );
 
         $this->expectException(HttpRequestException::class);
@@ -72,7 +81,10 @@ class APIRequestWrapperTest extends TestCase
     {
         $http = $this->getHttpClientMock($status, '');
         $api = new APIRequestWrapper(
-            '', [], $http, new Psr17Factory()
+            '',
+            [],
+            $http,
+            new Psr17Factory()
         );
 
         try {
@@ -123,8 +135,10 @@ class APIRequestWrapperTest extends TestCase
             ->with($this->callback(function ($request) use ($resourceUri, $redirectLocation) {
                 $uri = $request->getUri()->__toString();
 
-                $this->assertContains($uri,
-                    [$resourceUri, $redirectLocation]);
+                $this->assertContains(
+                    $uri,
+                    [$resourceUri, $redirectLocation]
+                );
 
                 return true;
             }))
@@ -138,5 +152,4 @@ class APIRequestWrapperTest extends TestCase
 
         return $httpClientMock;
     }
-
 }
