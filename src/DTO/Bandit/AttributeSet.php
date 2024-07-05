@@ -19,7 +19,7 @@ class AttributeSet
         $categoricalAttributes = [];
         $numericAttributes = [];
         foreach ($attributes as $key => $value) {
-            if (is_numeric($key)) {
+            if (is_numeric($value)) {
                 $numericAttributes[$key] = $value;
             } else {
                 $categoricalAttributes[$key] = $value;

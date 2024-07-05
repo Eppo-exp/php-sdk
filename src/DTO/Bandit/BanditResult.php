@@ -2,10 +2,7 @@
 
 namespace Eppo\DTO\Bandit;
 
-use Eppo\DTO\IDeserializable;
-use JsonSerializable;
-
-class BanditResult implements JsonSerializable, IDeserializable
+class BanditResult
 {
     public string $variation;
     public ?string $action;
@@ -29,7 +26,7 @@ class BanditResult implements JsonSerializable, IDeserializable
         return $this->action ?? $this->variation;
     }
 
-    public static function fromJson($json): IDeserializable
+    public static function fromJson($json): self
     {
         return new self($json['Variation'], $json['Action'] ?? null);
     }

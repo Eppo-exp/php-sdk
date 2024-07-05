@@ -11,12 +11,20 @@ class NumericAttributeCoefficient
     ) {
     }
 
-    public static function fromJson($json): NumericAttributeCoefficient
+    /**
+     * @param array $json
+     * @return NumericAttributeCoefficient
+     */
+    public static function fromJson(array $json): NumericAttributeCoefficient
     {
         return new self($json['attributeKey'], $json['coefficient'], $json['missingValueCoefficient']);
     }
 
-    public static function arrayFromJson($numericCoefficients): array
+    /**
+     * @param array $numericCoefficients
+     * @return NumericAttributeCoefficient[]
+     */
+    public static function arrayFromJson(array $numericCoefficients): array
     {
         return array_map(fn($item) => self::fromJson($item), $numericCoefficients);
     }

@@ -3,8 +3,6 @@
 namespace Eppo\DTO\Bandit;
 
 use DateTime;
-use Eppo\DTO\IDeserializable;
-use Eppo\Exception\EppoClientException;
 
 class Bandit
 {
@@ -17,18 +15,25 @@ class Bandit
     ) {
     }
 
-    public static function fromJson($json): Bandit
+    /**
+     * @param array $json
+     * @return Bandit
+     */
+    public static function fromJson(array $json): Bandit
     {
         try {
+            $updatedAt = new DateTime($json['updatedAt']);
+        } catch (\Exception $e) {
+            syslog(LOG_WARNING, "[Eppo SDK] invalid timestamp for bandit model ${json['updatedAt']}");
+            $updatedAt = new DateTime();
+        } finally {
             return new Bandit(
                 $json['banditKey'],
                 $json['modelName'],
-                new DateTime($json['updatedAt']),
+                $updatedAt,
                 $json['modelVersion'],
                 BanditModelData::fromJson($json['modelData'])
             );
-        } catch (\Exception $e) {
-            throw EppoClientException::from($e);
         }
     }
 }
