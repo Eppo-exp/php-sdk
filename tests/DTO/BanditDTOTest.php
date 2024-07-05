@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 
 class BanditDTOTest extends TestCase
 {
-    const BANDIT_JSON = '{
+    private const BANDIT_JSON = '{
       "banditKey": "banner_bandit",
       "modelName": "falcon",
       "updatedAt": "2023-09-13T04:52:06.462Z",
