@@ -1,14 +1,16 @@
 <?php
+
 namespace Eppo\DTO\Bandit;
 
-
-class BanditVariation {
+class BanditVariation
+{
     public string $key;
     public string $flagKey;
     public string $variationKey;
     public string $variationValue;
 
-    public function __construct(string $key, string $flagKey, string $variationKey, string $variationValue) {
+    public function __construct(string $key, string $flagKey, string $variationKey, string $variationValue)
+    {
         $this->key = $key;
         $this->flagKey = $flagKey;
         $this->variationKey = $variationKey;
