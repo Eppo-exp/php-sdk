@@ -2,7 +2,7 @@
 
 namespace Eppo\Bandits;
 
-use BanditEvaluation;
+use Eppo\DTO\Bandit\BanditEvaluation;
 use Eppo\DTO\Bandit\BanditModelData;
 use Eppo\DTO\Bandit\ContextAttributes;
 

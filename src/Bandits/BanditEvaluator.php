@@ -2,11 +2,12 @@
 
 namespace Eppo\Bandits;
 
-use BanditEvaluation;
 use Eppo\DTO\Bandit\ActionCoefficients;
 use Eppo\DTO\Bandit\AttributeSet;
+use Eppo\DTO\Bandit\BanditEvaluation;
 use Eppo\DTO\Bandit\BanditModelData;
 use Eppo\DTO\Bandit\ContextAttributes;
+use Eppo\DTO\Bandit\NumericAttributeCoefficient;
 use Eppo\Exception\BanditEvaluationException;
 use Eppo\Exception\InvalidArgumentException;
 use Eppo\Sharder;
@@ -19,6 +20,12 @@ class BanditEvaluator implements IBanditEvaluator
 
 
     /**
+     * @param string $flagKey
+     * @param ContextAttributes $subject
+     * @param array<string, ContextAttributes> $actionsWithContexts
+     * @param BanditModelData $banditModel
+     * @return BanditEvaluation
+     * @throws BanditEvaluationException
      * @throws InvalidArgumentException
      */
     public function evaluateBandit(
@@ -48,8 +55,8 @@ class BanditEvaluator implements IBanditEvaluator
         $actionScore = $actionScores[$selectedAction];
         $actionWeight = $actionWeights[$selectedAction];
 
-        // Determine optimality gap
-        $max = max($actionScores, 'value');
+        // Determine gap, if any between the selected action and the highest scoring one.
+        $max = max($actionScores);
         $gap = $max - $actionScore;
 
         return new BanditEvaluation(
@@ -67,7 +74,7 @@ class BanditEvaluator implements IBanditEvaluator
 
     /**
      * @param AttributeSet $subjectAttributes
-     * @param array $actionsWithContexts
+     * @param array<string, ContextAttributes> $actionsWithContexts
      * @param BanditModelData $banditModel
      * @return array<string, float>
      */
@@ -77,11 +84,11 @@ class BanditEvaluator implements IBanditEvaluator
         BanditModelData $banditModel
     ): array {
         $scores = [];
-        foreach ($actionsWithContexts as $key => $actionAttributes) {
+        foreach ($actionsWithContexts as $key => $actionContext) {
             if (isset($banditModel->coefficients[$key])) {
                 $scores[$key] = self::scoreAction(
                     $subjectAttributes,
-                    $actionAttributes,
+                    $actionContext->getAttributes(),
                     $banditModel->coefficients[$key]
                 );
             } else {
@@ -171,8 +178,7 @@ class BanditEvaluator implements IBanditEvaluator
     {
         $weightPairs = array_map(
             fn($key) => new ActionValue($key, $actionWeights[$key]),
-            $actionWeights,
-            ARRAY_FILTER_USE_KEY
+            array_keys($actionWeights)
         );
 
         // In place sorting.
@@ -206,6 +212,11 @@ class BanditEvaluator implements IBanditEvaluator
         );
     }
 
+    /**
+     * @param array<NumericAttributeCoefficient> $coefficients
+     * @param array<string, float> $attributes
+     * @return float
+     */
     public static function scoreNumericAttributes(array $coefficients, array $attributes): float
     {
         $score = 0.0;

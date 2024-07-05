@@ -1,6 +1,6 @@
 <?php
 
-use Eppo\DTO\Bandit\AttributeSet;
+namespace Eppo\DTO\Bandit;
 
 class BanditEvaluation
 {

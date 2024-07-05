@@ -2,6 +2,8 @@
 
 namespace Eppo\DTO\Bandit;
 
+use Eppo\Exception\InvalidArgumentException;
+
 class ActionCoefficients
 {
     /**
@@ -11,6 +13,7 @@ class ActionCoefficients
      * @param CategoricalAttributeCoefficient[] $subjectCategoricalCoefficients
      * @param NumericAttributeCoefficient[] $actionNumericCoefficients
      * @param CategoricalAttributeCoefficient[] $actionCategoricalCoefficients
+     * @throws InvalidArgumentException
      */
     public function __construct(
         public readonly string $actionKey,
@@ -20,6 +23,21 @@ class ActionCoefficients
         public readonly array $actionNumericCoefficients = [],
         public readonly array $actionCategoricalCoefficients = []
     ) {
+        foreach ([...$this->subjectNumericCoefficients, ...$this->actionNumericCoefficients] as $numericCoefficient) {
+            if (!($numericCoefficient instanceof NumericAttributeCoefficient)) {
+                throw new InvalidArgumentException("Unexpected non-numeric attribute coefficient encountered");
+            }
+        }
+        foreach (
+            [
+                ...$this->subjectCategoricalCoefficients,
+                ...$this->actionCategoricalCoefficients
+            ] as $categoricalCoefficient
+        ) {
+            if (!($categoricalCoefficient instanceof CategoricalAttributeCoefficient)) {
+                throw new InvalidArgumentException("Unexpected non-categorical attribute coefficient encountered");
+            }
+        }
     }
 
     public static function arrayFromJson($coefficients): array
