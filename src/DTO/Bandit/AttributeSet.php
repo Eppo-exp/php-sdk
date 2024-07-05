@@ -2,7 +2,6 @@
 
 namespace Eppo\DTO\Bandit;
 
-
 class AttributeSet
 {
     /**
