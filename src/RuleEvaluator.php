@@ -26,8 +26,9 @@ final class RuleEvaluator
      */
     public static function evaluateFlag(Flag $flag, string $subjectKey, array $subjectAttributes): FlagEvaluation|null
     {
-        if (!$flag->enabled)
+        if (!$flag->enabled) {
             return null;
+        }
 
         $now = time();
         foreach ($flag->allocations as $allocation) {
@@ -45,7 +46,12 @@ final class RuleEvaluator
                 foreach ($allocation->splits as $split) {
                     # Split needs to match all shards
                     if (self::matchesAllShards($split->shards, $subjectKey, $flag->totalShards)) {
-                        return new FlagEvaluation($flag->variations[$split->variationKey], $allocation->doLog, $allocation->key, $split->extraLogging);
+                        return new FlagEvaluation(
+                            $flag->variations[$split->variationKey],
+                            $allocation->doLog,
+                            $allocation->key,
+                            $split->extraLogging
+                        );
                     }
                 }
             }
@@ -234,5 +240,4 @@ final class RuleEvaluator
         }
         return false;
     }
-
 }

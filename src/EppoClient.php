@@ -49,10 +49,13 @@ class EppoClient
     /**
      * Initializes EppoClient singleton instance.
      *
-     * @param LoggerInterface|null $assignmentLogger optional assignment logger. Please check Eppo/LoggerLoggerInterface.
-     * @param CacheInterface|null $cache optional Compatible with psr-16 simple cache. By default, (if nothing passed) EppoClient will use FileSystem cache.
-     * @param ClientInterface|null $httpClient optional PSR-18 ClientInterface. If nothing is passed, EppoClient will use Discovery to locate a suitable implementation in the project.
-     * @param RequestFactoryInterface|null $requestFactory optional PSR-17 Request Factory implementation. If none is provided, EppoClient will use Discovery
+     * @param LoggerInterface|null $assignmentLogger optional assignment logger. Please see Eppo/LoggerLoggerInterface.
+     * @param CacheInterface|null $cache optional Compatible with psr-16 simple cache. By default, (if nothing passed)
+     * EppoClient will use FileSystem cache.
+     * @param ClientInterface|null $httpClient optional PSR-18 ClientInterface. If nothing is passed, EppoClient will
+     * use Discovery to locate a suitable implementation in the project.
+     * @param RequestFactoryInterface|null $requestFactory optional PSR-17 Request Factory implementation. If none is
+     * provided, EppoClient will use Discovery
      * @throws EppoClientInitializationException
      * @throws EppoClientException
      */
@@ -77,7 +80,7 @@ class EppoClient
                 try {
                     $cache = (new DefaultCacheFactory())->create();
                 } catch (Exception $e) {
-                    throw EppoClientInitializationException::From($e);
+                    throw EppoClientInitializationException::from($e);
                 }
             }
 
@@ -122,7 +125,7 @@ class EppoClient
     ): EppoClient {
         try {
             $configLoader->reloadConfigurationIfExpired();
-        } catch (HttpRequestException|InvalidApiKeyException $e) {
+        } catch (HttpRequestException | InvalidApiKeyException $e) {
             throw new EppoClientInitializationException(
                 "Unable to initialize Eppo Client: " . $e->getMessage()
             );
@@ -211,7 +214,8 @@ class EppoClient
 
     /**
      * Gets the assigned numeric variation as a float for the given subject and experiment
-     * If there is an issue retrieving the variation or the retrieved variation is not an integer or float (double), null wil be returned.
+     * If there is an issue retrieving the variation or the retrieved variation is not an integer or float (double),
+     * null wil be returned.
      *
      * @throws EppoClientException
      */
@@ -281,7 +285,8 @@ class EppoClient
      *
      * @param string $flagKey a feature flag identifier
      * @param string $subjectKey an identifier for the experiment. Ex: a user ID
-     * @param array $subjectAttributes optional attributes to use in the evaluation of experiment targeting rules. These attributes are also included in the loggin callback.
+     * @param array $subjectAttributes optional attributes to use in the evaluation of experiment targeting rules.
+     * These attributes are also included in the logging callback.
      * @param VariationType|null $expectedVariationType
      * @return Variation|null the Variation DTO assigned to the subject, or null if there is no assignment,
      * an error was encountered, or an expected type was provided that didn't match the variation's typed
@@ -307,11 +312,14 @@ class EppoClient
         $evaluationResult = $this->evaluator->evaluateFlag($flag, $subjectKey, $subjectAttributes);
         $computedVariation = $evaluationResult?->variation ?? null;
 
-        // If there is an assignment and the expected type has been expressed, do a type check and log an error if they don't match.
-        if ($computedVariation && $expectedVariationType && !$this->checkExpectedType(
+        // If there is an assignment and the expected type has been expressed, do a type check and log an error if
+        //they don't match.
+        if (
+            $computedVariation && $expectedVariationType && !$this->checkExpectedType(
                 $expectedVariationType,
                 $computedVariation->value
-            )) {
+            )
+        ) {
             $actualType = gettype($computedVariation->value);
             $eVarType = $expectedVariationType->value;
             syslog(LOG_ERR, "[EPPO SDK] Variation does not have the expected type, ${eVarType}; found ${actualType}");
@@ -330,8 +338,7 @@ class EppoClient
                 $sdkData = (new SDKData())->asArray();
                 $experimentKey = "$flagKey-$allocationKey";
                 $this->assignmentLogger->logAssignment(
-                    new AssignmentEvent
-                    (
+                    new AssignmentEvent(
                         $experimentKey,
                         $evaluationResult->variation->key,
                         $allocationKey,
@@ -356,8 +363,10 @@ class EppoClient
         return (
             ($expectedVariationType == VariationType::STRING && gettype($typedValue) === "string") ||
             ($expectedVariationType == VariationType::INTEGER && gettype($typedValue) === "integer") ||
-            ($expectedVariationType == VariationType::NUMERIC && in_array(gettype($typedValue), ["integer", "double"]
-                )) ||
+            ($expectedVariationType == VariationType::NUMERIC && in_array(
+                gettype($typedValue),
+                ["integer", "double"]
+            )) ||
             ($expectedVariationType == VariationType::BOOLEAN && gettype($typedValue) === "boolean") ||
             ($expectedVariationType == VariationType::JSON)); // JSON type check un-necessary here.
     }
@@ -391,7 +400,7 @@ class EppoClient
             error_log('[Eppo SDK] Error getting assignment: ' . $exception->getMessage());
             return $defaultValue;
         }
-        throw EppoClientException::From($exception);
+        throw EppoClientException::from($exception);
     }
 
     /**

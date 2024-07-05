@@ -20,8 +20,8 @@ class Allocation
         public array $splits,
         ?bool $doLog = true,
         public ?int $startAt = null,
-        public ?int $endAt = null)
-    {
+        public ?int $endAt = null
+    ) {
         $this->doLog = $doLog === null ? true : $doLog;
     }
 }

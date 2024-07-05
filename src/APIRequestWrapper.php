@@ -20,8 +20,8 @@ use Webclient\Extension\Redirect\RedirectClientDecorator;
 class APIRequestWrapper
 {
     /** @var string */
-    const UFC_ENDPOINT = '/flag-config/v1/config';
-    const CONFIG_BASE = 'https://fscdn.eppo.cloud/api';
+    private const UFC_ENDPOINT = '/flag-config/v1/config';
+    private const CONFIG_BASE = 'https://fscdn.eppo.cloud/api';
 
     private string $baseUrl;
 
@@ -62,8 +62,8 @@ class APIRequestWrapper
         try {
             // Prepare the URL with query params
             $resourceURI = $this->baseUrl . '/' . ltrim($this->resource, '/') . '?' . http_build_query(
-                    $this->queryParams
-                );
+                $this->queryParams
+            );
 
             $request = $this->requestFactory->createRequest('GET', $resourceURI);
 
