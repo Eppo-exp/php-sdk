@@ -7,7 +7,6 @@ use Throwable;
 
 class InvalidConfigurationException extends Exception
 {
-
     /**
      * @param string $message
      * @param int $code

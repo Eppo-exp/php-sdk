@@ -12,7 +12,7 @@ class Split
     public function __construct(
         public string $variationKey,
         public array $shards,
-        public array $extraLogging)
-    {
+        public array $extraLogging
+    ) {
     }
 }

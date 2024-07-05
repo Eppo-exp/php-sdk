@@ -25,9 +25,8 @@ use Throwable;
 
 class EppoClientTest extends TestCase
 {
-
-    const EXPERIMENT_NAME = 'numeric_flag';
-    const TEST_DATA_PATH = __DIR__ . '/data/ufc/tests';
+    private const EXPERIMENT_NAME = 'numeric_flag';
+    private const TEST_DATA_PATH = __DIR__ . '/data/ufc/tests';
 
     public static function setUpBeforeClass(): void
     {
@@ -81,7 +80,8 @@ class EppoClientTest extends TestCase
         $pollerMock = $this->getPollerMock();
 
         $apiRequestWrapper = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs(
-            ['', [], new Psr18Client(), new Psr17Factory()])->getMock();
+            ['', [], new Psr18Client(), new Psr17Factory()]
+        )->getMock();
 
         $apiRequestWrapper->expects($this->any())
             ->method('get')
@@ -107,7 +107,8 @@ class EppoClientTest extends TestCase
         $pollerMock = $this->getPollerMock();
 
         $apiRequestWrapper = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs(
-            ['', [], new Psr18Client(), new Psr17Factory()])->getMock();
+            ['', [], new Psr18Client(), new Psr17Factory()]
+        )->getMock();
 
         $apiRequestWrapper->expects($this->any())
             ->method('get')
@@ -118,14 +119,21 @@ class EppoClientTest extends TestCase
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
 
         $this->expectException(EppoClientInitializationException::class);
-        $client = EppoClient::createTestClient(new ConfigurationLoader($apiRequestWrapper, $configStore), $pollerMock, $mockLogger, false);
+        $client = EppoClient::createTestClient(
+            new ConfigurationLoader($apiRequestWrapper, $configStore),
+            $pollerMock,
+            $mockLogger,
+            false
+        );
     }
+
     public function testGracefulModeThrowsOnInit()
     {
         $pollerMock = $this->getPollerMock();
 
         $apiRequestWrapper = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs(
-            ['', [], new Psr18Client(), new Psr17Factory()])->getMock();
+            ['', [], new Psr18Client(), new Psr17Factory()]
+        )->getMock();
 
         $apiRequestWrapper->expects($this->any())
             ->method('get')
@@ -136,7 +144,11 @@ class EppoClientTest extends TestCase
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
 
         $this->expectException(EppoClientInitializationException::class);
-        $client = EppoClient::createTestClient(new ConfigurationLoader($apiRequestWrapper, $configStore), $pollerMock, $mockLogger);
+        $client = EppoClient::createTestClient(
+            new ConfigurationLoader($apiRequestWrapper, $configStore),
+            $pollerMock,
+            $mockLogger
+        );
     }
 
     public function testReturnsDefaultWhenExperimentConfigIsAbsent()

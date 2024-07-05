@@ -3,8 +3,8 @@
 namespace Eppo\Config;
 
 use Eppo\Bandits\BanditVariationIndexer;
-use Eppo\Cache;
 use Eppo\Cache\CacheType;
+use Eppo\Cache\NamespaceCache;
 use Eppo\DTO\Flag;
 use Eppo\Exception\EppoClientException;
 use Psr\SimpleCache\CacheInterface;
@@ -16,8 +16,8 @@ class ConfigurationStore implements IConfigurationStore
     private CacheInterface $flagCache;
     private CacheInterface $metadataCache;
 
-    const FLAG_TIMESTAMP = "flagTimestamp";
-    const BANDIT_VARIATION_KEY = 'banditVariations';
+    private const FLAG_TIMESTAMP = "flagTimestamp";
+    private const BANDIT_VARIATION_KEY = 'banditVariations';
 
     /**
      * @param CacheInterface $cache
@@ -25,20 +25,21 @@ class ConfigurationStore implements IConfigurationStore
     public function __construct(CacheInterface $cache)
     {
         $this->rootCache = $cache;
-        $this->flagCache = new Cache\NamespaceCache(CacheType::FLAG, $cache);
-        $this->metadataCache = new Cache\NamespaceCache(CacheType::META, $cache);
+        $this->flagCache = new NamespaceCache(CacheType::FLAG, $cache);
+        $this->metadataCache = new NamespaceCache(CacheType::META, $cache);
     }
 
     public function getFlag(string $key): ?Flag
     {
         try {
             $result = $this->flagCache->get($key);
-            if ($result == null) return null;
+            if ($result == null) {
+                return null;
+            }
 
             $inflated = unserialize($result);
             return $inflated === false ? null : $inflated;
         } catch (InvalidArgumentException $e) {
-
             // Simple cache throws exceptions when a keystring is not a legal value (characters {}()/@: are illegal)
             syslog(LOG_WARNING, "[EPPO SDK] Illegal flag key ${key}: " . $e->getMessage());
             return null;
@@ -61,7 +62,7 @@ class ConfigurationStore implements IConfigurationStore
      * @param BanditVariationIndexer|null $banditVariations
      * @throws EppoClientException
      */
-    public function setConfigurations(array $flags, BanditVariationIndexer $banditVariations = null) : void
+    public function setConfigurations(array $flags, BanditVariationIndexer $banditVariations = null): void
     {
         try {
             // Clear all stored config before setting data.
@@ -72,14 +73,13 @@ class ConfigurationStore implements IConfigurationStore
             $this->setFlags($flags);
             $this->metadataCache->set(self::BANDIT_VARIATION_KEY, serialize($banditVariations));
         } catch (InvalidArgumentException $e) {
-            throw EppoClientException::From($e);
+            throw EppoClientException::from($e);
         }
-
     }
 
     private function setFlags(array $flags): void
     {
-        foreach($flags as $flag) {
+        foreach ($flags as $flag) {
             $this->setFlag($flag);
         }
     }

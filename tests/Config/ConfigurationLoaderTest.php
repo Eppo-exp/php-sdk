@@ -7,6 +7,8 @@ use Eppo\Cache\DefaultCacheFactory;
 use Eppo\Config\ConfigurationLoader;
 use Eppo\Config\ConfigurationStore;
 use Eppo\DTO\Flag;
+use Eppo\FlagConfigurationLoader;
+use Eppo\IConfigurationStore;
 use Eppo\UFCParser;
 use Http\Discovery\Psr17Factory;
 use Http\Discovery\Psr18Client;
@@ -14,10 +16,10 @@ use PHPUnit\Framework\TestCase;
 
 class ConfigurationLoaderTest extends TestCase
 {
-    /** @var string */
-    const FLAG_KEY = 'kill-switch';
+    private const FLAG_KEY = 'kill-switch';
 
-    const MOCK_RESPONSE_FILENAME = __DIR__ . '/../mockdata/ufc-v1.json';
+    private const MOCK_RESPONSE_FILENAME = __DIR__ . '/mockdata/ufc-v1.json';
+
 
     public function setUp(): void
     {

@@ -2,7 +2,6 @@
 
 namespace Eppo\DTO;
 
-
 class Shard
 {
     /**
@@ -11,7 +10,7 @@ class Shard
      */
     public function __construct(
         public string $salt,
-        public array $ranges)
-    {
+        public array $ranges
+    ) {
     }
 }

@@ -50,7 +50,8 @@ final class BanditVariationIndexerTest extends TestCase
         self::$variations['bandit_four'] = [];
     }
 
-    public function testSurvivesSerialization() : void {
+    public function testSurvivesSerialization(): void
+    {
         $indexer = new BanditVariationIndexer(self::$variations);
         $this->assertTrue($indexer->isBanditFlag('bandit_one_flag'));
 
@@ -58,6 +59,7 @@ final class BanditVariationIndexerTest extends TestCase
         $unserialized = unserialize($serialized);
         $this->assertTrue($unserialized->isBanditFlag('bandit_one_flag'));
     }
+
     public function testIsBanditFlag()
     {
         $indexer = new BanditVariationIndexer(self::$variations);
@@ -86,7 +88,8 @@ final class BanditVariationIndexerTest extends TestCase
 
     public function testBadBanditVariation(): void
     {
-        // Add an illegal variation to the list for the indexer; bandit_two_flag.bandit_two_flag_variation already maps to `bandit_two`.
+        // Add an illegal variation to the list for the indexer; bandit_two_flag.bandit_two_flag_variation already
+        // maps to `bandit_two`.
         self::$variations['bandit_four'][] = new BanditVariation(
             'bandit_four',
             'bandit_two_flag',

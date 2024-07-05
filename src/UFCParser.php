@@ -25,12 +25,14 @@ class UFCParser
         $variations = self::parseVariations($configuration['variations'], $variationType);
         $allocations = self::parseAllocations($configuration['allocations']);
 
-        return new Flag($configuration['key'],
+        return new Flag(
+            $configuration['key'],
             $configuration['enabled'],
             $allocations,
             $variationType,
             $variations,
-            $configuration['totalShards']);
+            $configuration['totalShards']
+        );
     }
 
 
@@ -42,7 +44,10 @@ class UFCParser
     private static function parseVariations(array $variations, VariationType $variationType): array
     {
         return array_map(function ($variationConfig) use ($variationType) {
-            $typedValue = $variationType === VariationType::JSON ? json_decode($variationConfig['value'], true) : $variationConfig['value'];
+            $typedValue = $variationType === VariationType::JSON ? json_decode(
+                $variationConfig['value'],
+                true
+            ) : $variationConfig['value'];
             return new Variation($variationConfig['key'], $typedValue);
         },
             $variations);
@@ -67,9 +72,7 @@ class UFCParser
             }, $allocationConfig['rules']) : null;
 
             $splits = array_map(function ($splitConfig) {
-
                 $shards = array_map(function ($shardConfig) {
-
                     $ranges = array_map(function ($rangeConfig) {
                         return new ShardRange($rangeConfig['start'], $rangeConfig['end']);
                     }, $shardConfig['ranges']);
@@ -83,7 +86,8 @@ class UFCParser
                 return new Split(
                     $splitConfig['variationKey'],
                     $shards,
-                    array_key_exists('extraLogging', $splitConfig) ? $splitConfig['extraLogging'] : []);
+                    array_key_exists('extraLogging', $splitConfig) ? $splitConfig['extraLogging'] : []
+                );
             }, $allocationConfig['splits']);
 
             return new Allocation(
