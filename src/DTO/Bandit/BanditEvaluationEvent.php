@@ -7,46 +7,23 @@ use JsonSerializable;
 
 class BanditEvaluationEvent implements JsonSerializable
 {
-    public string $flagKey;
-    public string $banditKey;
-    public string $subjectKey;
-    public ?string $action;
-    public ?float $actionProbability;
-    public ?float $optimalityGap;
-    public ?string $modelVersion;
     public DateTime $timestamp;
-    public array $subjectNumericAttributes;
-    public array $subjectCategoricalAttributes;
-    public array $actionNumericAttributes;
-    public array $actionCategoricalAttributes;
-    public array $metaData;
 
     public function __construct(
-        string $flagKey,
-        string $banditKey,
-        string $subjectKey,
-        string $action = null,
-        float $actionProbability = null,
-        float $optimalityGap = null,
-        string $modelVersion = '',
-        array $subjectNumericAttributes = [],
-        array $subjectCategoricalAttributes = [],
-        array $actionNumericAttributes = [],
-        array $actionCategoricalAttributes = [],
-        array $metaData = []
+        public readonly string $flagKey,
+        public readonly string $banditKey,
+        public readonly string $subjectKey,
+        public readonly ?string $action = null,
+        public readonly ?float $actionProbability = null,
+        public readonly ?float $optimalityGap = null,
+        public readonly string $modelVersion = '',
+        public readonly array $subjectNumericAttributes = [],
+        public readonly array $subjectCategoricalAttributes = [],
+        public readonly array $actionNumericAttributes = [],
+        public readonly array $actionCategoricalAttributes = [],
+        public readonly array $metaData = []
     ) {
-        $this->flagKey = $flagKey;
-        $this->banditKey = $banditKey;
-        $this->subjectKey = $subjectKey;
-        $this->action = $action;
-        $this->actionProbability = $actionProbability;
-        $this->optimalityGap = $optimalityGap;
-        $this->modelVersion = $modelVersion;
-        $this->subjectNumericAttributes = $subjectNumericAttributes;
-        $this->subjectCategoricalAttributes = $subjectCategoricalAttributes;
-        $this->actionNumericAttributes = $actionNumericAttributes;
-        $this->actionCategoricalAttributes = $actionCategoricalAttributes;
-        $this->metaData = $metaData;
+        $this->timestamp = new DateTime();
     }
 
     public function jsonSerialize(): array

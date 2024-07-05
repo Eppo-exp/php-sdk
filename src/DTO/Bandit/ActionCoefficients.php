@@ -23,6 +23,8 @@ class ActionCoefficients
         public readonly array $actionNumericCoefficients = [],
         public readonly array $actionCategoricalCoefficients = []
     ) {
+        // Since PHP doesn't enforce array typing and this dev spent an unfortunate amount of time debugging, we ensure
+        // coefficients passed are of the correct type.
         foreach ([...$this->subjectNumericCoefficients, ...$this->actionNumericCoefficients] as $numericCoefficient) {
             if (!($numericCoefficient instanceof NumericAttributeCoefficient)) {
                 throw new InvalidArgumentException("Unexpected non-numeric attribute coefficient encountered");
@@ -40,7 +42,12 @@ class ActionCoefficients
         }
     }
 
-    public static function arrayFromJson($coefficients): array
+    /**
+     * @param array $coefficients
+     * @return array
+     * @throws InvalidArgumentException
+     */
+    public static function arrayFromJson(array $coefficients): array
     {
         $res = [];
         foreach ($coefficients as $key => $coefficient) {
@@ -49,7 +56,12 @@ class ActionCoefficients
         return $res;
     }
 
-    public static function fromJson($json): ActionCoefficients
+    /**
+     * @param array $json
+     * @return ActionCoefficients
+     * @throws InvalidArgumentException
+     */
+    public static function fromJson(array $json): ActionCoefficients
     {
         return new ActionCoefficients(
             $json['actionKey'],
