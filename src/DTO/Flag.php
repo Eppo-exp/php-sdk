@@ -13,8 +13,12 @@ class Flag
      * @param int $totalShards
      */
     public function __construct(
-        public string $key, public bool $enabled, public array $allocations, public VariationType $variationType, public array $variations,
-        public int $totalShards)
-    {
+        public string $key,
+        public bool $enabled,
+        public array $allocations,
+        public VariationType $variationType,
+        public array $variations,
+        public int $totalShards
+    ) {
     }
 }

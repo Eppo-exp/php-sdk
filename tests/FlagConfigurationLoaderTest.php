@@ -15,13 +15,13 @@ use PHPUnit\Framework\TestCase;
 
 class FlagConfigurationLoaderTest extends TestCase
 {
-    /** @var string */
-    const FLAG_KEY = 'kill-switch';
+    private const FLAG_KEY = 'kill-switch';
 
-    const MOCK_RESPONSE_FILENAME = __DIR__ . '/mockdata/ufc-v1.json';
+    private const MOCK_RESPONSE_FILENAME = __DIR__ . '/mockdata/ufc-v1.json';
 
 
-    public function setUp(): void {
+    public function setUp(): void
+    {
         DefaultCacheFactory::clearCache();
     }
 
@@ -33,7 +33,8 @@ class FlagConfigurationLoaderTest extends TestCase
         $flags = array_map(fn ($flag) => (new UFCParser())->parseFlag($flag), $flagsJson['flags']);
 
         $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs(
-            ['', [], new Psr18Client(), new Psr17Factory()])->getMock();
+            ['', [], new Psr18Client(), new Psr17Factory()]
+        )->getMock();
 
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->once())
@@ -58,7 +59,8 @@ class FlagConfigurationLoaderTest extends TestCase
         $this->assertEquals($flags[self::FLAG_KEY], $flag);
     }
 
-    public function testLoadsOnGet() : void {
+    public function testLoadsOnGet(): void
+    {
         // Arrange: Load some flag data to be returned by the APIRequestWrapper
         // Load mock response data
         $flagsRaw = file_get_contents(self::MOCK_RESPONSE_FILENAME);
@@ -83,7 +85,8 @@ class FlagConfigurationLoaderTest extends TestCase
         $this->assertNotNull($flag);
     }
 
-    public function testReloadsOnExpiredCache(): void {
+    public function testReloadsOnExpiredCache(): void
+    {
         // Arrange: Load some flag data to be returned by the APIRequestWrapper
         // Load mock response data
         $flagsRaw = file_get_contents(self::MOCK_RESPONSE_FILENAME);

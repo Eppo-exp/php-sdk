@@ -10,7 +10,7 @@ class NamespaceCache implements CacheInterface
     private CacheInterface $internalCache;
     private \Closure $nestKeyCallback;
 
-    const SEPARATOR = '_';
+    private const SEPARATOR = '_';
 
     public function __construct(CacheType $cacheType, CacheInterface $internalCache)
     {

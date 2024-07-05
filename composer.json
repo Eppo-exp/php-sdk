@@ -36,11 +36,18 @@
     "google/cloud-storage": "^1.30",
     "ext-posix": "*",
     "ext-pcntl": "*",
-    "psr-mock/http": "^1.0"
+    "psr-mock/http": "^1.0",
+    "squizlabs/php_codesniffer": "^3.10"
   },
   "config": {
     "allow-plugins": {
       "php-http/discovery": true
     }
+  },
+  "scripts": {
+    "lint": "./vendor/bin/phpcs --standard=PSR12 ./src",
+    "lint-fix": "./vendor/bin/phpcbf --standard=PSR12 ./src",
+    "lint-tests": "./vendor/bin/phpcs --standard=PSR12 ./tests",
+    "lint-fix-tests": "./vendor/bin/phpcbf --standard=PSR12 ./tests"
   }
 }

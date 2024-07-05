@@ -1,5 +1,6 @@
 <?php
 
+namespace Eppo\Tests;
 
 use Eppo\DTO\Flag;
 use Eppo\DTO\Operator;
@@ -9,10 +10,9 @@ use PHPUnit\Framework\TestCase;
 
 class UFCParserTest extends TestCase
 {
-    /** @var string */
-    const FLAG_KEY = 'kill-switch';
+    private const FLAG_KEY = 'kill-switch';
 
-    const MOCK_DATA_FILENAME = __DIR__ . '/mockdata/ufc-v1.json';
+    private const MOCK_DATA_FILENAME = __DIR__ . '/mockdata/ufc-v1.json';
 
     public function testParsesComplexFlagPayload(): void
     {
