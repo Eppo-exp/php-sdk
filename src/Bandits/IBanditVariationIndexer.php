@@ -17,7 +17,7 @@ interface IBanditVariationIndexer
     public function getBanditByVariation(string $flagKey, string $variation): ?string;
 
     /**
-     * Determines whether the give flag is associated with any bandits.
+     * Determines whether the given flag is associated with any bandits.
      *
      * @param string $flagKey
      * @return bool
