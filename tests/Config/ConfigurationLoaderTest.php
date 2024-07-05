@@ -18,7 +18,8 @@ class ConfigurationLoaderTest extends TestCase
 {
     private const FLAG_KEY = 'kill-switch';
 
-    private const MOCK_RESPONSE_FILENAME = __DIR__ . '/mockdata/ufc-v1.json';
+    private const MOCK_RESPONSE_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'mockdata' .
+        DIRECTORY_SEPARATOR . 'ufc-v1.json';
 
 
     public function setUp(): void
