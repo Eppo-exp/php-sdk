@@ -391,7 +391,7 @@ class BanditEvaluatorTest extends TestCase
 
         $this->assertEquals($banditModel->gamma, $evaluation->gamma);
 
-        $this->assertEqualsWithDelta(4.3, $evaluation->actionScore, 0.001);
-        $this->assertEqualsWithDelta(0.4926, $evaluation->actionWeight, 0.0004);
+        $this->assertEquals(4.3, $evaluation->actionScore);
+        $this->assertEqualsWithDelta(0.5074, $evaluation->actionWeight, 0.0001);
     }
 }
