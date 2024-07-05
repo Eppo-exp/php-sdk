@@ -41,12 +41,11 @@ class BanditVariationIndexer implements IBanditVariationIndexer
                     );
                 }
 
-                // Update the index for this triple (flagKey, variationValue) => banditKey
+                // Set the index for this triple (flagKey, variationValue) => banditKey
                 $this->banditFlags[$flagKey][$variationValue] = $banditVariation->key;
             }
         }
     }
-
 
     public function getBanditByVariation($flagKey, $variation): ?string
     {
@@ -55,6 +54,6 @@ class BanditVariationIndexer implements IBanditVariationIndexer
 
     public function isBanditFlag($flagKey): bool
     {
-        return array_key_exists($flagKey, $this->banditFlags);
+        return isset($this->banditFlags[$flagKey]);
     }
 }
