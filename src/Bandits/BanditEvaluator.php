@@ -176,19 +176,20 @@ class BanditEvaluator implements IBanditEvaluator
      */
     private function selectAction(string $flagKey, string $subjectKey, array $actionWeights): string
     {
+        // Use a list of key-value pairs to make sorting easier.
         $weightPairs = array_map(
             fn($key) => new ActionValue($key, $actionWeights[$key]),
             array_keys($actionWeights)
         );
 
-        // In place sorting.
+        // usort sorts in place.
         usort(
             $weightPairs,
             function (ActionValue $a, ActionValue $b) use ($subjectKey, $flagKey) {
                 $aValue = Sharder::getShard("$flagKey-$subjectKey-{$a->action}", $this->totalShards);
                 $bValue = Sharder::getShard("$flagKey-$subjectKey-{$b->action}", $this->totalShards);
 
-                return $aValue == $bValue ? true : (($aValue < $bValue) ? -1 : 1);
+                return $aValue === $bValue ? 0 : (($aValue < $bValue) ? -1 : 1);
             }
         );
 
@@ -198,12 +199,9 @@ class BanditEvaluator implements IBanditEvaluator
         $shardValue = $shard / $this->totalShards;
 
         foreach ($weightPairs as $weightData) {
-            $actionKey = $weightData->action;
-            $weight = $weightData->value;
-
-            $cumulativeWeight += $weight;
+            $cumulativeWeight += $weightData->value;
             if ($cumulativeWeight > $shardValue) {
-                return $actionKey;
+                return $weightData->action;
             }
         }
 
