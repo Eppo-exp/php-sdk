@@ -1,5 +1,4 @@
 <?php
-
 namespace Eppo\DTO\Bandit;
 
 class BanditVariation

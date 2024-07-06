@@ -1,10 +1,11 @@
 <?php
 
-namespace Eppo\Tests;
+namespace Eppo\Tests\Config;
 
 use Eppo\APIRequestWrapper;
 use Eppo\Cache\DefaultCacheFactory;
-use Eppo\ConfigurationStore;
+use Eppo\Config\ConfigurationLoader;
+use Eppo\Config\ConfigurationStore;
 use Eppo\DTO\Flag;
 use Eppo\FlagConfigurationLoader;
 use Eppo\IConfigurationStore;
@@ -13,11 +14,12 @@ use Http\Discovery\Psr17Factory;
 use Http\Discovery\Psr18Client;
 use PHPUnit\Framework\TestCase;
 
-class FlagConfigurationLoaderTest extends TestCase
+class ConfigurationLoaderTest extends TestCase
 {
     private const FLAG_KEY = 'kill-switch';
 
-    private const MOCK_RESPONSE_FILENAME = __DIR__ . '/mockdata/ufc-v1.json';
+    private const MOCK_RESPONSE_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'mockdata' .
+        DIRECTORY_SEPARATOR . 'ufc-v1.json';
 
 
     public function setUp(): void
@@ -30,7 +32,7 @@ class FlagConfigurationLoaderTest extends TestCase
         // Load mock response data
         $flagsRaw = file_get_contents(self::MOCK_RESPONSE_FILENAME);
         $flagsJson = json_decode($flagsRaw, true);
-        $flags = array_map(fn ($flag) => (new UFCParser())->parseFlag($flag), $flagsJson['flags']);
+        $flags = array_map(fn($flag) => (new UFCParser())->parseFlag($flag), $flagsJson['flags']);
 
         $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs(
             ['', [], new Psr18Client(), new Psr17Factory()]
@@ -41,15 +43,9 @@ class FlagConfigurationLoaderTest extends TestCase
             ->method('get')
             ->willReturn($flagsRaw);
 
-        $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
-        $configStore->expects($this->once())
-            ->method('getFlag')->with(self::FLAG_KEY)
-            ->willReturn($flags[self::FLAG_KEY]);
+        $configStore = new ConfigurationStore(DefaultCacheFactory::create());
 
-        $configStore->expects($this->once())
-            ->method('setConfigurations')->with($flags);
-
-        $loader = new FlagConfigurationLoader($apiWrapper, $configStore);
+        $loader = new ConfigurationLoader($apiWrapper, $configStore);
         $loader->fetchAndStoreConfigurations();
 
 
@@ -57,6 +53,13 @@ class FlagConfigurationLoaderTest extends TestCase
         $this->assertInstanceOf(Flag::class, $flag);
         $this->assertEquals(self::FLAG_KEY, $flag->key);
         $this->assertEquals($flags[self::FLAG_KEY], $flag);
+
+        $this->assertTrue($loader->isBanditFlag('cold_start_bandit_flag'));
+        $this->assertFalse($loader->isBanditFlag('kill-switch'));
+        $this->assertEquals(
+            'cold_start_bandit',
+            $loader->getBanditByVariation('cold_start_bandit_flag', 'cold_start_bandit')
+        );
     }
 
     public function testLoadsOnGet(): void
@@ -65,13 +68,13 @@ class FlagConfigurationLoaderTest extends TestCase
         // Load mock response data
         $flagsRaw = file_get_contents(self::MOCK_RESPONSE_FILENAME);
         $flagsJson = json_decode($flagsRaw, true);
-        $flags = array_map(fn ($flag) => (new UFCParser())->parseFlag($flag), $flagsJson['flags']);
+        $flags = array_map(fn($flag) => (new UFCParser())->parseFlag($flag), $flagsJson['flags']);
 
         $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->disableOriginalConstructor()->getMock();
 
         $cache = DefaultCacheFactory::create();
         // Act: Create a new FCL and retrieve a flag
-        $loader = new FlagConfigurationLoader($apiWrapper, new ConfigurationStore($cache));
+        $loader = new ConfigurationLoader($apiWrapper, new ConfigurationStore($cache));
 
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->once())
@@ -91,13 +94,13 @@ class FlagConfigurationLoaderTest extends TestCase
         // Load mock response data
         $flagsRaw = file_get_contents(self::MOCK_RESPONSE_FILENAME);
         $flagsJson = json_decode($flagsRaw, true);
-        $flags = array_map(fn ($flag) => (new UFCParser())->parseFlag($flag), $flagsJson['flags']);
+        $flags = array_map(fn($flag) => (new UFCParser())->parseFlag($flag), $flagsJson['flags']);
 
         $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->disableOriginalConstructor()->getMock();
 
         $cache = DefaultCacheFactory::create();
         // Act: Create a new FCL with a 0sec ttl and retrieve a flag
-        $loader = new FlagConfigurationLoader($apiWrapper, new ConfigurationStore($cache), cacheAgeLimit: 0);
+        $loader = new ConfigurationLoader($apiWrapper, new ConfigurationStore($cache), cacheAgeLimit: 0);
 
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->exactly(2))

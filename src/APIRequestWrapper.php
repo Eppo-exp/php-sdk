@@ -19,8 +19,8 @@ use Webclient\Extension\Redirect\RedirectClientDecorator;
  */
 class APIRequestWrapper
 {
-    /** @var string */
     private const UFC_ENDPOINT = '/flag-config/v1/config';
+    private const BANDIT_ENDPOINT = '/flag-config/v1/bandits';
     private const CONFIG_BASE = 'https://fscdn.eppo.cloud/api';
 
     private string $baseUrl;
@@ -40,14 +40,13 @@ class APIRequestWrapper
         array $extraQueryParams,
         ClientInterface $baseHttpClient,
         RequestFactoryInterface $requestFactory,
-        ?string $baseUrl = null,
-        ?string $resource = null
+        ?string $baseUrl = null
     ) {
         // Our HTTP Client needs to be able to follow redirects.
         $this->httpClient = new RedirectClientDecorator($baseHttpClient);
         $this->baseUrl = $baseUrl ?? self::CONFIG_BASE;
         $this->requestFactory = $requestFactory;
-        $this->resource = $resource ?? self::UFC_ENDPOINT;
+        $this->resource = self::UFC_ENDPOINT;
         $this->queryParams = [
             'apiKey' => $apiKey,
             ...$extraQueryParams
@@ -57,11 +56,11 @@ class APIRequestWrapper
     /**
      * @throws HttpRequestException|InvalidApiKeyException
      */
-    public function get(): string
+    private function getResource(string $endpoint): string
     {
         try {
             // Prepare the URL with query params
-            $resourceURI = $this->baseUrl . '/' . ltrim($this->resource, '/') . '?' . http_build_query(
+            $resourceURI = $this->baseUrl . '/' . ltrim($endpoint, '/') . '?' . http_build_query(
                 $this->queryParams
             );
 
@@ -76,6 +75,23 @@ class APIRequestWrapper
         }
 
         return $response->getBody()->getContents();
+    }
+
+    /**
+     * @throws HttpRequestException|InvalidApiKeyException
+     */
+    public function get(): string
+    {
+        return $this->getResource($this->resource);
+    }
+
+
+    /**
+     * @throws HttpRequestException|InvalidApiKeyException
+     */
+    public function getBandits(): string
+    {
+        return $this->getResource(self::BANDIT_ENDPOINT);
     }
 
     /**

@@ -7,6 +7,17 @@ use Eppo\Exception\InvalidConfigurationException;
 
 class BanditVariationIndexer implements IBanditVariationIndexer
 {
+    // By just serializing the indexed variations, we cut down on cache size.
+    public function __serialize(): array
+    {
+        return $this->banditFlags;
+    }
+
+    public function __unserialize(array $data): void
+    {
+        $this->banditFlags = $data;
+    }
+
     /**
      * Map of flag key+variation value => bandit
      * $_banditFlags[$flagKey][$variationValue] = $banditKey;

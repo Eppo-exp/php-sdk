@@ -50,6 +50,16 @@ final class BanditVariationIndexerTest extends TestCase
         self::$variations['bandit_four'] = [];
     }
 
+    public function testSurvivesSerialization(): void
+    {
+        $indexer = new BanditVariationIndexer(self::$variations);
+        $this->assertTrue($indexer->isBanditFlag('bandit_one_flag'));
+
+        $serialized = serialize($indexer);
+        $unserialized = unserialize($serialized);
+        $this->assertTrue($unserialized->isBanditFlag('bandit_one_flag'));
+    }
+
     public function testIsBanditFlag()
     {
         $indexer = new BanditVariationIndexer(self::$variations);
