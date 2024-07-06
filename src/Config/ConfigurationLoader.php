@@ -75,7 +75,7 @@ class ConfigurationLoader implements IFlags, IBanditVariationIndexer
      */
     public function fetchAndStoreConfigurations(): void
     {
-        $responseData = json_decode($this->apiRequestWrapper->get(), true);
+        $responseData = json_decode($this->apiRequestWrapper->getUFC(), true);
         if (!$responseData) {
             syslog(LOG_WARNING, "[Eppo SDK] Empty or invalid response from the configuration server.");
             return;

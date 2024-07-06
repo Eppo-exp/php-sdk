@@ -80,7 +80,7 @@ class APIRequestWrapper
     /**
      * @throws HttpRequestException|InvalidApiKeyException
      */
-    public function get(): string
+    public function getUFC(): string
     {
         return $this->getResource($this->resource);
     }

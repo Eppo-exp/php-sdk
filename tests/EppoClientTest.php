@@ -84,7 +84,7 @@ class EppoClientTest extends TestCase
         )->getMock();
 
         $apiRequestWrapper->expects($this->any())
-            ->method('get')
+            ->method('getUFC')
             ->willThrowException(new HttpRequestException());
 
         $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
@@ -111,7 +111,7 @@ class EppoClientTest extends TestCase
         )->getMock();
 
         $apiRequestWrapper->expects($this->any())
-            ->method('get')
+            ->method('getUFC')
             ->willThrowException(new HttpRequestException());
 
         $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
@@ -136,7 +136,7 @@ class EppoClientTest extends TestCase
         )->getMock();
 
         $apiRequestWrapper->expects($this->any())
-            ->method('get')
+            ->method('getUFC')
             ->willThrowException(new HttpRequestException());
 
         $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
@@ -235,7 +235,7 @@ class EppoClientTest extends TestCase
             new RequestFactory()
         ])->getMock();
         $apiRequestWrapper->expects($this->any())
-            ->method('get')
+            ->method('getUFC')
             ->willReturn('');
 
         $configStoreMock = $this->getMockBuilder(ConfigurationStore::class)->setConstructorArgs([$cache])->getMock();

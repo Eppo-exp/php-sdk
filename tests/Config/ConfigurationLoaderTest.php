@@ -40,7 +40,7 @@ class ConfigurationLoaderTest extends TestCase
 
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->once())
-            ->method('get')
+            ->method('getUFC')
             ->willReturn($flagsRaw);
 
         $configStore = new ConfigurationStore(DefaultCacheFactory::create());
@@ -78,7 +78,7 @@ class ConfigurationLoaderTest extends TestCase
 
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->once())
-            ->method('get')
+            ->method('getUFC')
             ->willReturn($flagsRaw);
 
 
@@ -104,7 +104,7 @@ class ConfigurationLoaderTest extends TestCase
 
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->exactly(2))
-            ->method('get')
+            ->method('getUFC')
             ->willReturn($flagsRaw);
 
         $flag = $loader->getFlag(self::FLAG_KEY);

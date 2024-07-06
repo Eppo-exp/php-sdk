@@ -29,7 +29,7 @@ class APIRequestWrapperTest extends TestCase
             $http,
             new Psr17Factory()
         );
-        $api->get();
+        $api->getUFC();
     }
 
     public function testUnauthorizedClient(): void
@@ -44,7 +44,7 @@ class APIRequestWrapperTest extends TestCase
 
         $this->expectException(InvalidApiKeyException::class);
 
-        $result = $api->get();
+        $result = $api->getUFC();
 
         $this->assertTrue($api->isUnauthorized);
     }
@@ -62,7 +62,7 @@ class APIRequestWrapperTest extends TestCase
         $this->expectException(HttpRequestException::class);
         $this->expectExceptionCode(RFC7231::INTERNAL_SERVER_ERROR);
 
-        $api->get();
+        $api->getUFC();
     }
 
     public function testRecoverableHttpError(): void
@@ -89,7 +89,7 @@ class APIRequestWrapperTest extends TestCase
             new Psr17Factory()
         );
 
-        $response = $api->get();
+        $response = $api->getUFC();
         $this->assertEquals('UFC', $response);
         $response = $api->getBandits();
         $this->assertEquals('BANDIT', $response);
@@ -106,7 +106,7 @@ class APIRequestWrapperTest extends TestCase
         );
 
         try {
-            $api->get();
+            $api->getUFC();
             $this->fail('Exception not thrown');
         } catch (HttpRequestException $e) {
             $this->assertEquals($recoverable, $e->isRecoverable);
