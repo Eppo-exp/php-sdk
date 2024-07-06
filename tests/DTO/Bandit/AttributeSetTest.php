@@ -50,7 +50,7 @@ class AttributeSetTest extends TestCase
         $this->assertEquals($expectedCategoricalAttributes, $attributeSet->categoricalAttributes);
     }
 
-    public function testFromArrayThrowsForInvalidDatatype()
+    public function testFromArrayFiltersInvalidValueTypes()
     {
         $attributes = array(
             'age' => 25,
@@ -58,7 +58,6 @@ class AttributeSetTest extends TestCase
             'city' => 'Paris',
             'subscribed' => [1, 2, 3]
         );
-
 
         $attributeSet = AttributeSet::fromArray($attributes);
 
