@@ -59,7 +59,17 @@ class AttributeSetTest extends TestCase
             'subscribed' => [1, 2, 3]
         );
 
-        $this->expectException(InvalidArgumentException::class);
+
         $attributeSet = AttributeSet::fromArray($attributes);
+
+        $expectedNumericAttributes = array(
+            'age' => 25.0
+        );
+        $expectedCategoricalAttributes = array(
+            'city' => 'Paris'
+        );
+
+        $this->assertEquals($expectedNumericAttributes, $attributeSet->numericAttributes);
+        $this->assertEquals($expectedCategoricalAttributes, $attributeSet->categoricalAttributes);
     }
 }
