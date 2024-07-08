@@ -2,10 +2,9 @@
 
 namespace Eppo\Exception;
 
-use Exception;
 use Throwable;
 
-class EppoClientException extends Exception
+class EppoClientException extends EppoException
 {
     public function __construct(string $message = "", int $code = 0, Throwable $previous = null)
     {

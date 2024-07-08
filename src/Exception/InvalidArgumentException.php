@@ -2,8 +2,6 @@
 
 namespace Eppo\Exception;
 
-use Exception;
-
-class InvalidArgumentException extends Exception
+class InvalidArgumentException extends EppoException
 {
 }

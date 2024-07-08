@@ -2,13 +2,11 @@
 
 namespace Eppo\Exception;
 
-use Exception;
 use Throwable;
 
-class HttpRequestException extends Exception
+class HttpRequestException extends EppoException
 {
-    /** @var bool */
-    public $isRecoverable = false;
+    public bool $isRecoverable = false;
 
     /**
      * @param string $message
