@@ -92,7 +92,7 @@ class BanditClientTest extends TestCase
         $this->assertEquals($result->variation, "control");
     }
 
-    public function skiptestEvaluatesListOfActionsNoContext(): void
+    public function testEvaluatesListOfActionsNoContext(): void
     {
         $configLoaderMock = $this->getConfigurationLoaderMock([]);
         $pollerMock = $this->getPollerMock();
@@ -250,7 +250,7 @@ class BanditClientTest extends TestCase
             new RequestFactory()
         ])->getMock();
         $apiRequestWrapper->expects($this->any())
-            ->method('get')
+            ->method('getUFC')
             ->willReturn('');
 
         $configStoreMock = $this->getMockBuilder(ConfigurationStore::class)->setConstructorArgs([$cache])->getMock();

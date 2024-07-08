@@ -54,7 +54,7 @@ class EppoClientTest extends TestCase
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
 
         $subjectAttributes = [['foo' => 3]];
-        $client = EppoClient::createTestClient($mockConfigRequester, $pollerMock, $mockLogger);
+        $client = EppoClient::createTestClient($mockConfigRequester, $pollerMock, $mockLogger, true);
 
         $defaultObj = json_decode('{}', true);
 
@@ -147,7 +147,8 @@ class EppoClientTest extends TestCase
         $client = EppoClient::createTestClient(
             new ConfigurationLoader($apiRequestWrapper, $configStore),
             $pollerMock,
-            $mockLogger
+            $mockLogger,
+            true
         );
     }
 

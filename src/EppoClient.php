@@ -8,6 +8,7 @@ use Eppo\Config\ConfigurationLoader;
 use Eppo\Config\ConfigurationStore;
 use Eppo\Config\SDKData;
 use Eppo\DTO\Bandit\AttributeSet;
+use Eppo\DTO\Bandit\Bandit;
 use Eppo\DTO\Bandit\BanditResult;
 use Eppo\DTO\Bandit\ContextAttributes;
 use Eppo\DTO\Variation;
@@ -15,9 +16,11 @@ use Eppo\DTO\VariationType;
 use Eppo\Exception\BanditEvaluationException;
 use Eppo\Exception\EppoClientException;
 use Eppo\Exception\EppoClientInitializationException;
+use Eppo\Exception\EppoException;
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
 use Eppo\Exception\InvalidArgumentException;
+use Eppo\Exception\InvalidConfigurationException;
 use Eppo\Logger\AssignmentEvent;
 use Eppo\Logger\BanditActionEvent;
 use Eppo\Logger\LoggerInterface;
@@ -135,7 +138,7 @@ class EppoClient
     ): EppoClient {
         try {
             $configLoader->reloadConfigurationIfExpired();
-        } catch (HttpRequestException | InvalidApiKeyException $e) {
+        } catch (HttpRequestException|InvalidApiKeyException $e) {
             throw new EppoClientInitializationException(
                 "Unable to initialize Eppo Client: " . $e->getMessage()
             );
@@ -405,7 +408,7 @@ class EppoClient
     public function getBanditAction(
         string $flagKey,
         string $subjectKey,
-        array $subjectContext,
+        array|AttributeSet $subjectContext,
         array $actions,
         string $defaultVariation
     ): BanditResult {
@@ -413,11 +416,12 @@ class EppoClient
             $actionContexts = [];
             foreach ($actions as $key => $value) {
                 if (is_string($value)) {
-                    $actionContexts[$value] = new AttributeSet();
+                    // List of action strings with no attributes
+                    $actionContexts[$value] = ContextAttributes::fromArray($value, []);
                 } elseif ($value instanceof AttributeSet) {
-                    $actions[$key] = $value;
+                    $actions[$key] = new ContextAttributes($key, $value);
                 } else {
-                    $actionContexts[$key] = AttributeSet::fromArray($value);
+                    $actionContexts[$key] = ContextAttributes::fromArray($key, $value);
                 }
             }
 
@@ -425,8 +429,9 @@ class EppoClient
                 $subjectKey,
                 $subjectContext
             ) : ContextAttributes::fromArray($subjectKey, $subjectContext);
-            return $this->getBanditDetail($flagKey, $subjectKey, $subjectContext, $actionContexts, $defaultVariation);
-        } catch (InvalidArgumentException | BanditEvaluationException $e) {
+
+            return $this->getBanditDetail($flagKey, $subject, $actionContexts, $defaultVariation);
+        } catch (EppoException $e) {
             // Handle bubbled exceptions.
             if ($this->isGracefulMode) {
                 error_log('[Eppo SDK] Error selecting bandit action: ' . $e->getMessage());
@@ -444,7 +449,11 @@ class EppoClient
      * @param string $defaultVariation
      * @return BanditResult
      *
+     * @throws InvalidConfigurationException
+     * @throws HttpRequestException
+     * @throws InvalidApiKeyException
      * @throws InvalidArgumentException
+     * @throws EppoClientException
      * @throws BanditEvaluationException
      */
     private function getBanditDetail(
@@ -472,9 +481,9 @@ class EppoClient
         );
 
 
-        $banditKey = $this->configurationLoader->getBanditByVariation($flagKey, $variation);
-        $bandit = $this->configurationLoader->getBandit($banditKey);
-        if ($bandit != null) {
+        $bandit = $this->getBandit($flagKey, $variation);
+
+        if ($bandit == null) {
             throw new BanditEvaluationException("Assigned bandit not found for ($flagKey, $variation)");
         }
         $result = $this->banditEvaluator->evaluateBandit($flagKey, $subject, $actionsWithContext, $bandit->modelData);
@@ -499,9 +508,9 @@ class EppoClient
             ($expectedVariationType == VariationType::STRING && gettype($typedValue) === "string") ||
             ($expectedVariationType == VariationType::INTEGER && gettype($typedValue) === "integer") ||
             ($expectedVariationType == VariationType::NUMERIC && in_array(
-                gettype($typedValue),
-                ["integer", "double"]
-            )) ||
+                    gettype($typedValue),
+                    ["integer", "double"]
+                )) ||
             ($expectedVariationType == VariationType::BOOLEAN && gettype($typedValue) === "boolean") ||
             ($expectedVariationType == VariationType::JSON)); // JSON type check un-necessary here.
     }
@@ -553,8 +562,25 @@ class EppoClient
         ConfigurationLoader $configurationLoader,
         PollerInterface $poller,
         ?LoggerInterface $logger = null,
-        ?bool $isGracefulMode = true
+        ?bool $isGracefulMode = false
     ): EppoClient {
         return self::createAndInitClient($configurationLoader, $poller, $logger, $isGracefulMode);
+    }
+
+    /**
+     * @param string $flagKey
+     * @param string $variation
+     * @return Bandit|null
+     * @throws HttpRequestException
+     * @throws InvalidApiKeyException
+     * @throws InvalidConfigurationException
+     */
+    private function getBandit(string $flagKey, string $variation): ?Bandit
+    {
+        $banditKey = $this->configurationLoader->getBanditByVariation($flagKey, $variation);
+        if ($banditKey == null) {
+            return null;
+        }
+        return $this->configurationLoader->getBandit($banditKey);
     }
 }
