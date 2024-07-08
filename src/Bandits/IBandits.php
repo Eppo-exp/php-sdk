@@ -1,16 +1,17 @@
 <?php
 
-namespace Eppo\Config;
+namespace Eppo\Bandits;
 
 use Eppo\DTO\Bandit\Bandit;
+use Eppo\Exception\InvalidConfigurationException;
 
 interface IBandits
 {
     /**
-     * Gets a Bandit by key
-     *
+     * Get a bandit by key or null if it does not exist.
      * @param string $banditKey
      * @return ?Bandit
+     * @throws InvalidConfigurationException
      */
     public function getBandit(string $banditKey): ?Bandit;
 }
