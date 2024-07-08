@@ -3,9 +3,11 @@
 namespace Eppo\Config;
 
 use Eppo\Bandits\BanditVariationIndexer;
+use Eppo\Bandits\IBandits;
 use Eppo\DTO\Bandit\Bandit;
 use Eppo\DTO\Flag;
-use Eppo\IFlags;
+use Eppo\Exception\InvalidConfigurationException;
+use Eppo\Flags\IFlags;
 
 interface IConfigurationStore extends IFlags, IBandits
 {
@@ -18,12 +20,14 @@ interface IConfigurationStore extends IFlags, IBandits
      * @param Bandit[] $bandits
      * @param BanditVariationIndexer|null $banditVariations
      * @return void
+     * @throws InvalidConfigurationException
      */
     public function setConfigurations(array $flags, array $bandits, BanditVariationIndexer $banditVariations = null): void;
 
     /**
      * Gets the `BanditVariationIndexer` for mapping from flag variations to bandits.
      * @return BanditVariationIndexer
+     * @throws InvalidConfigurationException
      */
     public function getBanditVariations(): BanditVariationIndexer;
 

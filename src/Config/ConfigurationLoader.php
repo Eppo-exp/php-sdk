@@ -11,7 +11,7 @@ use Eppo\DTO\Flag;
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
 use Eppo\Exception\InvalidConfigurationException;
-use Eppo\IFlags;
+use Eppo\Flags\IFlags;
 use Eppo\UFCParser;
 
 class ConfigurationLoader implements IFlags, IBanditVariationIndexer

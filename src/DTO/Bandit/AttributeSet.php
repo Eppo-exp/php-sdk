@@ -6,7 +6,6 @@ use Eppo\Exception\InvalidArgumentException;
 
 class AttributeSet
 {
-
     /**
      * Types to automatically classify as Categorical
      */
@@ -39,15 +38,19 @@ class AttributeSet
         $categoricalAttributes = [];
         $numericAttributes = [];
         foreach ($attributes as $key => $value) {
-            if (in_array(
-                gettype($value),
-                self::NUMERIC_TYPES
-            )) {
+            if (
+                in_array(
+                    gettype($value),
+                    self::NUMERIC_TYPES
+                )
+            ) {
                 $numericAttributes[$key] = $value;
-            } elseif (in_array(
-                gettype($value),
-                self::CATEGORICAL_TYPES
-            )) {
+            } elseif (
+                in_array(
+                    gettype($value),
+                    self::CATEGORICAL_TYPES
+                )
+            ) {
                 $categoricalAttributes[$key] = $value;
             } else {
                 throw new InvalidArgumentException("Unsupported attribute type: " . gettype($value));
