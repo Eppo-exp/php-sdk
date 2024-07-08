@@ -2,9 +2,12 @@
 
 namespace Eppo\Tests\Config;
 
+use DateTime;
 use Eppo\Bandits\BanditVariationIndexer;
 use Eppo\Cache\DefaultCacheFactory;
 use Eppo\Config\ConfigurationStore;
+use Eppo\DTO\Bandit\Bandit;
+use Eppo\DTO\Bandit\BanditModelData;
 use Eppo\DTO\Bandit\BanditVariation;
 use Eppo\DTO\Flag;
 use Eppo\DTO\VariationType;
@@ -68,6 +71,29 @@ class ConfigurationStoreTest extends TestCase
             $banditVariations->getBanditByVariation('bandit_flag', 'bandit_flag_variation'),
             $recoveredBanditVariations->getBanditByVariation('bandit_flag', 'bandit_flag_variation')
         );
+    }
+
+    public function testStoresBandits(): void
+    {
+        $bandits = [
+            'banditOne' => new Bandit(
+                'banditOne',
+                'falcon',
+                new DateTime(),
+                'v123',
+                new BanditModelData(1.0, [], 0.1, 0.1)
+            )
+        ];
+
+        $configStore = new ConfigurationStore(DefaultCacheFactory::create());
+        $configStore->setConfigurations([], $bandits);
+
+        $banditOne = $configStore->getBandit('banditOne');
+
+        $this->assertNotNull($banditOne);
+
+        $this->assertEquals('banditOne', $banditOne->banditKey);
+        $this->assertEquals('falcon', $banditOne->modelName);
     }
 
     private function assertHasFlag(
