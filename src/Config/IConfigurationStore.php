@@ -7,10 +7,12 @@ use Eppo\DTO\Bandit\Bandit;
 use Eppo\DTO\Flag;
 use Eppo\IFlags;
 
-interface IConfigurationStore extends IFlags
+interface IConfigurationStore extends IFlags, IBandits
 {
     /**
-     * Sets multiple flags in the data store.
+     * Sets configuration objects in the data store.
+     *
+     * Implementations of this method must also register the time in order to respond to the `getFlagCacheAgeSeconds` method.
      *
      * @param Flag[] $flags
      * @param Bandit[] $bandits

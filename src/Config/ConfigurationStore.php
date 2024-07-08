@@ -48,6 +48,7 @@ class ConfigurationStore implements IConfigurationStore
             return null;
         }
     }
+
     private function setFlag(Flag $flag): void
     {
         try {
@@ -66,8 +67,11 @@ class ConfigurationStore implements IConfigurationStore
      * @param BanditVariationIndexer|null $banditVariations
      * @throws EppoClientException
      */
-    public function setConfigurations(array $flags, array $bandits, BanditVariationIndexer $banditVariations = null): void
-    {
+    public function setConfigurations(
+        array $flags,
+        array $bandits,
+        BanditVariationIndexer $banditVariations = null
+    ): void {
         try {
             // Clear all stored config before setting data.
             $this->rootCache->clear();
@@ -115,13 +119,27 @@ class ConfigurationStore implements IConfigurationStore
         }
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
-    private function setBandits(array $bandits) : void
+    private function setBandits(array $bandits): void
     {
         foreach ($bandits as $bandit) {
-            $this->banditCache->set($bandit->key, serialize($bandit));
+            try {
+                $this->banditCache->set($bandit->key, serialize($bandit));
+            } catch (InvalidArgumentException $e) {
+                $message = $e->getMessage();
+                syslog(LOG_WARNING, "[Eppo SDK]: Error \"{$message}\" encountered while setting bandit");
+            }
+        }
+    }
+
+    /**
+     * @throws EppoClientException
+     */
+    public function getBandit(string $banditKey): array
+    {
+        try {
+            return $this->banditCache->get($banditKey);
+        } catch (InvalidArgumentException $e) {
+            throw EppoClientException::From($e);
         }
     }
 }

@@ -33,8 +33,6 @@ class APIRequestWrapper
 
     private RequestFactoryInterface $requestFactory;
 
-    private string $resource;
-
     public function __construct(
         string $apiKey,
         array $extraQueryParams,
@@ -46,7 +44,6 @@ class APIRequestWrapper
         $this->httpClient = new RedirectClientDecorator($baseHttpClient);
         $this->baseUrl = $baseUrl ?? self::CONFIG_BASE;
         $this->requestFactory = $requestFactory;
-        $this->resource = self::UFC_ENDPOINT;
         $this->queryParams = [
             'apiKey' => $apiKey,
             ...$extraQueryParams
@@ -82,12 +79,13 @@ class APIRequestWrapper
      */
     public function getUFC(): string
     {
-        return $this->getResource($this->resource);
+        return $this->getResource(self::UFC_ENDPOINT);
     }
 
 
     /**
-     * @throws HttpRequestException|InvalidApiKeyException
+     * @throws HttpRequestException
+     * @throws InvalidApiKeyException
      */
     public function getBandits(): string
     {
