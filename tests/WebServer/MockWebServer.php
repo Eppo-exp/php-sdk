@@ -7,7 +7,7 @@ use Exception;
 class MockWebServer
 {
     /** @var string */
-    private static $command = "php -S localhost:4000 " . __DIR__ . "/router.php";
+    private static string $command = 'php -S localhost:4000 ' . __DIR__ . '/router.php';
 
     /** @var resource */
     private static $process;
@@ -16,14 +16,15 @@ class MockWebServer
      * @return void
      * @throws Exception
      */
-    public static function start()
+    public static function start($ufcFile = __DIR__ . '/../data/ufc/flags-v1.json')
     {
         $descriptorSpec = [
             0 => ["pipe", "r"], // stdin
             1 => ["pipe", "w"], // stdout
             2 => ["pipe", "w"]  // stderr
         ];
-        self::$process = proc_open(self::$command, $descriptorSpec, $pipes);
+        $cmd = "UFC=$ufcFile " . self::$command;
+        self::$process = proc_open($cmd, $descriptorSpec, $pipes);
         if (!is_resource(self::$process)) {
             throw new Exception('Unable to start PHP built-in web server.');
         }
