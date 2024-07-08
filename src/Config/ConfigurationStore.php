@@ -155,7 +155,7 @@ class ConfigurationStore implements IConfigurationStore
     public function getBandit(string $banditKey): ?Bandit
     {
         try {
-            return $this->banditCache->get($banditKey);
+            return unserialize($this->banditCache->get($banditKey));
         } catch (InvalidArgumentException $e) {
             // Simple cache throws exceptions when a keystring is not a legal value (characters {}()/@: are illegal)
             throw new InvalidConfigurationException(
