@@ -6,11 +6,11 @@ use Eppo\DTO\Bandit\Bandit;
 
 interface IBandits
 {
-
     /**
-     * Gets the Bandit models.
+     * Gets a Bandit by key
+     *
      * @param string $banditKey
-     * @return Bandit[]
+     * @return ?Bandit
      */
-    public function getBandit(string $banditKey): array;
+    public function getBandit(string $banditKey): ?Bandit;
 }

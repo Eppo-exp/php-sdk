@@ -2,18 +2,24 @@
 
 namespace Eppo;
 
+use Eppo\Bandits\BanditEvaluator;
 use Eppo\Cache\DefaultCacheFactory;
 use Eppo\Config\ConfigurationLoader;
 use Eppo\Config\ConfigurationStore;
 use Eppo\Config\SDKData;
+use Eppo\DTO\Bandit\AttributeSet;
+use Eppo\DTO\Bandit\BanditResult;
+use Eppo\DTO\Bandit\ContextAttributes;
 use Eppo\DTO\Variation;
 use Eppo\DTO\VariationType;
+use Eppo\Exception\BanditEvaluationException;
 use Eppo\Exception\EppoClientException;
 use Eppo\Exception\EppoClientInitializationException;
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
 use Eppo\Exception\InvalidArgumentException;
 use Eppo\Logger\AssignmentEvent;
+use Eppo\Logger\BanditActionEvent;
 use Eppo\Logger\LoggerInterface;
 use Exception;
 use Http\Discovery\Psr17Factory;
@@ -31,21 +37,23 @@ class EppoClient
 
     private static ?EppoClient $instance = null;
     private RuleEvaluator $evaluator;
+    private BanditEvaluator $banditEvaluator;
 
 
     /**
      * @param ConfigurationLoader $configurationLoader
      * @param PollerInterface $poller
-     * @param LoggerInterface|null $assignmentLogger optional assignment logger. Please check Eppo/LoggerLoggerInterface
+     * @param LoggerInterface|null $eventLogger optional logger. Please see Eppo/LoggerLoggerInterface
      * @param bool|null $isGracefulMode
      */
     protected function __construct(
         private readonly ConfigurationLoader $configurationLoader,
         private readonly PollerInterface $poller,
-        private readonly ?LoggerInterface $assignmentLogger = null,
+        private readonly ?LoggerInterface $eventLogger = null,
         private readonly ?bool $isGracefulMode = true
     ) {
         $this->evaluator = new RuleEvaluator();
+        $this->banditEvaluator = new BanditEvaluator();
     }
 
     /**
@@ -334,12 +342,12 @@ class EppoClient
         }
 
         // If an assignment was made, log it using the user-provided logger callback.
-        if ($computedVariation && $this->assignmentLogger && $evaluationResult->doLog) {
+        if ($computedVariation && $this->eventLogger && $evaluationResult->doLog) {
             try {
                 $allocationKey = $evaluationResult->allocationKey;
                 $sdkData = (new SDKData())->asArray();
                 $experimentKey = "$flagKey-$allocationKey";
-                $this->assignmentLogger->logAssignment(
+                $this->eventLogger->logAssignment(
                     new AssignmentEvent(
                         $experimentKey,
                         $evaluationResult->variation->key,
@@ -360,8 +368,133 @@ class EppoClient
         return $computedVariation;
     }
 
-    private function checkExpectedType(VariationType $expectedVariationType, $typedValue): bool
-    {
+    /**
+     * Selects a Bandit action, if applicable, based on the flag key, subject, and actions provided.
+     *
+     * Actions are selected based on the subject and action contexts. Contexts are passed as associative arrays
+     * (key=>value) of attributes which, by default, are sorted into numeric and non-numeric. Non-numeric attributes
+     * are bucketed as "Categorical Attributes" while numeric are treated as "Numeric Attributes". Demonstrated in the
+     * **Example 2** below is a means of explicitly classifying attributes as either Numeric or Categorical.
+     *
+     * Example 1:
+     *
+     * $flagKey = "my-bandit-flag";
+     * $subject = "user-123";
+     * $subjectContext = ["accountAge" => 0.5, "country" => "US"];
+     *
+     * // A simple list of actions with no context attributes
+     * $actions = ["nike", "adidas", "reebok"];
+     *
+     * $result = $client->getBanditAction($flagKey, $subject, $subjectContext, $actions, "control");
+     *
+     * Example 1.2: Actions with un-grouped attributes
+     * $actions = [
+     *  "nike": [
+     *    "brandLoyalty"
+     *
+     *
+     * @param string $flagKey
+     * @param string $subjectKey
+     * @param array<string, ?object>|AttributeSet $subjectContext
+     * @param array<string>|array<string, array<string, ?object>>|array<string, AttributeSet> $actions
+     * @param string $defaultVariation
+     * @return BanditResult
+     *
+     * @throws EppoClientException
+     */
+    public function getBanditAction(
+        string $flagKey,
+        string $subjectKey,
+        array $subjectContext,
+        array $actions,
+        string $defaultVariation
+    ): BanditResult {
+        try {
+            $actionContexts = [];
+            foreach ($actions as $key => $value) {
+                if (is_string($value)) {
+                    $actionContexts[$value] = new AttributeSet();
+                } elseif ($value instanceof AttributeSet) {
+                    $actions[$key] = $value;
+                } else {
+                    $actionContexts[$key] = AttributeSet::fromArray($value);
+                }
+            }
+
+            $subject = $subjectContext instanceof AttributeSet ? new ContextAttributes(
+                $subjectKey,
+                $subjectContext
+            ) : ContextAttributes::fromArray($subjectKey, $subjectContext);
+            return $this->getBanditDetail($flagKey, $subjectKey, $subjectContext, $actionContexts, $defaultVariation);
+        } catch (InvalidArgumentException | BanditEvaluationException $e) {
+            // Handle bubbled exceptions.
+            if ($this->isGracefulMode) {
+                error_log('[Eppo SDK] Error selecting bandit action: ' . $e->getMessage());
+                return new BanditResult($defaultVariation);
+            } else {
+                throw EppoClientException::from($e);
+            }
+        }
+    }
+
+    /**
+     * @param string $flagKey
+     * @param ContextAttributes $subject
+     * @param array<string, ContextAttributes> $actionsWithContext
+     * @param string $defaultVariation
+     * @return BanditResult
+     *
+     * @throws InvalidArgumentException
+     * @throws BanditEvaluationException
+     */
+    private function getBanditDetail(
+        string $flagKey,
+        ContextAttributes $subject,
+        array $actionsWithContext,
+        string $defaultVariation
+    ): BanditResult {
+        Validator::validateNotBlank($flagKey, "Invalid argument: flagKey cannot be blank");
+
+        $isBanditFlag = $this->configurationLoader->isBanditFlag($flagKey);
+
+        if (empty($actionsWithContext) && $isBanditFlag) {
+            throw new BanditEvaluationException("No actions provided for bandit flag {$flagKey}");
+        } elseif (!$isBanditFlag) {
+            // It's likely that the developer made a mistake passing a non-bandit flag so let's warn them.
+            syslog(LOG_WARNING, "[Eppo SDK]: Flag \"{$flagKey}\" does not contain a Bandit");
+        }
+
+        $variation = $this->getStringAssignment(
+            $flagKey,
+            $subject->key,
+            $subject->getAttributes()->toArray(),
+            $defaultVariation
+        );
+
+
+        $banditKey = $this->configurationLoader->getBanditByVariation($flagKey, $variation);
+        $bandit = $this->configurationLoader->getBandit($banditKey);
+        if ($bandit != null) {
+            throw new BanditEvaluationException("Assigned bandit not found for ($flagKey, $variation)");
+        }
+        $result = $this->banditEvaluator->evaluateBandit($flagKey, $subject, $actionsWithContext, $bandit->modelData);
+
+        $banditActionLog = BanditActionEvent::fromEvaluation(
+            $variation,
+            $result,
+            $bandit,
+            (new SDKData())->asArray()
+        );
+        $this->eventLogger->logBanditAction($banditActionLog);
+
+        return new BanditResult($variation, $result->selectedAction);
+    }
+
+
+    private function checkExpectedType(
+        VariationType $expectedVariationType,
+        $typedValue
+    ): bool {
         return (
             ($expectedVariationType == VariationType::STRING && gettype($typedValue) === "string") ||
             ($expectedVariationType == VariationType::INTEGER && gettype($typedValue) === "integer") ||
@@ -407,7 +540,7 @@ class EppoClient
 
     /**
      * Only used for unit-tests.
-     * For production use please use only singleton instance.
+     * For production please use only singleton instance.
      *
      * @param ConfigurationLoader $configurationLoader
      * @param PollerInterface $poller

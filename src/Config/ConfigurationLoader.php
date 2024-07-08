@@ -14,7 +14,7 @@ use Eppo\Exception\InvalidConfigurationException;
 use Eppo\IFlags;
 use Eppo\UFCParser;
 
-class ConfigurationLoader implements IFlags, IBanditVariationIndexer
+class ConfigurationLoader implements IFlags, IBandits, IBanditVariationIndexer
 {
     private UFCParser $parser;
 
@@ -112,5 +112,13 @@ class ConfigurationLoader implements IFlags, IBanditVariationIndexer
         }
 
         $this->configurationStore->setConfigurations($inflated, $bandits, $indexer);
+    }
+
+    public function getBandit(?string $banditKey): ?Bandit
+    {
+        if ($banditKey === null) {
+            return null;
+        }
+        return $this->configurationStore->getBandit($banditKey);
     }
 }

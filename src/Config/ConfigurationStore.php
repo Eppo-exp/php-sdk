@@ -7,7 +7,6 @@ use Eppo\Cache\CacheType;
 use Eppo\Cache\NamespaceCache;
 use Eppo\DTO\Bandit\Bandit;
 use Eppo\DTO\Flag;
-use Eppo\Exception\EppoClientException;
 use Psr\SimpleCache\CacheInterface;
 use Psr\SimpleCache\InvalidArgumentException;
 
@@ -65,14 +64,13 @@ class ConfigurationStore implements IConfigurationStore
      * @param array $flags
      * @param Bandit[] $bandits
      * @param BanditVariationIndexer|null $banditVariations
-     * @throws EppoClientException
+     * @throws InvalidArgumentException
      */
     public function setConfigurations(
         array $flags,
         array $bandits,
         BanditVariationIndexer $banditVariations = null
     ): void {
-        try {
             // Clear all stored config before setting data.
             $this->rootCache->clear();
 
@@ -81,9 +79,6 @@ class ConfigurationStore implements IConfigurationStore
             $this->setFlags($flags);
             $this->setBandits($bandits);
             $this->metadataCache->set(self::BANDIT_VARIATION_KEY, serialize($banditVariations));
-        } catch (InvalidArgumentException $e) {
-            throw EppoClientException::from($e);
-        }
     }
 
     private function setFlags(array $flags): void
@@ -107,16 +102,11 @@ class ConfigurationStore implements IConfigurationStore
     }
 
     /**
-     * @throws EppoClientException
+     * @throws InvalidArgumentException
      */
     public function getBanditVariations(): BanditVariationIndexer
     {
-        try {
-            return unserialize($this->metadataCache->get(self::BANDIT_VARIATION_KEY));
-        } catch (InvalidArgumentException $e) {
-            // We know that the key does not contain illegal characters, so we should not end up here.
-            throw EppoClientException::From($e);
-        }
+        return unserialize($this->metadataCache->get(self::BANDIT_VARIATION_KEY));
     }
 
     private function setBandits(array $bandits): void
@@ -132,14 +122,10 @@ class ConfigurationStore implements IConfigurationStore
     }
 
     /**
-     * @throws EppoClientException
+     * @throws InvalidArgumentException
      */
-    public function getBandit(string $banditKey): array
+    public function getBandit(string $banditKey): ?Bandit
     {
-        try {
-            return $this->banditCache->get($banditKey);
-        } catch (InvalidArgumentException $e) {
-            throw EppoClientException::From($e);
-        }
+        return $this->banditCache->get($banditKey);
     }
 }
