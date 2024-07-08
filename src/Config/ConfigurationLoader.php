@@ -5,6 +5,7 @@ namespace Eppo\Config;
 use Eppo\APIRequestWrapper;
 use Eppo\Bandits\BanditVariationIndexer;
 use Eppo\Bandits\IBanditVariationIndexer;
+use Eppo\DTO\Bandit\Bandit;
 use Eppo\DTO\Bandit\BanditVariation;
 use Eppo\DTO\Flag;
 use Eppo\Exception\HttpRequestException;
@@ -28,6 +29,7 @@ class ConfigurationLoader implements IFlags, IBanditVariationIndexer
     /**
      * @throws InvalidApiKeyException
      * @throws HttpRequestException
+     * @throws InvalidConfigurationException
      */
     public function getFlag(string $key): ?Flag
     {
@@ -36,20 +38,27 @@ class ConfigurationLoader implements IFlags, IBanditVariationIndexer
     }
 
     /**
+     * @param string $flagKey
+     * @param string $variation
+     * @return string|null
      * @throws HttpRequestException
      * @throws InvalidApiKeyException
+     * @throws InvalidConfigurationException
      */
-    public function getBanditByVariation($flagKey, $variation): ?string
+    public function getBanditByVariation(string $flagKey, string $variation): ?string
     {
         $this->reloadConfigurationIfExpired();
         return $this->configurationStore->getBanditVariations()->getBanditByVariation($flagKey, $variation);
     }
 
     /**
-     * @throws InvalidApiKeyException
+     * @param string $flagKey
+     * @return bool
      * @throws HttpRequestException
+     * @throws InvalidApiKeyException
+     * @throws InvalidConfigurationException
      */
-    public function isBanditFlag($flagKey): bool
+    public function isBanditFlag(string $flagKey): bool
     {
         $this->reloadConfigurationIfExpired();
         return $this->configurationStore->getBanditVariations()->isBanditFlag($flagKey);
@@ -93,6 +102,15 @@ class ConfigurationLoader implements IFlags, IBanditVariationIndexer
         }
 
         $indexer = new BanditVariationIndexer($variations);
-        $this->configurationStore->setConfigurations($inflated, $indexer);
+
+        $banditModelResponse = json_decode($this->apiRequestWrapper->getBandits(), true);
+        if (!$banditModelResponse || !isset($banditModelResponse['bandits'])) {
+            syslog(LOG_WARNING, "[Eppo SDK] Empty or invalid response from the configuration server.");
+            $bandits = [];
+        } else {
+            $bandits = array_map(fn($json) => Bandit::fromJson($json), $banditModelResponse['bandits']);
+        }
+
+        $this->configurationStore->setConfigurations($inflated, $bandits, $indexer);
     }
 }

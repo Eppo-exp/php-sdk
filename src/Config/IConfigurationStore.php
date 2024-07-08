@@ -3,6 +3,7 @@
 namespace Eppo\Config;
 
 use Eppo\Bandits\BanditVariationIndexer;
+use Eppo\DTO\Bandit\Bandit;
 use Eppo\DTO\Flag;
 use Eppo\IFlags;
 
@@ -12,10 +13,11 @@ interface IConfigurationStore extends IFlags
      * Sets multiple flags in the data store.
      *
      * @param Flag[] $flags
+     * @param Bandit[] $bandits
      * @param BanditVariationIndexer|null $banditVariations
      * @return void
      */
-    public function setConfigurations(array $flags, BanditVariationIndexer $banditVariations = null): void;
+    public function setConfigurations(array $flags, array $bandits, BanditVariationIndexer $banditVariations = null): void;
 
     /**
      * Gets the `BanditVariationIndexer` for mapping from flag variations to bandits.

@@ -5,6 +5,7 @@ namespace Eppo\Config;
 use Eppo\Bandits\BanditVariationIndexer;
 use Eppo\Cache\CacheType;
 use Eppo\Cache\NamespaceCache;
+use Eppo\DTO\Bandit\Bandit;
 use Eppo\DTO\Flag;
 use Eppo\Exception\EppoClientException;
 use Psr\SimpleCache\CacheInterface;
@@ -14,6 +15,7 @@ class ConfigurationStore implements IConfigurationStore
 {
     private CacheInterface $rootCache;
     private CacheInterface $flagCache;
+    private CacheInterface $banditCache;
     private CacheInterface $metadataCache;
 
     private const FLAG_TIMESTAMP = "flagTimestamp";
@@ -26,6 +28,7 @@ class ConfigurationStore implements IConfigurationStore
     {
         $this->rootCache = $cache;
         $this->flagCache = new NamespaceCache(CacheType::FLAG, $cache);
+        $this->banditCache = new NamespaceCache(CacheType::BANDIT, $cache);
         $this->metadataCache = new NamespaceCache(CacheType::META, $cache);
     }
 
@@ -59,10 +62,11 @@ class ConfigurationStore implements IConfigurationStore
 
     /**
      * @param array $flags
+     * @param Bandit[] $bandits
      * @param BanditVariationIndexer|null $banditVariations
      * @throws EppoClientException
      */
-    public function setConfigurations(array $flags, BanditVariationIndexer $banditVariations = null): void
+    public function setConfigurations(array $flags, array $bandits, BanditVariationIndexer $banditVariations = null): void
     {
         try {
             // Clear all stored config before setting data.
@@ -71,6 +75,7 @@ class ConfigurationStore implements IConfigurationStore
             // Set last fetch timestamp.
             $this->metadataCache->set(self::FLAG_TIMESTAMP, time());
             $this->setFlags($flags);
+            $this->setBandits($bandits);
             $this->metadataCache->set(self::BANDIT_VARIATION_KEY, serialize($banditVariations));
         } catch (InvalidArgumentException $e) {
             throw EppoClientException::from($e);
@@ -105,8 +110,18 @@ class ConfigurationStore implements IConfigurationStore
         try {
             return unserialize($this->metadataCache->get(self::BANDIT_VARIATION_KEY));
         } catch (InvalidArgumentException $e) {
-            // We know that the key does not contain illegal characters so we should not end up here.
+            // We know that the key does not contain illegal characters, so we should not end up here.
             throw EppoClientException::From($e);
+        }
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    private function setBandits(array $bandits) : void
+    {
+        foreach ($bandits as $bandit) {
+            $this->banditCache->set($bandit->key, serialize($bandit));
         }
     }
 }
