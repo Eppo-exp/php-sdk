@@ -2,6 +2,7 @@
 
 namespace Eppo\Tests;
 
+use Eppo\Cache\DefaultCacheFactory;
 use Eppo\Config\ConfigurationLoader;
 use Eppo\DTO\Bandit\AttributeSet;
 use Eppo\EppoClient;
@@ -35,6 +36,7 @@ class BanditClientTest extends TestCase
     public static function tearDownAfterClass(): void
     {
         MockWebServer::stop();
+        DefaultCacheFactory::clearCache();
     }
 
     public function testBanditWithEmptyActions(): void
