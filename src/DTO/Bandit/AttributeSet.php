@@ -53,7 +53,7 @@ class AttributeSet
             ) {
                 $categoricalAttributes[$key] = $value;
             } else {
-                throw new InvalidArgumentException("Unsupported attribute type: " . gettype($value));
+                syslog(LOG_WARNING, "[Eppo SDK] Unsupported attribute type: " . gettype($value));
             }
         }
         return new self($numericAttributes, $categoricalAttributes);
