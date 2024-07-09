@@ -2,8 +2,6 @@
 
 namespace Eppo\DTO\Bandit;
 
-use Eppo\Exception\InvalidArgumentException;
-
 class AttributeSet
 {
     /**
@@ -30,9 +28,6 @@ class AttributeSet
     ) {
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
     public static function fromArray(array $attributes): self
     {
         $categoricalAttributes = [];
@@ -53,7 +48,7 @@ class AttributeSet
             ) {
                 $categoricalAttributes[$key] = $value;
             } else {
-                throw new InvalidArgumentException("Unsupported attribute type: " . gettype($value));
+                syslog(LOG_WARNING, "[Eppo SDK] Unsupported attribute type: " . gettype($value));
             }
         }
         return new self($numericAttributes, $categoricalAttributes);
