@@ -3,7 +3,6 @@
 namespace Eppo\Tests\DTO\Bandit;
 
 use Eppo\DTO\Bandit\AttributeSet;
-use Eppo\Exception\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 class AttributeSetTest extends TestCase
@@ -19,9 +18,6 @@ class AttributeSetTest extends TestCase
         $this->assertEquals($categoricalAttributes, $attributeSet->categoricalAttributes);
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
     public function testFromArray()
     {
         $attributes = array(
@@ -50,7 +46,7 @@ class AttributeSetTest extends TestCase
         $this->assertEquals($expectedCategoricalAttributes, $attributeSet->categoricalAttributes);
     }
 
-    public function testFromArrayThrowsForInvalidDatatype()
+    public function testFromArrayFiltersInvalidValueTypes()
     {
         $attributes = array(
             'age' => 25,
@@ -59,7 +55,16 @@ class AttributeSetTest extends TestCase
             'subscribed' => [1, 2, 3]
         );
 
-        $this->expectException(InvalidArgumentException::class);
         $attributeSet = AttributeSet::fromArray($attributes);
+
+        $expectedNumericAttributes = array(
+            'age' => 25.0
+        );
+        $expectedCategoricalAttributes = array(
+            'city' => 'Paris'
+        );
+
+        $this->assertEquals($expectedNumericAttributes, $attributeSet->numericAttributes);
+        $this->assertEquals($expectedCategoricalAttributes, $attributeSet->categoricalAttributes);
     }
 }
