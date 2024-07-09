@@ -14,7 +14,7 @@ interface IConfigurationStore extends IFlags, IBandits
     /**
      * Sets configuration objects in the data store.
      *
-     * Implementations of this method must also register the time in order to respond to the `getFlagCacheAgeSeconds` method.
+     * Implementations of this method should also store the time in order to respond to `getFlagCacheAgeSeconds` calls.
      *
      * @param Flag[] $flags
      * @param Bandit[] $bandits
@@ -22,7 +22,11 @@ interface IConfigurationStore extends IFlags, IBandits
      * @return void
      * @throws InvalidConfigurationException
      */
-    public function setConfigurations(array $flags, array $bandits, BanditVariationIndexer $banditVariations = null): void;
+    public function setConfigurations(
+        array $flags,
+        array $bandits,
+        BanditVariationIndexer $banditVariations = null
+    ): void;
 
     /**
      * Gets the `BanditVariationIndexer` for mapping from flag variations to bandits.
