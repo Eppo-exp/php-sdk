@@ -2,8 +2,12 @@
 
 namespace Eppo\Tests;
 
+use Eppo\Config\ConfigurationLoader;
 use Eppo\DTO\Bandit\AttributeSet;
 use Eppo\EppoClient;
+use Eppo\Exception\BanditEvaluationException;
+use Eppo\Exception\EppoClientException;
+use Eppo\Exception\EppoException;
 use Eppo\Tests\WebServer\MockWebServer;
 use Exception;
 use PHPUnit\Framework\TestCase;
@@ -33,6 +37,29 @@ class BanditClientTest extends TestCase
         MockWebServer::stop();
     }
 
+    public function testBanditWithEmptyActions(): void
+    {
+        $banditKey = 'bandit';
+        $actions = [];
+        $subjectKey = 'user123';
+        $subject = ['country'=>'USA','age'=>25];
+        $default = 'defaultVariation';
+
+
+        $config = $this->getMockBuilder(ConfigurationLoader::class)->disableOriginalConstructor()->getMock();
+
+        $config->expects($this->once())
+            ->method('isBanditFlag')
+            ->with($banditKey)
+            ->willReturn(true);
+
+        $client = EppoClient::createTestClient( $config);
+
+        $this->expectException(EppoClientException::class);
+        $this->expectExceptionCode(EppoException::BANDIT_EVALUATION_FAILED_NO_ACTIONS_PROVIDED);
+
+        $client->getBanditAction($banditKey, $subjectKey, $subject, $actions, $default);
+    }
     // Test notABandit
     // test banditDNE
     // test logged

@@ -16,7 +16,7 @@ class MockWebServer
      * @return void
      * @throws Exception
      */
-    public static function start($ufcFile = __DIR__ . '/../data/ufc/flags-v1.json')
+    public static function start($ufcFile = __DIR__ . '/../data/ufc/flags-v1.json'): void
     {
         $descriptorSpec = [
             0 => ["pipe", "r"], // stdin
