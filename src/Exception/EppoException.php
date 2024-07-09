@@ -10,4 +10,5 @@ use Exception;
 abstract class EppoException extends Exception
 {
     public const BANDIT_EVALUATION_FAILED_NO_ACTIONS_PROVIDED = 21;
+    public const BANDIT_EVALUATION_FAILED_BANDIT_MODEL_NOT_PRESENT = 22;
 }

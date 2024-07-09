@@ -5,9 +5,10 @@ namespace Eppo\Logger;
 use DateTime;
 use Eppo\DTO\Bandit\Bandit;
 use Eppo\DTO\Bandit\BanditEvaluation;
+use JsonSerializable;
 use Serializable;
 
-class BanditActionEvent implements Serializable
+class BanditActionEvent implements Serializable, JsonSerializable
 {
     public function __construct(
         public readonly string $flagKey,
@@ -94,5 +95,10 @@ class BanditActionEvent implements Serializable
         $this->actionNumericAttributes = $data['actionNumericAttributes'];
         $this->actionCategoricalAttributes = $data['actionCategoricalAttributes'];
         $this->metaData = $data['metaData'];
+    }
+
+    public function jsonSerialize(): mixed
+    {
+        return $this->__serialize();
     }
 }

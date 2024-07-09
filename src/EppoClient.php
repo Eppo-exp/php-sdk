@@ -3,6 +3,7 @@
 namespace Eppo;
 
 use Eppo\Bandits\BanditEvaluator;
+use Eppo\Bandits\IBanditEvaluator;
 use Eppo\Cache\DefaultCacheFactory;
 use Eppo\Config\ConfigurationLoader;
 use Eppo\Config\ConfigurationStore;
@@ -39,7 +40,7 @@ class EppoClient
 
     private static ?EppoClient $instance = null;
     private RuleEvaluator $evaluator;
-    private BanditEvaluator $banditEvaluator;
+    private IBanditEvaluator $banditEvaluator;
 
 
     /**
@@ -52,10 +53,11 @@ class EppoClient
         private readonly ConfigurationLoader $configurationLoader,
         private readonly PollerInterface $poller,
         private readonly ?LoggerInterface $eventLogger = null,
-        private readonly ?bool $isGracefulMode = true
+        private readonly ?bool $isGracefulMode = true,
+        IBanditEvaluator $banditEvaluator = null,
     ) {
         $this->evaluator = new RuleEvaluator();
-        $this->banditEvaluator = new BanditEvaluator();
+        $this->banditEvaluator = $banditEvaluator ?? new BanditEvaluator();
     }
 
     /**
@@ -133,7 +135,8 @@ class EppoClient
         ConfigurationLoader $configLoader,
         PollerInterface $poller,
         ?LoggerInterface $assignmentLogger,
-        ?bool $isGracefulMode
+        ?bool $isGracefulMode,
+        ?IBanditEvaluator $banditEvaluator = null
     ): EppoClient {
         try {
             $configLoader->reloadConfigurationIfExpired();
@@ -142,7 +145,7 @@ class EppoClient
                 'Unable to initialize Eppo Client: ' . $e->getMessage()
             );
         }
-        return new self($configLoader, $poller, $assignmentLogger, $isGracefulMode);
+        return new self($configLoader, $poller, $assignmentLogger, $isGracefulMode, $banditEvaluator);
     }
 
     /**
@@ -484,7 +487,10 @@ class EppoClient
 
         $bandit = $this->configurationLoader->getBandit($banditKey);
         if ($bandit == null) {
-            throw new BanditEvaluationException("Assigned bandit not found for ($flagKey, $variation)");
+            throw new BanditEvaluationException(
+                "Assigned bandit not found for ($flagKey, $variation)",
+                EppoException::BANDIT_EVALUATION_FAILED_BANDIT_MODEL_NOT_PRESENT
+            );
         }
 
         $result = $this->banditEvaluator->evaluateBandit($flagKey, $subject, $actionsWithContext, $bandit->modelData);
@@ -565,7 +571,8 @@ class EppoClient
         ConfigurationLoader $configurationLoader,
         PollerInterface $poller = null,
         ?LoggerInterface $logger = null,
-        ?bool $isGracefulMode = false
+        ?bool $isGracefulMode = false,
+        ?IBanditEvaluator $banditEvaluator = null
     ): EppoClient {
         $poller ??= new Poller(
             self::POLL_INTERVAL_MILLIS,
@@ -574,6 +581,6 @@ class EppoClient
                 $configurationLoader->fetchAndStoreConfigurations();
             }
         );
-        return self::createAndInitClient($configurationLoader, $poller, $logger, $isGracefulMode);
+        return self::createAndInitClient($configurationLoader, $poller, $logger, $isGracefulMode, $banditEvaluator);
     }
 }
