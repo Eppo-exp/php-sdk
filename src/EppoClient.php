@@ -8,7 +8,6 @@ use Eppo\Config\ConfigurationLoader;
 use Eppo\Config\ConfigurationStore;
 use Eppo\Config\SDKData;
 use Eppo\DTO\Bandit\AttributeSet;
-use Eppo\DTO\Bandit\Bandit;
 use Eppo\DTO\Bandit\BanditResult;
 use Eppo\DTO\Bandit\ContextAttributes;
 use Eppo\DTO\Variation;
@@ -138,9 +137,9 @@ class EppoClient
     ): EppoClient {
         try {
             $configLoader->reloadConfigurationIfExpired();
-        } catch (HttpRequestException | InvalidApiKeyException $e) {
+        } catch (HttpRequestException|InvalidApiKeyException $e) {
             throw new EppoClientInitializationException(
-                "Unable to initialize Eppo Client: " . $e->getMessage()
+                'Unable to initialize Eppo Client: ' . $e->getMessage()
             );
         }
         return new self($configLoader, $poller, $assignmentLogger, $isGracefulMode);
@@ -343,7 +342,7 @@ class EppoClient
         }
 
         if (!$flag->enabled) {
-            syslog(LOG_INFO, "[EPPO SDK] No assigned variation; flag is disabled.");
+            syslog(LOG_INFO, '[EPPO SDK] No assigned variation; flag is disabled.');
             return null;
         }
 
@@ -384,19 +383,19 @@ class EppoClient
      *
      * Example 1:
      *
-     * $flagKey = "my-bandit-flag";
-     * $subject = "user-123";
-     * $subjectContext = ["accountAge" => 0.5, "country" => "US"];
+     * $flagKey = 'my-bandit-flag';
+     * $subject = 'user-123';
+     * $subjectContext = ['accountAge' => 0.5, 'country' => 'US'];
      *
      * // A simple list of actions with no context attributes
-     * $actions = ["nike", "adidas", "reebok"];
+     * $actions = ['nike', 'adidas', 'reebok'];
      *
-     * $result = $client->getBanditAction($flagKey, $subject, $subjectContext, $actions, "control");
+     * $result = $client->getBanditAction($flagKey, $subject, $subjectContext, $actions, 'control');
      *
      * Example 1.2: Actions with un-grouped attributes
      * $actions = [
-     *  "nike": [
-     *    "brandLoyalty"
+     *  'nike': [
+     *    'brandLoyalty'
      *
      *
      * @param string $flagKey
@@ -453,15 +452,13 @@ class EppoClient
         array $actionsWithContext,
         string $defaultVariation
     ): BanditResult {
-        Validator::validateNotBlank($flagKey, "Invalid argument: flagKey cannot be blank");
+        Validator::validateNotBlank($flagKey, 'Invalid argument: flagKey cannot be blank');
 
         $isBanditFlag = $this->configurationLoader->isBanditFlag($flagKey);
 
         if (empty($actionsWithContext) && $isBanditFlag) {
+            // This exception is caught in graceful mode and the default is returned (@see getBanditAction)
             throw new BanditEvaluationException("No actions provided for bandit flag {$flagKey}");
-        } elseif (!$isBanditFlag) {
-            // It's likely that the developer made a mistake passing a non-bandit flag so let's warn them.
-            syslog(LOG_WARNING, "[Eppo SDK]: Flag \"{$flagKey}\" does not contain a Bandit");
         }
 
         $variation = $this->getStringAssignment(
@@ -471,6 +468,13 @@ class EppoClient
             $defaultVariation
         );
 
+        if (!$isBanditFlag) {
+            // It's likely that the developer made a mistake passing a non-bandit flag so let's warn them.
+            syslog(LOG_WARNING, "[Eppo SDK]: Flag \"{$flagKey}\" does not contain a Bandit");
+
+            // Return the computed variation without doing any more Bandit work.
+            return new BanditResult($variation);
+        }
 
         $banditKey = $this->configurationLoader->getBanditByVariation($flagKey, $variation);
         if ($banditKey == null) {
@@ -503,13 +507,13 @@ class EppoClient
         $typedValue
     ): bool {
         return (
-            ($expectedVariationType == VariationType::STRING && gettype($typedValue) === "string") ||
-            ($expectedVariationType == VariationType::INTEGER && gettype($typedValue) === "integer") ||
+            ($expectedVariationType == VariationType::STRING && gettype($typedValue) === 'string') ||
+            ($expectedVariationType == VariationType::INTEGER && gettype($typedValue) === 'integer') ||
             ($expectedVariationType == VariationType::NUMERIC && in_array(
-                gettype($typedValue),
-                ["integer", "double"]
-            )) ||
-            ($expectedVariationType == VariationType::BOOLEAN && gettype($typedValue) === "boolean") ||
+                    gettype($typedValue),
+                    ['integer', 'double']
+                )) ||
+            ($expectedVariationType == VariationType::BOOLEAN && gettype($typedValue) === 'boolean') ||
             ($expectedVariationType == VariationType::JSON)); // JSON type check un-necessary here.
     }
 
@@ -551,7 +555,7 @@ class EppoClient
      * For production please use only singleton instance.
      *
      * @param ConfigurationLoader $configurationLoader
-     * @param PollerInterface $poller
+     * @param PollerInterface|null $poller
      * @param LoggerInterface|null $logger
      * @param bool|null $isGracefulMode
      * @return EppoClient
@@ -559,10 +563,17 @@ class EppoClient
      */
     public static function createTestClient(
         ConfigurationLoader $configurationLoader,
-        PollerInterface $poller,
+        PollerInterface $poller = null,
         ?LoggerInterface $logger = null,
         ?bool $isGracefulMode = false
     ): EppoClient {
+        $poller ??= new Poller(
+            self::POLL_INTERVAL_MILLIS,
+            self::JITTER_MILLIS,
+            function () use ($configurationLoader) {
+                $configurationLoader->fetchAndStoreConfigurations();
+            }
+        );
         return self::createAndInitClient($configurationLoader, $poller, $logger, $isGracefulMode);
     }
 }
