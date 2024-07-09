@@ -3,7 +3,6 @@
 namespace Eppo\Tests\DTO\Bandit;
 
 use Eppo\DTO\Bandit\AttributeSet;
-use Eppo\Exception\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 class AttributeSetTest extends TestCase
@@ -19,9 +18,6 @@ class AttributeSetTest extends TestCase
         $this->assertEquals($categoricalAttributes, $attributeSet->categoricalAttributes);
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
     public function testFromArray()
     {
         $attributes = array(

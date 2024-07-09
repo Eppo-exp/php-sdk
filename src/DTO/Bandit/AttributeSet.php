@@ -2,8 +2,6 @@
 
 namespace Eppo\DTO\Bandit;
 
-use Eppo\Exception\InvalidArgumentException;
-
 class AttributeSet
 {
     /**
@@ -30,9 +28,6 @@ class AttributeSet
     ) {
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
     public static function fromArray(array $attributes): self
     {
         $categoricalAttributes = [];
