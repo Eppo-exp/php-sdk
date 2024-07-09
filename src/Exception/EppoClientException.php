@@ -11,8 +11,13 @@ class EppoClientException extends EppoException
         parent::__construct($message, $code, $previous);
     }
 
-    public static function from(Throwable $previous = null, int $code = 0): self
+    /**
+     * @param Throwable|null $previous
+     * @param int|null $code
+     * @return self
+     */
+    public static function from(Throwable $previous = null, int $code = null): self
     {
-        return new self($previous->getMessage(), $code, $previous);
+        return new self($previous->getMessage(), $code ?? $previous->getCode(), $previous);
     }
 }
