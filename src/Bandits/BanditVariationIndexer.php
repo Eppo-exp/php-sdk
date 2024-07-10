@@ -58,7 +58,6 @@ class BanditVariationIndexer implements IBanditVariationIndexer
         }
     }
 
-
     public function getBanditByVariation($flagKey, $variation): ?string
     {
         return $this->banditFlags[$flagKey][$variation] ?? null;
@@ -66,6 +65,6 @@ class BanditVariationIndexer implements IBanditVariationIndexer
 
     public function isBanditFlag($flagKey): bool
     {
-        return array_key_exists($flagKey, $this->banditFlags);
+        return isset($this->banditFlags[$flagKey]);
     }
 }
