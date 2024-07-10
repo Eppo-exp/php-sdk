@@ -213,7 +213,7 @@ class BanditEvaluator implements IBanditEvaluator
         foreach ($coefficients as $coefficient) {
             $attributeKey = $coefficient->attributeKey;
             $attributeValue = $attributes[$attributeKey] ?? null;
-            if ($attributeValue != null && AttributeSet::isNumberType($attributeValue)) {
+            if ($attributeValue !== null && AttributeSet::isNumberType($attributeValue)) {
                 $score += $coefficient->coefficient * $attributeValue;
             } else {
                 $score += $coefficient->missingValueCoefficient;

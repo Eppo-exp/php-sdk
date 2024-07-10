@@ -115,11 +115,8 @@ class ConfigurationLoader implements IFlags, IBandits, IBanditVariationIndexer
         $this->configurationStore->setConfigurations($inflated, $bandits, $indexer);
     }
 
-    public function getBandit(?string $banditKey): ?Bandit
+    public function getBandit(string $banditKey): ?Bandit
     {
-        if ($banditKey === null) {
-            return null;
-        }
         return $this->configurationStore->getBandit($banditKey);
     }
 }
