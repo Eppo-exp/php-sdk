@@ -181,7 +181,7 @@ class BanditEvaluator implements IBanditEvaluator
             fn($key) => new ActionValue($key, $actionWeights[$key]),
             array_keys($actionWeights)
         );
-        
+
         $sortedWeights = $this->sortActionsByShards($weightPairs, $subjectKey, $flagKey);
 
         // Bucket the user
@@ -211,8 +211,9 @@ class BanditEvaluator implements IBanditEvaluator
         $score = 0.0;
         foreach ($coefficients as $coefficient) {
             $attributeKey = $coefficient->attributeKey;
-            if (array_key_exists($attributeKey, $attributes)) {
-                $score += $coefficient->coefficient * $attributes[$attributeKey];
+            $attributeValue = $attributes[$attributeKey] ?? null;
+            if ($attributeValue != null && AttributeSet::isNumberType($attributeValue)) {
+                $score += $coefficient->coefficient * $attributeValue;
             } else {
                 $score += $coefficient->missingValueCoefficient;
             }
