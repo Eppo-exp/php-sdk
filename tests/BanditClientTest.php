@@ -133,8 +133,15 @@ class BanditClientTest extends TestCase
         $banditKey = $default;
 
         $bandit = new Bandit(
-            $banditKey, 'falcon', new DateTime(), 'v123', new BanditModelData(
-                1.0, [], 0.1, 0.1
+            $banditKey,
+            'falcon',
+            new DateTime(),
+            'v123',
+            new BanditModelData(
+                1.0,
+                [],
+                0.1,
+                0.1
             )
         );
 
@@ -180,7 +187,7 @@ class BanditClientTest extends TestCase
         $mockLogger->expects($this->never())->method('logAssignment');
 
         $mockLogger->expects($this->once())->method('logBanditAction')
-            ->with($this->callback(function(BanditActionEvent $bee) use ($flagKey, $subjectKey, $banditKey) {
+            ->with($this->callback(function (BanditActionEvent $bee) use ($flagKey, $subjectKey, $banditKey) {
                 return $bee->banditKey == $banditKey &&
                     $bee->subjectKey == $subjectKey &&
                     $bee->flagKey == $flagKey &&

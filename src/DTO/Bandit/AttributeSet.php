@@ -58,4 +58,37 @@ class AttributeSet
     {
         return [...$this->numericAttributes, ...$this->categoricalAttributes];
     }
+
+    /**+
+     * @param array<string, ?object>|AttributeSet $attributes
+     * @return AttributeSet
+     */
+    public static function fromFlexibleInput(array|AttributeSet $attributes): AttributeSet
+    {
+        return $attributes instanceof AttributeSet ?
+            $attributes:
+            AttributeSet::fromArray($attributes);
+    }
+
+
+
+    /**
+     * @param array<string>|array<string, AttributeSet|array<string, array<string, ?object>>> $contexts
+     * @return array<string, AttributeSet>
+     */
+    public static function arrayFromFlexibleInput(array $contexts): array
+    {
+        $assembledContexts = [];
+        foreach ($contexts as $key => $value) {
+            if (is_string($value)) {
+                // List of action strings with no attributes
+                $assembledContexts[$value] = new self([],[]);
+            } elseif ($value instanceof AttributeSet) {
+                $assembledContexts[$key] = $value;
+            } else {
+                $assembledContexts[$key] = self::fromArray($value);
+            }
+        }
+        return $assembledContexts;
+    }
 }

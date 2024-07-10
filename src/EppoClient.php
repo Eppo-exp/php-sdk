@@ -10,7 +10,6 @@ use Eppo\Config\ConfigurationStore;
 use Eppo\Config\SDKData;
 use Eppo\DTO\Bandit\AttributeSet;
 use Eppo\DTO\Bandit\BanditResult;
-use Eppo\DTO\Bandit\ContextAttributes;
 use Eppo\DTO\Variation;
 use Eppo\DTO\VariationType;
 use Eppo\Exception\BanditEvaluationException;
@@ -420,10 +419,10 @@ class EppoClient
         try {
             // Normalize the subject and action into ContextAttributes. These functions detect the structure of the
             // user data allowing for either automatic or manual sorting into numeric and categorical attributes.
-            $subject = ContextAttributes::fromFlexibleInput($subjectKey, $subjectContext);
-            $actionContexts = ContextAttributes::arrayFromFlexibleInput($actions);
+            $subject = AttributeSet::fromFlexibleInput($subjectContext);
+            $actionContexts = AttributeSet::arrayFromFlexibleInput($actions);
 
-            return $this->getBanditDetail($flagKey, $subject, $actionContexts, $defaultVariation);
+            return $this->getBanditDetail($flagKey, $subjectKey, $subject, $actionContexts, $defaultVariation);
         } catch (EppoException $e) {
             // TODO: handle the different exception types, maybe codify error types in the generic `EppoClientException`
             if ($this->isGracefulMode) {
@@ -437,8 +436,9 @@ class EppoClient
 
     /**
      * @param string $flagKey
-     * @param ContextAttributes $subject
-     * @param array<string, ContextAttributes> $actionsWithContext
+     * @param string $subjectKey,
+     * @param AttributeSet $subject
+     * @param array<string, AttributeSet> $actionsWithContext
      * @param string $defaultVariation
      * @return BanditResult
      *
@@ -451,7 +451,8 @@ class EppoClient
      */
     private function getBanditDetail(
         string $flagKey,
-        ContextAttributes $subject,
+        string $subjectKey,
+        AttributeSet $subject,
         array $actionsWithContext,
         string $defaultVariation
     ): BanditResult {
@@ -466,8 +467,8 @@ class EppoClient
 
         $variation = $this->getStringAssignment(
             $flagKey,
-            $subject->key,
-            $subject->getAttributes()->toArray(),
+            $subjectKey,
+            $subject->toArray(),
             $defaultVariation
         );
 
@@ -493,7 +494,7 @@ class EppoClient
             );
         }
 
-        $result = $this->banditEvaluator->evaluateBandit($flagKey, $subject, $actionsWithContext, $bandit->modelData);
+        $result = $this->banditEvaluator->evaluateBandit($flagKey, $subjectKey, $subject, $actionsWithContext, $bandit->modelData);
 
         $banditActionLog = BanditActionEvent::fromEvaluation(
             $variation,
@@ -564,6 +565,7 @@ class EppoClient
      * @param PollerInterface|null $poller
      * @param LoggerInterface|null $logger
      * @param bool|null $isGracefulMode
+     * @param IBanditEvaluator|null $banditEvaluator
      * @return EppoClient
      * @throws EppoClientInitializationException
      */
