@@ -2,8 +2,17 @@
 
 namespace Eppo\DTO\Bandit;
 
+
+/**
+ * A set of attributes (@@see AttributeSet) for the context referenced by @see IContextAttributes::getKey().
+ * @see IContextAttributes for more details.
+ */
 class ContextAttributes implements IContextAttributes
 {
+    /**
+     * @param string $key The key used to identify this context. ex: Subject ID or Action Name.
+     * @param AttributeSet $attributes
+     */
     public function __construct(public readonly string $key, public readonly AttributeSet $attributes)
     {
     }
@@ -13,6 +22,11 @@ class ContextAttributes implements IContextAttributes
         return $this->attributes;
     }
 
+    /**
+     * @param string $key The key used to identify this context. ex: Subject ID or Action Name.
+     * @param array $attributes
+     * @return IContextAttributes
+     */
     public static function fromArray(string $key, array $attributes): IContextAttributes
     {
         return new self($key, AttributeSet::fromArray($attributes));
