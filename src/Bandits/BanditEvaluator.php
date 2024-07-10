@@ -65,7 +65,7 @@ class BanditEvaluator implements IBanditEvaluator
             $subjectKey,
             $subject,
             $selectedAction,
-            $actionsWithContexts[$selectedAction],
+            $selectedActionContext,
             $actionScore,
             $actionWeight,
             $banditModel->gamma,
