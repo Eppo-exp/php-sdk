@@ -2,12 +2,12 @@
 
 namespace Eppo\Tests\Bandits;
 
+use Eppo\Bandits\ActionValue;
 use Eppo\Bandits\BanditEvaluator;
 use Eppo\DTO\Bandit\ActionCoefficients;
 use Eppo\DTO\Bandit\AttributeSet;
 use Eppo\DTO\Bandit\BanditModelData;
 use Eppo\DTO\Bandit\CategoricalAttributeCoefficient;
-use Eppo\DTO\Bandit\ContextAttributes;
 use Eppo\DTO\Bandit\NumericAttributeCoefficient;
 use PHPUnit\Framework\TestCase;
 
@@ -18,7 +18,7 @@ class BanditEvaluatorTest extends TestCase
         $this->evaluator = new BanditEvaluator();
     }
 
-    public function testShouldScoreNumericAttributes()
+    public function testShouldScoreNumericAttributes(): void
     {
         $subjectAttributes = AttributeSet::fromArray(['age' => 30, 'height' => 170]);
         $numericCoefficients = [
@@ -35,7 +35,24 @@ class BanditEvaluatorTest extends TestCase
         $this->assertEquals($expectedScore, $actualScore);
     }
 
-    public function testShouldScoreNumericAttributesWithMissingValues()
+    public function testScoreNumericIgnoringNonNumericAttributes(): void
+    {
+        $numericAttributes = ['age' => 30, 'height' => 170, 'shouldBeANumber' => 'but_it_is_not'];
+        $numericCoefficients = [
+            new NumericAttributeCoefficient('shouldBeANumber', 15, 3.5)
+        ];
+
+        $expectedScore = 3.5;
+
+        $actualScore = BanditEvaluator::scoreNumericAttributes(
+            $numericCoefficients,
+            $numericAttributes
+        );
+
+        $this->assertEquals($expectedScore, $actualScore);
+    }
+
+    public function testShouldScoreNumericAttributesWithMissingValues(): void
     {
         $subjectAttributes = AttributeSet::fromArray(['age' => 30]);
         $numericCoefficients = [
@@ -53,7 +70,7 @@ class BanditEvaluatorTest extends TestCase
         $this->assertEquals($expectedScore, $actualScore);
     }
 
-    public function testShouldScoreNumericAttributesWithAllMissingValues()
+    public function testShouldScoreNumericAttributesWithAllMissingValues(): void
     {
         $subjectAttributes = new AttributeSet();
         $numericCoefficients = [
@@ -70,7 +87,7 @@ class BanditEvaluatorTest extends TestCase
         $this->assertEquals($expectedScore, $actualScore);
     }
 
-    public function testShouldScoreNumericAttributesNoCoefficients()
+    public function testShouldScoreNumericAttributesNoCoefficients(): void
     {
         $subjectAttributes = AttributeSet::fromArray(['age' => 30, 'height' => 170]);
         $numericCoefficients = [];
@@ -84,7 +101,7 @@ class BanditEvaluatorTest extends TestCase
         $this->assertEquals($expectedScore, $actualScore);
     }
 
-    public function testShouldScoreNumericAttributesNegativeCoefficients()
+    public function testShouldScoreNumericAttributesNegativeCoefficients(): void
     {
         $subjectAttributes = AttributeSet::fromArray(['age' => 30, 'height' => 170]);
         $numericCoefficients = [
@@ -141,7 +158,7 @@ class BanditEvaluatorTest extends TestCase
         $this->assertEquals($expectedScore, $actualScore);
     }
 
-    public function testScoreCategoricalAttributesAllMissing()
+    public function testScoreCategoricalAttributesAllMissing(): void
     {
         $subjectAttributes = new AttributeSet();
         $categoricalCoefficients = [
@@ -161,7 +178,7 @@ class BanditEvaluatorTest extends TestCase
     /**
      * Test scoring categorical attributes with no coefficients
      */
-    public function testScoreCategoricalAttributesNoCoefficients()
+    public function testScoreCategoricalAttributesNoCoefficients(): void
     {
         $subjectAttributes = AttributeSet::fromArray(['color' => 'red', 'size' => 'large']);
         $expectedScore = 0;
@@ -170,7 +187,7 @@ class BanditEvaluatorTest extends TestCase
         $this->assertEquals($expectedScore, $actualScore);
     }
 
-    public function testScoreCategoricalAttributesNegativeCoefficients()
+    public function testScoreCategoricalAttributesNegativeCoefficients(): void
     {
         $subjectAttributes = AttributeSet::fromArray(['color' => 'red', 'size' => 'large']);
         $categoricalCoefficients = [
@@ -191,16 +208,17 @@ class BanditEvaluatorTest extends TestCase
     /**
      * Test weighing a single action
      */
-    public function testWeighOneAction()
+    public function testWeighOneAction(): void
     {
         $scores = ['action' => 87.0];
         $expectedWeights = ['action' => 1.0];
 
         $actualWeights = BanditEvaluator::weighActions($scores, 10, 0.1);
+        $this->assertEquals(array_keys($expectedWeights), array_keys($actualWeights));
         $this->assertEquals($expectedWeights, $actualWeights);
     }
 
-    public function testWeighMultipleActionsToFloor()
+    public function testWeighMultipleActionsToFloor(): void
     {
         $scores = array(
             'action' => 87.0,
@@ -227,10 +245,12 @@ class BanditEvaluatorTest extends TestCase
         );
 
         $actualWeights = BanditEvaluator::weighActions($scores, $gamma, $minProbability);
-        $this->assertEquals($expectedWeights, $actualWeights);
+
+        // Ordering of the weights does not matter.
+        $this->assertAssociativeArraysEqual($expectedWeights, $actualWeights);
     }
 
-    public function testWeighMultipleActionsSmallSpread()
+    public function testWeighMultipleActionsSmallSpread(): void
     {
         $scores = array(
             'Ovechkin' => 8.0,
@@ -258,7 +278,7 @@ class BanditEvaluatorTest extends TestCase
         $this->assertEquals($expectedOrder, $orderedKeys);
     }
 
-    public function testWeighWithGamma()
+    public function testWeighWithGamma(): void
     {
         $scores = array(
             'action' => 2.0,
@@ -283,7 +303,7 @@ class BanditEvaluatorTest extends TestCase
         ); // Non-winner weight higher with larger gamma
     }
 
-    public function testWeighEvenField()
+    public function testWeighEvenField(): void
     {
         $scores = array(
             'action1' => 0.5,
@@ -302,29 +322,72 @@ class BanditEvaluatorTest extends TestCase
         $gamma = 0.1;
         $minProbability = 0.1;
 
-        $weights = BanditEvaluator::weighActions($scores, $gamma, $minProbability);
-        $this->assertEquals($expectedWeights, $weights);
+        $actualWeights = BanditEvaluator::weighActions($scores, $gamma, $minProbability);
+
+        // Ordering of the weights does not matter.
+        $this->assertAssociativeArraysEqual($expectedWeights, $actualWeights);
     }
 
-    public function testEvaluateBandit()
+    /**
+     * Compare two associative arrays without order mattering.
+     * @param array $expectedArray
+     * @param array $actualArray
+     * @return void
+     */
+    private function assertAssociativeArraysEqual(array $expectedArray, array $actualArray): void
+    {
+        // Keys must be the same, but not necessarily in the same order; also asserts the arrays are the same length.
+        $this->assertEqualsCanonicalizing(array_keys($expectedArray), array_keys($actualArray));
+        foreach ($expectedArray as $key => $value) {
+            $this->assertEquals($value, $actualArray[$key]);
+        }
+    }
+
+    public function testTiebreakByActionName(): void
+    {
+        // Deliberately not in alphabetical order.
+        $weights = [
+            new ActionValue('gammaAction', 0.25),
+            new ActionValue('omegaAction', 0.25),
+            new ActionValue('alphaAction', 0.25),
+            new ActionValue('deltaAction', 0.25),
+        ];
+
+        $expectedWeights = [
+            new ActionValue('alphaAction', 0.25),
+            new ActionValue('deltaAction', 0.25),
+            new ActionValue('gammaAction', 0.25),
+            new ActionValue('omegaAction', 0.25),
+        ];
+
+        // Use only 1 shard so every item gets the same bucket. This forces the comparison based on action name.
+        $evaluator = new BanditEvaluator(1);
+
+        $actualWeights = $evaluator->sortActionsByShards($weights, 'subject', 'flag');
+
+        $this->assertEquals(array_keys($expectedWeights), array_keys($actualWeights));
+        $this->assertEquals($expectedWeights, $actualWeights);
+    }
+
+    public function testEvaluateBandit(): void
     {
         // Mock data (constants, arrays, objects)
         $flagKey = 'test_flag';
         $subjectKey = 'test_subject';
 
-        $subject = ContextAttributes::fromArray($subjectKey, [
+        $subject = AttributeSet::fromArray([
             'age' => 25.0,
             'location' => 'US',
         ]);
 
         $actionContexts = [
             'action1' =>
-                ContextAttributes::fromArray('action1', [
+                AttributeSet::fromArray([
                     'price' => 10.0,
                     'category' => 'A',
                 ]),
             'action2' =>
-                ContextAttributes::fromArray('action2', [
+                AttributeSet::fromArray([
                     'price' => 20.0,
                     'category' => 'B',
                 ])
@@ -332,33 +395,39 @@ class BanditEvaluatorTest extends TestCase
 
         $coefficients = [
             'action1' => new ActionCoefficients('action1', 0.5, [
-                new NumericAttributeCoefficient('age', 0.1, 0.0)], [
+                new NumericAttributeCoefficient('age', 0.1, 0.0)
+            ], [
                 new CategoricalAttributeCoefficient(
                     'location',
                     0.0,
                     ['US' => 0.2]
-                )], [
-                new NumericAttributeCoefficient('price', 0.05, 0.0)], [
+                )
+            ], [
+                new NumericAttributeCoefficient('price', 0.05, 0.0)
+            ], [
                 new CategoricalAttributeCoefficient(
                     'category',
                     0.0,
                     ['A' => 0.3]
                 ),
-                ]),
+            ]),
             'action2' => new ActionCoefficients('action2', 0.3, [
-                new NumericAttributeCoefficient('age', 0.1, 0.0)], [
+                new NumericAttributeCoefficient('age', 0.1, 0.0)
+            ], [
                 new CategoricalAttributeCoefficient(
                     'location',
                     0.0,
                     ['US' => 0.2]
-                )], [
-                new NumericAttributeCoefficient('price', 0.05, 0.0)], [
+                )
+            ], [
+                new NumericAttributeCoefficient('price', 0.05, 0.0)
+            ], [
                 new CategoricalAttributeCoefficient(
                     'category',
                     0.0,
                     ['B' => 0.3]
                 ),
-                ]),
+            ]),
         ];
 
         $banditModel = new BanditModelData(
@@ -370,7 +439,7 @@ class BanditEvaluatorTest extends TestCase
 
         $evaluator = new BanditEvaluator(10_000);
 
-        $evaluation = $evaluator->evaluateBandit($flagKey, $subject, $actionContexts, $banditModel);
+        $evaluation = $evaluator->evaluateBandit($flagKey, $subjectKey, $subject, $actionContexts, $banditModel);
 
         $this->assertNotNull($evaluation);
 
@@ -379,11 +448,11 @@ class BanditEvaluatorTest extends TestCase
 
 
         $this->assertEquals(
-            $subject->getAttributes()->numericAttributes,
+            $subject->numericAttributes,
             $evaluation->subjectAttributes->numericAttributes
         );
         $this->assertEquals(
-            $subject->getAttributes()->categoricalAttributes,
+            $subject->categoricalAttributes,
             $evaluation->subjectAttributes->categoricalAttributes
         );
 
