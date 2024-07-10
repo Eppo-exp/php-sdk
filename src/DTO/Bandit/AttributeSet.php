@@ -32,6 +32,11 @@ class AttributeSet
         foreach ($numericAttributes as $key => $value) {
             if (self::isNumberType($value)) {
                 $numeric[$key] = $value;
+            } else {
+                syslog(
+                    LOG_WARNING,
+                    "[Eppo SDK] non-numeric attribute passed in `\$numericAttributes` for key $key"
+                );
             }
         }
         $this->numericAttributes = $numeric;
