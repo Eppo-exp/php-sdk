@@ -182,23 +182,14 @@ class BanditEvaluator implements IBanditEvaluator
             array_keys($actionWeights)
         );
 
-        // usort sorts in place.
-        usort(
-            $weightPairs,
-            function (ActionValue $a, ActionValue $b) use ($subjectKey, $flagKey) {
-                $aValue = Sharder::getShard("$flagKey-$subjectKey-{$a->action}", $this->totalShards);
-                $bValue = Sharder::getShard("$flagKey-$subjectKey-{$b->action}", $this->totalShards);
-
-                return $aValue === $bValue ? 0 : (($aValue < $bValue) ? -1 : 1);
-            }
-        );
+        $sortedWeights = $this->sortActionsByShards($weightPairs, $subjectKey, $flagKey);
 
         // Bucket the user
         $shard = Sharder::getShard("$flagKey-$subjectKey", $this->totalShards);
         $cumulativeWeight = 0.0;
         $shardValue = $shard / $this->totalShards;
 
-        foreach ($weightPairs as $weightData) {
+        foreach ($sortedWeights as $weightData) {
             $cumulativeWeight += $weightData->value;
             if ($cumulativeWeight > $shardValue) {
                 return $weightData->action;
@@ -247,5 +238,29 @@ class BanditEvaluator implements IBanditEvaluator
             }
         }
         return $score;
+    }
+
+    /**
+     * @param ActionValue[] $weightPairs
+     * @param string $subjectKey
+     * @param string $flagKey
+     * @return ActionValue[]
+     */
+    public function sortActionsByShards(array $weightPairs, string $subjectKey, string $flagKey): array
+    {
+        // usort sorts in place.
+        usort(
+            $weightPairs,
+            function (ActionValue $a, ActionValue $b) use ($subjectKey, $flagKey) {
+                $aValue = Sharder::getShard("$flagKey-$subjectKey-{$a->action}", $this->totalShards);
+                $bValue = Sharder::getShard("$flagKey-$subjectKey-{$b->action}", $this->totalShards);
+
+                if ($aValue == $bValue) {
+                    return $a->action <=> $b->action;
+                }
+                return $aValue <=> $bValue;
+            }
+        );
+        return $weightPairs;
     }
 }
