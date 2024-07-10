@@ -34,7 +34,7 @@ class BanditVariationIndexer implements IBanditVariationIndexer
                     array_key_exists(
                         $variationValue,
                         $this->banditFlags[$flagKey]
-                    ) && $this->banditFlags[$flagKey][$variationValue] !== $banditVariation->key
+                    ) && $this->banditFlags[$flagKey][$variationValue] !== $banditVariation->banditKey
                 ) {
                     throw new InvalidConfigurationException(
                         "Ambiguous mapping for flag: '{$flagKey}', variation: '{$variationValue}'."
@@ -42,7 +42,7 @@ class BanditVariationIndexer implements IBanditVariationIndexer
                 }
 
                 // Update the index for this triple (flagKey, variationValue) => banditKey
-                $this->banditFlags[$flagKey][$variationValue] = $banditVariation->key;
+                $this->banditFlags[$flagKey][$variationValue] = $banditVariation->banditKey;
             }
         }
     }

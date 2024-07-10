@@ -5,7 +5,7 @@ namespace Eppo\DTO\Bandit;
 class BanditVariation
 {
     public function __construct(
-        public readonly string $key,
+        public readonly string $banditKey, // called `key` in API response and other SDKs.
         public readonly string $flagKey,
         public readonly string $variationKey,
         public readonly string $variationValue
