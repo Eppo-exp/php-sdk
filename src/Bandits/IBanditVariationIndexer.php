@@ -10,17 +10,17 @@ interface IBanditVariationIndexer
     /**
      *  Gets the bandit key by flag key and variation.
      *
-     * @param $flagKey
-     * @param $variation
+     * @param string $flagKey
+     * @param string $variation
      * @return string|null
      */
-    public function getBanditByVariation($flagKey, $variation): ?string;
+    public function getBanditByVariation(string $flagKey, string $variation): ?string;
 
     /**
      * Determines whether the given flag is associated with any bandits.
      *
-     * @param $flagKey
+     * @param string $flagKey
      * @return bool
      */
-    public function isBanditFlag($flagKey): bool;
+    public function isBanditFlag(string $flagKey): bool;
 }

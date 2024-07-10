@@ -7,6 +7,17 @@ use Eppo\Exception\InvalidConfigurationException;
 
 class BanditVariationIndexer implements IBanditVariationIndexer
 {
+    // By just serializing the indexed variations, we cut down on cache size.
+    public function __serialize(): array
+    {
+        return $this->banditFlags;
+    }
+
+    public function __unserialize(array $data): void
+    {
+        $this->banditFlags = $data;
+    }
+
     /**
      * Map of flag key+variation value => bandit
      * $_banditFlags[$flagKey][$variationValue] = $banditKey;
@@ -34,15 +45,15 @@ class BanditVariationIndexer implements IBanditVariationIndexer
                     array_key_exists(
                         $variationValue,
                         $this->banditFlags[$flagKey]
-                    ) && $this->banditFlags[$flagKey][$variationValue] !== $banditVariation->key
+                    ) && $this->banditFlags[$flagKey][$variationValue] !== $banditVariation->banditKey
                 ) {
                     throw new InvalidConfigurationException(
                         "Ambiguous mapping for flag: '{$flagKey}', variation: '{$variationValue}'."
                     );
                 }
 
-                // Set the index for this triple (flagKey, variationValue) => banditKey
-                $this->banditFlags[$flagKey][$variationValue] = $banditVariation->key;
+                // Update the index for this triple (flagKey, variationValue) => banditKey
+                $this->banditFlags[$flagKey][$variationValue] = $banditVariation->banditKey;
             }
         }
     }

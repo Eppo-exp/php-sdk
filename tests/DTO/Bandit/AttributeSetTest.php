@@ -67,4 +67,16 @@ class AttributeSetTest extends TestCase
         $this->assertEquals($expectedNumericAttributes, $attributeSet->numericAttributes);
         $this->assertEquals($expectedCategoricalAttributes, $attributeSet->categoricalAttributes);
     }
+
+    public function testDropsNonNumericAttributes(): void
+    {
+        $numericAttributes = array('age' => 25, 'height' => 1.80, 'mistake' => 'whoops');
+        $expectedNumericAttributes = array('age' => 25, 'height' => 1.80);
+        $categoricalAttributes = array('city' => 'New York', 'subscribed' => true, 'zip' => 90210);
+
+        $attributeSet = new AttributeSet($numericAttributes, $categoricalAttributes);
+
+        $this->assertEquals($expectedNumericAttributes, $attributeSet->numericAttributes);
+        $this->assertEquals($categoricalAttributes, $attributeSet->categoricalAttributes);
+    }
 }

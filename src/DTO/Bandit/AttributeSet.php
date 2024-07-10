@@ -17,15 +17,29 @@ class AttributeSet
      */
     private const NUMERIC_TYPES = ["double", "integer"];
 
+    public readonly array $numericAttributes;
 
     /**
-     * @param array<string, float> $numericAttributes
+     * @param array<string, int|float> $numericAttributes
      * @param array<string, bool|float|int|string> $categoricalAttributes
      */
     public function __construct(
-        public readonly array $numericAttributes = [],
+        array $numericAttributes = [],
         public readonly array $categoricalAttributes = []
     ) {
+        // Drop any non numbers in the numeric attributes.
+        $numeric = [];
+        foreach ($numericAttributes as $key => $value) {
+            if (self::isNumberType($value)) {
+                $numeric[$key] = $value;
+            } else {
+                syslog(
+                    LOG_WARNING,
+                    "[Eppo SDK] non-numeric attribute passed in `\$numericAttributes` for key $key"
+                );
+            }
+        }
+        $this->numericAttributes = $numeric;
     }
 
     public static function fromArray(array $attributes): self
@@ -33,24 +47,38 @@ class AttributeSet
         $categoricalAttributes = [];
         $numericAttributes = [];
         foreach ($attributes as $key => $value) {
-            if (
-                in_array(
-                    gettype($value),
-                    self::NUMERIC_TYPES
-                )
-            ) {
+            if (self::isNumberType($value)) {
                 $numericAttributes[$key] = $value;
-            } elseif (
-                in_array(
-                    gettype($value),
-                    self::CATEGORICAL_TYPES
-                )
-            ) {
+            } elseif (self::isCategoricalType($value)) {
                 $categoricalAttributes[$key] = $value;
             } else {
                 syslog(LOG_WARNING, "[Eppo SDK] Unsupported attribute type: " . gettype($value));
             }
         }
         return new self($numericAttributes, $categoricalAttributes);
+    }
+
+    /**
+     * @param mixed $value
+     * @return bool
+     */
+    public static function isCategoricalType(mixed $value): bool
+    {
+        return in_array(
+            gettype($value),
+            self::CATEGORICAL_TYPES
+        );
+    }
+
+    /**
+     * @param mixed $value
+     * @return bool
+     */
+    public static function isNumberType(mixed $value): bool
+    {
+        return in_array(
+            gettype($value),
+            self::NUMERIC_TYPES
+        );
     }
 }
