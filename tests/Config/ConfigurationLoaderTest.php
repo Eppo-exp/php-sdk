@@ -6,9 +6,8 @@ use Eppo\APIRequestWrapper;
 use Eppo\Cache\DefaultCacheFactory;
 use Eppo\Config\ConfigurationLoader;
 use Eppo\Config\ConfigurationStore;
+use Eppo\DTO\Bandit\Bandit;
 use Eppo\DTO\Flag;
-use Eppo\FlagConfigurationLoader;
-use Eppo\IConfigurationStore;
 use Eppo\UFCParser;
 use Http\Discovery\Psr17Factory;
 use Http\Discovery\Psr18Client;
@@ -33,7 +32,22 @@ class ConfigurationLoaderTest extends TestCase
         $flagsRaw = file_get_contents(self::MOCK_RESPONSE_FILENAME);
         $flagsJson = json_decode($flagsRaw, true);
         $flags = array_map(fn($flag) => (new UFCParser())->parseFlag($flag), $flagsJson['flags']);
-        $banditsRaw = '{"bandits": {}}';
+        $banditsRaw = '{
+            "bandits": {
+                "cold_start_bandit": {
+                    "banditKey": "cold_start_bandit",
+                    "modelName": "falcon",
+                    "updatedAt": "2023-09-13T04:52:06.462Z",
+                    "modelVersion": "cold start",
+                    "modelData": {
+                        "gamma": 1.0,
+                        "defaultActionScore": 0.0,
+                        "actionProbabilityFloor": 0.0,
+                        "coefficients": {}
+                    }
+                }
+            }
+        }';
 
         $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs(
             ['', [], new Psr18Client(), new Psr17Factory()]
@@ -64,6 +78,11 @@ class ConfigurationLoaderTest extends TestCase
             'cold_start_bandit',
             $loader->getBanditByVariation('cold_start_bandit_flag', 'cold_start_bandit')
         );
+
+        $bandit = $loader->getBandit('cold_start_bandit');
+        $this->assertNotNull($bandit);
+        $this->assertInstanceOf(Bandit::class, $bandit);
+        $this->assertEquals('cold_start_bandit', $bandit->banditKey);
     }
 
     public function testLoadsOnGet(): void

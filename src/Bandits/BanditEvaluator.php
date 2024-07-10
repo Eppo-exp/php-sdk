@@ -6,7 +6,6 @@ use Eppo\DTO\Bandit\ActionCoefficients;
 use Eppo\DTO\Bandit\AttributeSet;
 use Eppo\DTO\Bandit\BanditEvaluation;
 use Eppo\DTO\Bandit\BanditModelData;
-use Eppo\DTO\Bandit\ContextAttributes;
 use Eppo\DTO\Bandit\NumericAttributeCoefficient;
 use Eppo\Exception\BanditEvaluationException;
 use Eppo\Exception\InvalidArgumentException;
@@ -21,8 +20,9 @@ class BanditEvaluator implements IBanditEvaluator
 
     /**
      * @param string $flagKey
-     * @param ContextAttributes $subject
-     * @param array<string, ContextAttributes> $actionsWithContexts
+     * @param string $subjectKey
+     * @param AttributeSet $subject
+     * @param array<string, AttributeSet> $actionsWithContexts
      * @param BanditModelData $banditModel
      * @return BanditEvaluation
      * @throws BanditEvaluationException
@@ -30,7 +30,8 @@ class BanditEvaluator implements IBanditEvaluator
      */
     public function evaluateBandit(
         string $flagKey,
-        ContextAttributes $subject,
+        string $subjectKey,
+        AttributeSet $subject,
         array $actionsWithContexts,
         BanditModelData $banditModel
     ): BanditEvaluation {
@@ -39,7 +40,7 @@ class BanditEvaluator implements IBanditEvaluator
         }
 
         // Score all potential actions.
-        $actionScores = self::scoreActions($subject->getAttributes(), $actionsWithContexts, $banditModel);
+        $actionScores = self::scoreActions($subject, $actionsWithContexts, $banditModel);
 
         // Assign action weights using FALCON.
         $actionWeights = self::weighActions(
@@ -49,7 +50,7 @@ class BanditEvaluator implements IBanditEvaluator
         );
 
         // Shuffle the actions and select one based on the subject's bucket.
-        $selectedAction = self::selectAction($flagKey, $subject->getKey(), $actionWeights);
+        $selectedAction = self::selectAction($flagKey, $subjectKey, $actionWeights);
 
         $selectedActionContext = $actionsWithContexts[$selectedAction];
         $actionScore = $actionScores[$selectedAction];
@@ -61,10 +62,10 @@ class BanditEvaluator implements IBanditEvaluator
 
         return new BanditEvaluation(
             $flagKey,
-            $subject->getKey(),
-            $subject->getAttributes(),
+            $subjectKey,
+            $subject,
             $selectedAction,
-            $actionsWithContexts[$selectedAction]->getAttributes(),
+            $actionsWithContexts[$selectedAction],
             $actionScore,
             $actionWeight,
             $banditModel->gamma,
@@ -74,7 +75,7 @@ class BanditEvaluator implements IBanditEvaluator
 
     /**
      * @param AttributeSet $subjectAttributes
-     * @param array<string, ContextAttributes> $actionsWithContexts
+     * @param array<string, AttributeSet> $actionsWithContexts
      * @param BanditModelData $banditModel
      * @return array<string, float>
      */
@@ -84,11 +85,11 @@ class BanditEvaluator implements IBanditEvaluator
         BanditModelData $banditModel
     ): array {
         $scores = [];
-        foreach ($actionsWithContexts as $key => $actionContext) {
+        foreach ($actionsWithContexts as $key => $actionAttributes) {
             if (isset($banditModel->coefficients[$key])) {
                 $scores[$key] = self::scoreAction(
                     $subjectAttributes,
-                    $actionContext->getAttributes(),
+                    $actionAttributes,
                     $banditModel->coefficients[$key]
                 );
             } else {
@@ -182,23 +183,14 @@ class BanditEvaluator implements IBanditEvaluator
             array_keys($actionWeights)
         );
 
-        // usort sorts in place.
-        usort(
-            $weightPairs,
-            function (ActionValue $a, ActionValue $b) use ($subjectKey, $flagKey) {
-                $aValue = Sharder::getShard("$flagKey-$subjectKey-{$a->action}", $this->totalShards);
-                $bValue = Sharder::getShard("$flagKey-$subjectKey-{$b->action}", $this->totalShards);
-
-                return $aValue === $bValue ? 0 : (($aValue < $bValue) ? -1 : 1);
-            }
-        );
+        $sortedWeights = $this->sortActionsByShards($weightPairs, $subjectKey, $flagKey);
 
         // Bucket the user
         $shard = Sharder::getShard("$flagKey-$subjectKey", $this->totalShards);
         $cumulativeWeight = 0.0;
         $shardValue = $shard / $this->totalShards;
 
-        foreach ($weightPairs as $weightData) {
+        foreach ($sortedWeights as $weightData) {
             $cumulativeWeight += $weightData->value;
             if ($cumulativeWeight > $shardValue) {
                 return $weightData->action;
@@ -220,8 +212,9 @@ class BanditEvaluator implements IBanditEvaluator
         $score = 0.0;
         foreach ($coefficients as $coefficient) {
             $attributeKey = $coefficient->attributeKey;
-            if (array_key_exists($attributeKey, $attributes)) {
-                $score += $coefficient->coefficient * $attributes[$attributeKey];
+            $attributeValue = $attributes[$attributeKey] ?? null;
+            if ($attributeValue != null && AttributeSet::isNumberType($attributeValue)) {
+                $score += $coefficient->coefficient * $attributeValue;
             } else {
                 $score += $coefficient->missingValueCoefficient;
             }
@@ -247,5 +240,29 @@ class BanditEvaluator implements IBanditEvaluator
             }
         }
         return $score;
+    }
+
+    /**
+     * @param ActionValue[] $weightPairs
+     * @param string $subjectKey
+     * @param string $flagKey
+     * @return ActionValue[]
+     */
+    public function sortActionsByShards(array $weightPairs, string $subjectKey, string $flagKey): array
+    {
+        // usort sorts in place.
+        usort(
+            $weightPairs,
+            function (ActionValue $a, ActionValue $b) use ($subjectKey, $flagKey) {
+                $aValue = Sharder::getShard("$flagKey-$subjectKey-{$a->action}", $this->totalShards);
+                $bValue = Sharder::getShard("$flagKey-$subjectKey-{$b->action}", $this->totalShards);
+
+                if ($aValue == $bValue) {
+                    return $a->action <=> $b->action;
+                }
+                return $aValue <=> $bValue;
+            }
+        );
+        return $weightPairs;
     }
 }

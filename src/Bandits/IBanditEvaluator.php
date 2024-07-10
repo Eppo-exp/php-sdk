@@ -2,22 +2,24 @@
 
 namespace Eppo\Bandits;
 
+use Eppo\DTO\Bandit\AttributeSet;
 use Eppo\DTO\Bandit\BanditEvaluation;
 use Eppo\DTO\Bandit\BanditModelData;
-use Eppo\DTO\Bandit\ContextAttributes;
 
 interface IBanditEvaluator
 {
     /**
      * @param string $flagKey
-     * @param ContextAttributes $subject
-     * @param array<string, ContextAttributes> $actionsWithContexts
+     * @param string $subjectKey
+     * @param AttributeSet $subject
+     * @param array<string, AttributeSet> $actionsWithContexts
      * @param BanditModelData $banditModel
      * @return BanditEvaluation
      */
     public function evaluateBandit(
         string $flagKey,
-        ContextAttributes $subject,
+        string $subjectKey,
+        AttributeSet $subject,
         array $actionsWithContexts,
         BanditModelData $banditModel
     ): BanditEvaluation;
