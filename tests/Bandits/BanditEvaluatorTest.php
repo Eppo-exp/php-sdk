@@ -448,11 +448,11 @@ class BanditEvaluatorTest extends TestCase
 
 
         $this->assertEquals(
-            $subject->getAttributes()->numericAttributes,
+            $subject->numericAttributes,
             $evaluation->subjectAttributes->numericAttributes
         );
         $this->assertEquals(
-            $subject->getAttributes()->categoricalAttributes,
+            $subject->categoricalAttributes,
             $evaluation->subjectAttributes->categoricalAttributes
         );
 

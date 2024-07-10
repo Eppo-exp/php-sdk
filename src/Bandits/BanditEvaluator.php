@@ -40,7 +40,7 @@ class BanditEvaluator implements IBanditEvaluator
         }
 
         // Score all potential actions.
-        $actionScores = self::scoreActions($subject->getAttributes(), $actionsWithContexts, $banditModel);
+        $actionScores = self::scoreActions($subject, $actionsWithContexts, $banditModel);
 
         // Assign action weights using FALCON.
         $actionWeights = self::weighActions(
@@ -50,7 +50,7 @@ class BanditEvaluator implements IBanditEvaluator
         );
 
         // Shuffle the actions and select one based on the subject's bucket.
-        $selectedAction = self::selectAction($flagKey, $subject->getKey(), $actionWeights);
+        $selectedAction = self::selectAction($flagKey, $subjectKey, $actionWeights);
 
         $selectedActionContext = $actionsWithContexts[$selectedAction];
         $actionScore = $actionScores[$selectedAction];
@@ -62,10 +62,10 @@ class BanditEvaluator implements IBanditEvaluator
 
         return new BanditEvaluation(
             $flagKey,
-            $subject->getKey(),
-            $subject->getAttributes(),
+            $subjectKey,
+            $subject,
             $selectedAction,
-            $actionsWithContexts[$selectedAction]->getAttributes(),
+            $actionsWithContexts[$selectedAction],
             $actionScore,
             $actionWeight,
             $banditModel->gamma,
