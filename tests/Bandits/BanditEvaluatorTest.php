@@ -8,7 +8,6 @@ use Eppo\DTO\Bandit\ActionCoefficients;
 use Eppo\DTO\Bandit\AttributeSet;
 use Eppo\DTO\Bandit\BanditModelData;
 use Eppo\DTO\Bandit\CategoricalAttributeCoefficient;
-use Eppo\DTO\Bandit\ContextAttributes;
 use Eppo\DTO\Bandit\NumericAttributeCoefficient;
 use PHPUnit\Framework\TestCase;
 
@@ -376,19 +375,19 @@ class BanditEvaluatorTest extends TestCase
         $flagKey = 'test_flag';
         $subjectKey = 'test_subject';
 
-        $subject = ContextAttributes::fromArray($subjectKey, [
+        $subject = AttributeSet::fromArray([
             'age' => 25.0,
             'location' => 'US',
         ]);
 
         $actionContexts = [
             'action1' =>
-                ContextAttributes::fromArray('action1', [
+                AttributeSet::fromArray([
                     'price' => 10.0,
                     'category' => 'A',
                 ]),
             'action2' =>
-                ContextAttributes::fromArray('action2', [
+                AttributeSet::fromArray([
                     'price' => 20.0,
                     'category' => 'B',
                 ])
@@ -440,7 +439,7 @@ class BanditEvaluatorTest extends TestCase
 
         $evaluator = new BanditEvaluator(10_000);
 
-        $evaluation = $evaluator->evaluateBandit($flagKey, $subject, $actionContexts, $banditModel);
+        $evaluation = $evaluator->evaluateBandit($flagKey, $subjectKey, $subject, $actionContexts, $banditModel);
 
         $this->assertNotNull($evaluation);
 

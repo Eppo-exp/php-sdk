@@ -6,7 +6,6 @@ use Eppo\DTO\Bandit\ActionCoefficients;
 use Eppo\DTO\Bandit\AttributeSet;
 use Eppo\DTO\Bandit\BanditEvaluation;
 use Eppo\DTO\Bandit\BanditModelData;
-use Eppo\DTO\Bandit\ContextAttributes;
 use Eppo\DTO\Bandit\NumericAttributeCoefficient;
 use Eppo\Exception\BanditEvaluationException;
 use Eppo\Exception\InvalidArgumentException;
@@ -21,8 +20,9 @@ class BanditEvaluator implements IBanditEvaluator
 
     /**
      * @param string $flagKey
-     * @param ContextAttributes $subject
-     * @param array<string, ContextAttributes> $actionsWithContexts
+     * @param string $subjectKey
+     * @param AttributeSet $subject
+     * @param array<string, AttributeSet> $actionsWithContexts
      * @param BanditModelData $banditModel
      * @return BanditEvaluation
      * @throws BanditEvaluationException
@@ -30,7 +30,8 @@ class BanditEvaluator implements IBanditEvaluator
      */
     public function evaluateBandit(
         string $flagKey,
-        ContextAttributes $subject,
+        string $subjectKey,
+        AttributeSet $subject,
         array $actionsWithContexts,
         BanditModelData $banditModel
     ): BanditEvaluation {
@@ -74,7 +75,7 @@ class BanditEvaluator implements IBanditEvaluator
 
     /**
      * @param AttributeSet $subjectAttributes
-     * @param array<string, ContextAttributes> $actionsWithContexts
+     * @param array<string, AttributeSet> $actionsWithContexts
      * @param BanditModelData $banditModel
      * @return array<string, float>
      */
@@ -84,11 +85,11 @@ class BanditEvaluator implements IBanditEvaluator
         BanditModelData $banditModel
     ): array {
         $scores = [];
-        foreach ($actionsWithContexts as $key => $actionContext) {
+        foreach ($actionsWithContexts as $key => $actionAttributes) {
             if (isset($banditModel->coefficients[$key])) {
                 $scores[$key] = self::scoreAction(
                     $subjectAttributes,
-                    $actionContext->getAttributes(),
+                    $actionAttributes,
                     $banditModel->coefficients[$key]
                 );
             } else {
