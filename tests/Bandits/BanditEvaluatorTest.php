@@ -2,6 +2,7 @@
 
 namespace Eppo\Tests\Bandits;
 
+use Eppo\Bandits\ActionValue;
 use Eppo\Bandits\BanditEvaluator;
 use Eppo\DTO\Bandit\ActionCoefficients;
 use Eppo\DTO\Bandit\AttributeSet;
@@ -197,6 +198,7 @@ class BanditEvaluatorTest extends TestCase
         $expectedWeights = ['action' => 1.0];
 
         $actualWeights = BanditEvaluator::weighActions($scores, 10, 0.1);
+        $this->assertEquals(array_keys($expectedWeights), array_keys($actualWeights));
         $this->assertEquals($expectedWeights, $actualWeights);
     }
 
@@ -227,6 +229,8 @@ class BanditEvaluatorTest extends TestCase
         );
 
         $actualWeights = BanditEvaluator::weighActions($scores, $gamma, $minProbability);
+
+        $this->assertEquals(array_keys($expectedWeights), array_keys($actualWeights));
         $this->assertEquals($expectedWeights, $actualWeights);
     }
 
@@ -302,8 +306,36 @@ class BanditEvaluatorTest extends TestCase
         $gamma = 0.1;
         $minProbability = 0.1;
 
-        $weights = BanditEvaluator::weighActions($scores, $gamma, $minProbability);
-        $this->assertEquals($expectedWeights, $weights);
+        $actualWeights = BanditEvaluator::weighActions($scores, $gamma, $minProbability);
+
+        $this->assertEquals(array_keys($expectedWeights), array_keys($actualWeights));
+        $this->assertEquals($expectedWeights, $actualWeights);
+    }
+
+    public function testTiebreakByActionName() : void {
+
+        // Deliberately not in alphabetical order.
+        $weights = [
+           new ActionValue('gammaAction', 0.25),
+            new ActionValue('omegaAction', 0.25),
+            new ActionValue('alphaAction', 0.25),
+            new ActionValue('deltaAction', 0.25),
+        ];
+
+        $expectedWeights = [
+            new ActionValue('alphaAction', 0.25),
+            new ActionValue('deltaAction', 0.25),
+            new ActionValue('gammaAction', 0.25),
+            new ActionValue('omegaAction', 0.25),
+        ];
+
+        // Use only 1 shard so every item gets the same bucket. This forces the comparison based on action name.
+        $evaluator = new BanditEvaluator(1);
+
+        $actualWeights = $evaluator->sortActionsByShards($weights, 'subject', 'flag');
+
+        $this->assertEquals(array_keys($expectedWeights), array_keys($actualWeights));
+        $this->assertEquals($expectedWeights, $actualWeights);
     }
 
     public function testEvaluateBandit()
