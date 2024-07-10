@@ -94,7 +94,7 @@ class AttributeSet
     public static function fromFlexibleInput(array|AttributeSet $attributes): AttributeSet
     {
         return $attributes instanceof AttributeSet ?
-            $attributes:
+            $attributes :
             AttributeSet::fromArray($attributes);
     }
 
@@ -110,7 +110,7 @@ class AttributeSet
         foreach ($contexts as $key => $value) {
             if (is_string($value)) {
                 // List of action strings with no attributes
-                $assembledContexts[$value] = new self([],[]);
+                $assembledContexts[$value] = new self([], []);
             } elseif ($value instanceof AttributeSet) {
                 $assembledContexts[$key] = $value;
             } else {

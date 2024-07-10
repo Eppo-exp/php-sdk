@@ -139,7 +139,7 @@ class EppoClient
     ): EppoClient {
         try {
             $configLoader->reloadConfigurationIfExpired();
-        } catch (HttpRequestException|InvalidApiKeyException $e) {
+        } catch (HttpRequestException | InvalidApiKeyException $e) {
             throw new EppoClientInitializationException(
                 'Unable to initialize Eppo Client: ' . $e->getMessage()
             );
@@ -436,7 +436,7 @@ class EppoClient
 
     /**
      * @param string $flagKey
-     * @param string $subjectKey,
+     * @param string $subjectKey ,
      * @param AttributeSet $subject
      * @param array<string, AttributeSet> $actionsWithContext
      * @param string $defaultVariation
@@ -494,7 +494,13 @@ class EppoClient
             );
         }
 
-        $result = $this->banditEvaluator->evaluateBandit($flagKey, $subjectKey, $subject, $actionsWithContext, $bandit->modelData);
+        $result = $this->banditEvaluator->evaluateBandit(
+            $flagKey,
+            $subjectKey,
+            $subject,
+            $actionsWithContext,
+            $bandit->modelData
+        );
 
         $banditActionLog = BanditActionEvent::fromEvaluation(
             $variation,
@@ -517,9 +523,9 @@ class EppoClient
             ($expectedVariationType == VariationType::STRING && gettype($typedValue) === 'string') ||
             ($expectedVariationType == VariationType::INTEGER && gettype($typedValue) === 'integer') ||
             ($expectedVariationType == VariationType::NUMERIC && in_array(
-                    gettype($typedValue),
-                    ['integer', 'double']
-                )) ||
+                gettype($typedValue),
+                ['integer', 'double']
+            )) ||
             ($expectedVariationType == VariationType::BOOLEAN && gettype($typedValue) === 'boolean') ||
             ($expectedVariationType == VariationType::JSON)); // JSON type check un-necessary here.
     }
