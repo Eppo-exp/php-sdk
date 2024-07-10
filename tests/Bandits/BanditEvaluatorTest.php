@@ -35,6 +35,22 @@ class BanditEvaluatorTest extends TestCase
         $this->assertEquals($expectedScore, $actualScore);
     }
 
+    public function testScoreNumericAttributesWithZeroValue(): void
+    {
+        $numericAttributes = ['brand_affinity'=>0.0];
+        $numericCoefficients = [
+            new NumericAttributeCoefficient('brand_affinity', 20.0, -10)
+        ];
+        $expectedScore = 20  * 0;
+
+        $actualScore = BanditEvaluator::scoreNumericAttributes(
+            $numericCoefficients,
+            $numericAttributes
+        );
+
+        $this->assertEquals($expectedScore, $actualScore);
+    }
+
     public function testScoreNumericIgnoringNonNumericAttributes(): void
     {
         $numericAttributes = ['age' => 30, 'height' => 170, 'shouldBeANumber' => 'but_it_is_not'];
