@@ -2,7 +2,6 @@
 
 namespace Eppo\DTO\Bandit;
 
-
 /**
  * A set of attributes (@@see AttributeSet) for the context referenced by @see IContextAttributes::getKey().
  * @see IContextAttributes for more details.

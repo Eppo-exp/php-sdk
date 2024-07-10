@@ -8,9 +8,9 @@ namespace Eppo\DTO\Bandit;
  * The _Context_ is intended to be either a *subject* or an *action*, thus the key returned by `getKey()` refers to the
  * `subjectKey` and `actionKey`, respectively.
  *
- * Often, the `AttributeSet` for a subject or action needs to be indexed or keyed in an array. This class makes it easier
- * to manipulate a group of `AttributeSet`s while keeping track of their identifiers next to the attributes, instead of
- * in an external array/map.
+ * Often, the `AttributeSet` for a subject or action needs to be indexed or keyed in an array. This class makes it
+ * easier to manipulate a group of `AttributeSet`s while keeping track of their identifiers next to the attributes,
+ * instead of in an external array/map.
  */
 interface IContextAttributes
 {
