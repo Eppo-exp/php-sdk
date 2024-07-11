@@ -81,48 +81,50 @@ class EppoClient
         RequestFactoryInterface $requestFactory = null,
         ?bool $isGracefulMode = true
     ): EppoClient {
-        if (self::$instance === null) {
-            // Get SDK metadata to pass as params in the http client.
-            $sdkData = new SDKData();
-            $sdkParams = [
-                'sdkVersion' => $sdkData->getSdkVersion(),
-                'sdkName' => $sdkData->getSdkName()
-            ];
 
-            if (!$cache) {
-                try {
-                    $cache = (new DefaultCacheFactory())->create();
-                } catch (Exception $e) {
-                    throw EppoClientInitializationException::from($e);
-                }
+        self::$instance?->stopPolling();
+
+        // Get SDK metadata to pass as params in the http client.
+        $sdkData = new SDKData();
+        $sdkParams = [
+            'sdkVersion' => $sdkData->getSdkVersion(),
+            'sdkName' => $sdkData->getSdkName()
+        ];
+
+        if (!$cache) {
+            try {
+                $cache = (new DefaultCacheFactory())->create();
+            } catch (Exception $e) {
+                throw EppoClientInitializationException::from($e);
             }
-
-            $configStore = new ConfigurationStore($cache);
-
-            if (!$httpClient) {
-                $httpClient = Psr18ClientDiscovery::find();
-            }
-            $requestFactory = $requestFactory ?: new Psr17Factory();
-
-            $apiWrapper = new APIRequestWrapper(
-                $apiKey,
-                $sdkParams,
-                $httpClient,
-                $requestFactory,
-                $baseUrl
-            );
-
-            $configLoader = new ConfigurationLoader($apiWrapper, $configStore);
-            $poller = new Poller(
-                self::POLL_INTERVAL_MILLIS,
-                self::JITTER_MILLIS,
-                function () use ($configLoader) {
-                    $configLoader->fetchAndStoreConfigurations();
-                }
-            );
-
-            self::$instance = self::createAndInitClient($configLoader, $poller, $assignmentLogger, $isGracefulMode);
         }
+
+        $configStore = new ConfigurationStore($cache);
+
+        if (!$httpClient) {
+            $httpClient = Psr18ClientDiscovery::find();
+        }
+        $requestFactory = $requestFactory ?: new Psr17Factory();
+
+        $apiWrapper = new APIRequestWrapper(
+            $apiKey,
+            $sdkParams,
+            $httpClient,
+            $requestFactory,
+            $baseUrl
+        );
+
+        $configLoader = new ConfigurationLoader($apiWrapper, $configStore);
+        $poller = new Poller(
+            self::POLL_INTERVAL_MILLIS,
+            self::JITTER_MILLIS,
+            function () use ($configLoader) {
+                $configLoader->fetchAndStoreConfigurations();
+            }
+        );
+
+        self::$instance = self::createAndInitClient($configLoader, $poller, $assignmentLogger, $isGracefulMode);
+
 
         return self::$instance;
     }
@@ -139,7 +141,7 @@ class EppoClient
     ): EppoClient {
         try {
             $configLoader->reloadConfigurationIfExpired();
-        } catch (HttpRequestException | InvalidApiKeyException $e) {
+        } catch (HttpRequestException|InvalidApiKeyException $e) {
             throw new EppoClientInitializationException(
                 'Unable to initialize Eppo Client: ' . $e->getMessage()
             );
@@ -523,9 +525,9 @@ class EppoClient
             ($expectedVariationType == VariationType::STRING && gettype($typedValue) === 'string') ||
             ($expectedVariationType == VariationType::INTEGER && gettype($typedValue) === 'integer') ||
             ($expectedVariationType == VariationType::NUMERIC && in_array(
-                gettype($typedValue),
-                ['integer', 'double']
-            )) ||
+                    gettype($typedValue),
+                    ['integer', 'double']
+                )) ||
             ($expectedVariationType == VariationType::BOOLEAN && gettype($typedValue) === 'boolean') ||
             ($expectedVariationType == VariationType::JSON)); // JSON type check un-necessary here.
     }
