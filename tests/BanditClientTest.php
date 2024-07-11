@@ -16,6 +16,7 @@ use Eppo\Exception\EppoClientException;
 use Eppo\Exception\EppoException;
 use Eppo\Logger\BanditActionEvent;
 use Eppo\Logger\LoggerInterface;
+use Eppo\PollerInterface;
 use Eppo\Tests\WebServer\MockWebServer;
 use Exception;
 use PHPUnit\Framework\TestCase;
@@ -62,7 +63,7 @@ class BanditClientTest extends TestCase
             ->with($flagKey)
             ->willReturn(true);
 
-        $client = EppoClient::createTestClient($config);
+        $client = EppoClient::createTestClient($config, poller: $this->getPollerMock());
 
         $this->expectException(EppoClientException::class);
         $this->expectExceptionCode(EppoException::BANDIT_EVALUATION_FAILED_NO_ACTIONS_PROVIDED);
@@ -87,7 +88,7 @@ class BanditClientTest extends TestCase
             ->willReturn(false);
 
 
-        $client = EppoClient::createTestClient($config);
+        $client = EppoClient::createTestClient($config, poller: $this->getPollerMock());
 
 
         $result = $client->getBanditAction($flagKey, $subjectKey, $subject, $actions, $default);
@@ -115,7 +116,7 @@ class BanditClientTest extends TestCase
             ->with($flagKey, $default)
             ->willReturn('DNEBanditKey');
 
-        $client = EppoClient::createTestClient($config);
+        $client = EppoClient::createTestClient($config, poller: $this->getPollerMock());
 
         $this->expectException(EppoClientException::class);
         $this->expectExceptionCode(EppoException::BANDIT_EVALUATION_FAILED_BANDIT_MODEL_NOT_PRESENT);
@@ -187,23 +188,27 @@ class BanditClientTest extends TestCase
         $mockLogger->expects($this->never())->method('logAssignment');
 
         $mockLogger->expects($this->once())->method('logBanditAction')
-            ->with($this->callback(function (BanditActionEvent $bee) use ($flagKey, $subjectKey, $banditKey) {
-                return $bee->banditKey == $banditKey &&
-                    $bee->subjectKey == $subjectKey &&
-                    $bee->flagKey == $flagKey &&
-                    $bee->action == 'banditAction';
-            }));
+            ->with(
+                $this->callback(function (BanditActionEvent $bee) use ($flagKey, $subjectKey, $banditKey) {
+                    return $bee->banditKey == $banditKey &&
+                        $bee->subjectKey == $subjectKey &&
+                        $bee->flagKey == $flagKey &&
+                        $bee->action == 'banditAction';
+                })
+            );
 
-
-        $client = EppoClient::createTestClient($config, logger: $mockLogger, banditEvaluator: $banditEvaluator);
+        $client = EppoClient::createTestClient(
+            $config,
+            poller: $this->getPollerMock(),
+            logger: $mockLogger,
+            banditEvaluator: $banditEvaluator
+        );
 
         $result = $client->getBanditAction($flagKey, $subjectKey, $subject, $actions, $default);
 
 
         $this->assertEquals($expectedResult, $result);
     }
-
-    // test logged
 
     public function testRepoTestCases(): void
     {
@@ -258,5 +263,10 @@ class BanditClientTest extends TestCase
             $tests[$file] = json_decode(file_get_contents(self::TEST_DATA_PATH . '/' . $file), true);
         }
         return $tests;
+    }
+
+    private function getPollerMock()
+    {
+        return $this->getMockBuilder(PollerInterface::class)->getMock();
     }
 }

@@ -589,7 +589,7 @@ class EppoClient
      * Do not use for production.
      *
      * @param ConfigurationLoader $configurationLoader
-     * @param PollerInterface|null $poller
+     * @param PollerInterface $poller
      * @param LoggerInterface|null $logger
      * @param bool|null $isGracefulMode
      * @param IBanditEvaluator|null $banditEvaluator
@@ -598,7 +598,7 @@ class EppoClient
      */
     public static function createTestClient(
         ConfigurationLoader $configurationLoader,
-        PollerInterface $poller = null,
+        PollerInterface $poller,
         ?LoggerInterface $logger = null,
         ?bool $isGracefulMode = false,
         ?IBanditEvaluator $banditEvaluator = null
