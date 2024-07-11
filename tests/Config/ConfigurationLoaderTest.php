@@ -22,7 +22,7 @@ class ConfigurationLoaderTest extends TestCase
         DIRECTORY_SEPARATOR . 'ufc-v1.json';
 
 
-    public function setUp(): void
+    public function tearDown(): void
     {
         DefaultCacheFactory::clearCache();
     }
@@ -45,7 +45,7 @@ class ConfigurationLoaderTest extends TestCase
 
         $configStore = new ConfigurationStore(DefaultCacheFactory::create());
 
-        $loader = new ConfigurationLoader($apiWrapper, $configStore);
+        $loader = new ConfigurationLoader($apiWrapper, $configStore, cacheAgeLimit: PHP_INT_MAX);
         $loader->fetchAndStoreConfigurations();
 
 

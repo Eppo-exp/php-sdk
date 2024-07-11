@@ -37,10 +37,10 @@ class NamespaceCache implements CacheInterface
 
     public function get(string $key, mixed $default = null)
     {
-        return $this->internalCache->get($this->nestKey($key));
+        return $this->internalCache->get($this->nestKey($key), $default);
     }
 
-    public function set(string $key, mixed $value, \DateInterval|int|null $ttl = null): bool
+    public function set(string $key, mixed $value, \DateInterval|int|null $ttl = 3600): bool
     {
         $this->keys[$key] = $key;
         return $this->internalCache->set($this->nestKey($key), $value, $ttl);
@@ -55,13 +55,8 @@ class NamespaceCache implements CacheInterface
     public function clear(): bool
     {
         // Only delete values with the correct prefix
-        foreach ($this->keys as $key) {
-            try {
-                $this->internalCache->delete($this->nestKey($key));
-            } catch (InvalidArgumentException $e) {
-            }
-            unset($this->keys[$key]);
-        }
+        $this->deleteMultiple($this->keys);
+        $this->keys = [];
         return true;
     }
 
@@ -70,12 +65,14 @@ class NamespaceCache implements CacheInterface
         return $this->internalCache->getMultiple($this->nestKeys($keys), $default);
     }
 
-    public function setMultiple(iterable $values, \DateInterval|int|null $ttl = null): bool
+    public function setMultiple(iterable $values, \DateInterval|int|null $ttl = 3600): bool
     {
+        $nestedKeyedValues = [];
         foreach ($values as $key => $value) {
             $this->keys[$key] = $key;
+            $nestedKeyedValues[$this->nestKey($key)] = $value;
         }
-        return $this->internalCache->setMultiple($values, $ttl);
+        return $this->internalCache->setMultiple($nestedKeyedValues, $ttl);
     }
 
     public function deleteMultiple(iterable $keys): bool

@@ -45,17 +45,6 @@ class ConfigurationStore implements IConfigurationStore
             return null;
         }
     }
-    private function setFlag(Flag $flag): void
-    {
-        try {
-            $this->flagCache->set($flag->key, serialize($flag));
-        } catch (InvalidArgumentException $e) {
-            $key = $flag->key;
-
-            // Simple cache throws exceptions when a keystring is not a legal value (characters {}()/@: are illegal)
-            syslog(LOG_WARNING, "[EPPO SDK] Illegal flag key ${key}: " . $e->getMessage());
-        }
-    }
 
     /**
      * @param array $flags
@@ -77,10 +66,22 @@ class ConfigurationStore implements IConfigurationStore
         }
     }
 
+    /**
+     * @param Flag[] $flags
+     * @return void
+     */
     private function setFlags(array $flags): void
     {
-        foreach ($flags as $flag) {
-            $this->setFlag($flag);
+        $serialized = [];
+        array_walk($flags, function (Flag &$value) use (&$serialized) {
+            $serialized[$value->key] = serialize($value);
+        });
+
+        try {
+            $this->flagCache->setMultiple($serialized);
+        } catch (InvalidArgumentException $e) {
+            // Simple cache throws exceptions when a keystring is not a legal value (characters {}()/@: are illegal)
+            syslog(LOG_WARNING, "[EPPO SDK] Illegal flag key: " . $e->getMessage());
         }
     }
 
