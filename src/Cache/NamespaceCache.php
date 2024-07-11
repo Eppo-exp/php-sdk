@@ -3,12 +3,15 @@
 namespace Eppo\Cache;
 
 use Psr\SimpleCache\CacheInterface;
+use Psr\SimpleCache\InvalidArgumentException;
 
 class NamespaceCache implements CacheInterface
 {
     private readonly string $namespace;
     private CacheInterface $internalCache;
     private \Closure $nestKeyCallback;
+
+    private array $keys = [];
 
     private const SEPARATOR = '_';
 
@@ -39,35 +42,51 @@ class NamespaceCache implements CacheInterface
 
     public function set(string $key, mixed $value, \DateInterval|int|null $ttl = null): bool
     {
+        $this->keys[$key] = $key;
         return $this->internalCache->set($this->nestKey($key), $value, $ttl);
     }
 
     public function delete(string $key)
     {
+        unset($this->keys[$key]);
         return $this->internalCache->delete($this->nestKey($key));
     }
 
     public function clear(): bool
     {
-        return $this->internalCache->clear();
+        // Only delete values with the correct prefix
+        foreach ($this->keys as $key) {
+            try {
+                $this->internalCache->delete($this->nestKey($key));
+            } catch (InvalidArgumentException $e) {
+            }
+            unset($this->keys[$key]);
+        }
+        return true;
     }
 
-    public function getMultiple(iterable $keys, mixed $default = null)
+    public function getMultiple(iterable $keys, mixed $default = null): array
     {
-        return $this->getMultiple($this->nestKeys($keys), $default);
+        return $this->internalCache->getMultiple($this->nestKeys($keys), $default);
     }
 
-    public function setMultiple(iterable $values, \DateInterval|int|null $ttl = null)
+    public function setMultiple(iterable $values, \DateInterval|int|null $ttl = null): bool
     {
-        return $this->setMultiple($values, $ttl);
+        foreach ($values as $key => $value) {
+            $this->keys[$key] = $key;
+        }
+        return $this->internalCache->setMultiple($values, $ttl);
     }
 
-    public function deleteMultiple(iterable $keys)
+    public function deleteMultiple(iterable $keys): bool
     {
-        return $this->deleteMultiple($this->nestKeys($keys));
+        foreach ($keys as $key) {
+            unset($this->keys[$key]);
+        }
+        return $this->internalCache->deleteMultiple($this->nestKeys($keys));
     }
 
-    public function has(string $key)
+    public function has(string $key): bool
     {
         return $this->internalCache->has($this->nestKey($key));
     }
