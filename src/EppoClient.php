@@ -396,9 +396,30 @@ class EppoClient
      *
      * Example 1.2: Actions with un-grouped attributes
      * $actions = [
-     *  'nike': [
-     *    'brandLoyalty'
+     *   'nike': [
+     *     'brandLoyalty' => 0.0,
+     *     'size' => 5,
+     *     'colour' => 'red'
+     *   ], ...
+     * ];
      *
+     * $result = $client->getBanditAction($flagKey, $subject, $subjectContext, $actions, 'control');
+     *
+     * Example 2:
+     *
+     * $subjectContext = new AttributeSet(
+     *      numericAttributes: ['accountAge' => 0.5],
+     *      categoricalAttributes: ['zip' => 90210, 'country' => 'US']
+     * );
+     *
+     * $actions = [
+     *   'nike': new AttributeSet(
+     *     numericAttributes: ['brandLoyalty' => 0.0],
+     *     categoricalAttributes: ['size' => 5, 'colour' => 'red']
+     *   ), ...
+     * ];
+     *
+     * $result = $client->getBanditAction($flagKey, $subject, $subjectContext, $actions, 'control');
      *
      * @param string $flagKey
      * @param string $subjectKey
@@ -417,14 +438,14 @@ class EppoClient
         string $defaultVariation
     ): BanditResult {
         try {
-            // Normalize the subject and action into ContextAttributes. These functions detect the structure of the
+            // Normalize the subject and action into AttributeSets. These functions detect the structure of the
             // user data allowing for either automatic or manual sorting into numeric and categorical attributes.
             $subject = AttributeSet::fromFlexibleInput($subjectContext);
             $actionContexts = AttributeSet::arrayFromFlexibleInput($actions);
 
             return $this->getBanditDetail($flagKey, $subjectKey, $subject, $actionContexts, $defaultVariation);
         } catch (EppoException $e) {
-            // TODO: handle the different exception types, maybe codify error types in the generic `EppoClientException`
+            // TODO: handle the different exception types.
             if ($this->isGracefulMode) {
                 error_log('[Eppo SDK] Error selecting bandit action: ' . $e->getMessage());
                 return new BanditResult($defaultVariation);
