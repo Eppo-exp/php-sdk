@@ -2,7 +2,7 @@
 
 namespace Eppo\Tests;
 
-use Eppo\APIRequestWrapper;
+use Eppo\API\APIRequestWrapper;
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
 use Http\Discovery\Psr17Factory;

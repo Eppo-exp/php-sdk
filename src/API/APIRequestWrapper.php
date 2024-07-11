@@ -1,6 +1,6 @@
 <?php
 
-namespace Eppo;
+namespace Eppo\API;
 
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
@@ -57,7 +57,7 @@ class APIRequestWrapper
     /**
      * @throws HttpRequestException|InvalidApiKeyException
      */
-    public function get(): string
+    public function get(?string $lastEtag = null): APIResource
     {
         try {
             // Prepare the URL with query params
@@ -66,6 +66,9 @@ class APIRequestWrapper
             );
 
             $request = $this->requestFactory->createRequest('GET', $resourceURI);
+            if ($lastEtag != null) {
+                $request = $request->withAddedHeader('IF-NONE-MATCH', $lastEtag);
+            }
 
             $response = $this->httpClient->sendRequest($request);
         } catch (ClientExceptionInterface $e) {
@@ -75,7 +78,24 @@ class APIRequestWrapper
             $this->handleHttpError($response->getStatusCode(), $response->getBody());
         }
 
-        return $response->getBody()->getContents();
+        if ($response->getStatusCode() == 304) { // Not modified
+            // Quick Return
+            return new APIResource(null, time(), false, $lastEtag);
+        }
+
+        // The server should have returned a 304 status code when `IF-NONE-MATCH` is set and the content hasn't changed.
+        // The code below works the same if the server returns a new/modified payload or with an ETag matching
+        // `lastEtag` (unexpected).
+        $responseETag = $response->getHeader('ETag')[0] ?? null;
+        // If there's no ETag header (unexpected), we need to assume the data has changed otherwise we'll never load it.
+        $isModified = $responseETag == null || $lastEtag != $responseETag;
+
+        return new APIResource(
+            $response->getBody()->getContents(),
+            time(),
+            $isModified,
+            $responseETag
+        );
     }
 
     /**

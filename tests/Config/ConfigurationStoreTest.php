@@ -30,13 +30,13 @@ class ConfigurationStoreTest extends TestCase
         $configStore = new ConfigurationStore(DefaultCacheFactory::create());
 
 
-        $configStore->setConfigurations($firstFlags);
+        $configStore->setFlagConfigurations($firstFlags);
 
         $this->assertHasFlag($flag1, 'flag1', $configStore);
         $this->assertHasFlag($flag2, 'flag2', $configStore);
         $this->assertHasFlag($flag3, 'flag3', $configStore, hasFlag: false);
 
-        $configStore->setConfigurations($secondFlags);
+        $configStore->setFlagConfigurations($secondFlags);
 
         $this->assertHasFlag($flag1, 'flag1', $configStore);
         $this->assertHasFlag($flag2, 'flag2', $configStore, hasFlag: false);
@@ -60,7 +60,7 @@ class ConfigurationStoreTest extends TestCase
 
         $banditVariations = new BanditVariationIndexer($variations);
 
-        $configStore->setConfigurations([], $banditVariations);
+        $configStore->setFlagConfigurations([], $banditVariations);
 
         $recoveredBanditVariations = $configStore->getBanditVariations();
 

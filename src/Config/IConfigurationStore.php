@@ -2,6 +2,7 @@
 
 namespace Eppo\Config;
 
+use Eppo\API\CachedResourceMeta;
 use Eppo\Bandits\BanditVariationIndexer;
 use Eppo\DTO\Flag;
 use Eppo\IFlags;
@@ -15,7 +16,7 @@ interface IConfigurationStore extends IFlags
      * @param BanditVariationIndexer|null $banditVariations
      * @return void
      */
-    public function setConfigurations(array $flags, BanditVariationIndexer $banditVariations = null): void;
+    public function setFlagConfigurations(array $flags, ?BanditVariationIndexer $banditVariations = null): void;
 
     /**
      * Gets the `BanditVariationIndexer` for mapping from flag variations to bandits.
@@ -24,9 +25,10 @@ interface IConfigurationStore extends IFlags
     public function getBanditVariations(): BanditVariationIndexer;
 
     /**
-     * Gets the age of the cache
+     * Gets the metadata from the last flag fetch.
      *
-     * @return int The age of the cache in seconds. -1 if there has been no cache set.
+     * @return CachedResourceMeta|null Null if no value is available in the config store.
      */
-    public function getFlagCacheAgeSeconds(): int;
+    public function getFlagCacheMetadata(): ?CachedResourceMeta;
+    public function setFlagCacheMetadata(CachedResourceMeta $metadata): void;
 }

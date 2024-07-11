@@ -2,6 +2,7 @@
 
 namespace Eppo\Config;
 
+use Eppo\API\CachedResourceMeta;
 use Eppo\Bandits\BanditVariationIndexer;
 use Eppo\Cache\CacheType;
 use Eppo\Cache\NamespaceCache;
@@ -17,6 +18,7 @@ class ConfigurationStore implements IConfigurationStore
     private CacheInterface $metadataCache;
 
     private const FLAG_TIMESTAMP = "flagTimestamp";
+    private const FLAG_META = "flagResourceMetadata";
     private const BANDIT_VARIATION_KEY = 'banditVariations';
 
     /**
@@ -51,14 +53,12 @@ class ConfigurationStore implements IConfigurationStore
      * @param BanditVariationIndexer|null $banditVariations
      * @throws EppoClientException
      */
-    public function setConfigurations(array $flags, BanditVariationIndexer $banditVariations = null): void
+    public function setFlagConfigurations(array $flags, ?BanditVariationIndexer $banditVariations = null): void
     {
         try {
             // Clear all stored config before setting data.
-            $this->rootCache->clear();
+            $this->flagCache->clear();
 
-            // Set last fetch timestamp.
-            $this->metadataCache->set(self::FLAG_TIMESTAMP, time());
             $this->setFlags($flags);
             $this->metadataCache->set(self::BANDIT_VARIATION_KEY, serialize($banditVariations));
         } catch (InvalidArgumentException $e) {
@@ -85,17 +85,17 @@ class ConfigurationStore implements IConfigurationStore
         }
     }
 
-    public function getFlagCacheAgeSeconds(): int
+    public function getFlagCacheMetadata(): ?CachedResourceMeta
     {
         try {
-            $lastFetch = $this->metadataCache->get(self::FLAG_TIMESTAMP);
-            if ($lastFetch == null) {
-                return -1;
+            $meta = $this->metadataCache->get(self::FLAG_META);
+            if ($meta != null) {
+                return unserialize($meta) ?: null; // unserialize returns false if there was a problem decoding.
             }
         } catch (InvalidArgumentException $e) {
-            return -1;
         }
-        return time() - $lastFetch;
+
+        return null;
     }
 
     /**
@@ -109,5 +109,10 @@ class ConfigurationStore implements IConfigurationStore
             // We know that the key does not contain illegal characters so we should not end up here.
             throw EppoClientException::From($e);
         }
+    }
+
+    public function setFlagCacheMetadata(CachedResourceMeta $metadata): void
+    {
+        $this->metadataCache->set(self::FLAG_META, serialize($metadata));
     }
 }
