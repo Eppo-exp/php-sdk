@@ -45,8 +45,9 @@ class EppoClient
     /**
      * @param ConfigurationLoader $configurationLoader
      * @param PollerInterface $poller
-     * @param LoggerInterface|null $eventLogger optional logger. Please see Eppo/LoggerLoggerInterface
+     * @param LoggerInterface|null $eventLogger optional logger. Please @see LoggerInterface
      * @param bool|null $isGracefulMode
+     * @param IBanditEvaluator|null $banditEvaluator
      */
     protected function __construct(
         private readonly ConfigurationLoader $configurationLoader,
@@ -62,7 +63,7 @@ class EppoClient
     /**
      * Initializes EppoClient singleton instance.
      *
-     * @param LoggerInterface|null $assignmentLogger optional assignment logger. Please see Eppo/LoggerLoggerInterface.
+     * @param LoggerInterface|null $assignmentLogger optional assignment logger. Please @see LoggerInterface.
      * @param CacheInterface|null $cache optional Compatible with psr-16 simple cache. By default, (if nothing passed)
      * EppoClient will use FileSystem cache.
      * @param ClientInterface|null $httpClient optional PSR-18 ClientInterface. If nothing is passed, EppoClient will
@@ -81,9 +82,6 @@ class EppoClient
         RequestFactoryInterface $requestFactory = null,
         ?bool $isGracefulMode = true
     ): EppoClient {
-
-        self::$instance?->stopPolling();
-
         // Get SDK metadata to pass as params in the http client.
         $sdkData = new SDKData();
         $sdkParams = [
@@ -141,7 +139,7 @@ class EppoClient
     ): EppoClient {
         try {
             $configLoader->reloadConfigurationIfExpired();
-        } catch (HttpRequestException|InvalidApiKeyException $e) {
+        } catch (HttpRequestException | InvalidApiKeyException $e) {
             throw new EppoClientInitializationException(
                 'Unable to initialize Eppo Client: ' . $e->getMessage()
             );
@@ -525,9 +523,9 @@ class EppoClient
             ($expectedVariationType == VariationType::STRING && gettype($typedValue) === 'string') ||
             ($expectedVariationType == VariationType::INTEGER && gettype($typedValue) === 'integer') ||
             ($expectedVariationType == VariationType::NUMERIC && in_array(
-                    gettype($typedValue),
-                    ['integer', 'double']
-                )) ||
+                gettype($typedValue),
+                ['integer', 'double']
+            )) ||
             ($expectedVariationType == VariationType::BOOLEAN && gettype($typedValue) === 'boolean') ||
             ($expectedVariationType == VariationType::JSON)); // JSON type check un-necessary here.
     }
@@ -567,7 +565,7 @@ class EppoClient
 
     /**
      * Only used for unit-tests.
-     * For production please use only singleton instance.
+     * Do not use for production.
      *
      * @param ConfigurationLoader $configurationLoader
      * @param PollerInterface|null $poller
@@ -584,13 +582,6 @@ class EppoClient
         ?bool $isGracefulMode = false,
         ?IBanditEvaluator $banditEvaluator = null
     ): EppoClient {
-        $poller ??= new Poller(
-            self::POLL_INTERVAL_MILLIS,
-            self::JITTER_MILLIS,
-            function () use ($configurationLoader) {
-                $configurationLoader->fetchAndStoreConfigurations();
-            }
-        );
         return self::createAndInitClient($configurationLoader, $poller, $logger, $isGracefulMode, $banditEvaluator);
     }
 }

@@ -88,6 +88,8 @@ class AttributeSet
     }
 
     /**+
+     * Convenience method to encapsulate taking flexible user input and normalizing it for processing
+     *
      * @param array<string, ?object>|AttributeSet $attributes
      * @return AttributeSet
      */
@@ -98,9 +100,9 @@ class AttributeSet
             AttributeSet::fromArray($attributes);
     }
 
-
-
     /**
+     *  Convenience method to encapsulate taking flexible user input and normalizing it for processing
+     *
      * @param array<string>|array<string, AttributeSet|array<string, array<string, ?object>>> $contexts
      * @return array<string, AttributeSet>
      */

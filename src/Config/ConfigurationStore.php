@@ -62,7 +62,6 @@ class ConfigurationStore implements IConfigurationStore
             $this->flagCache->set($flag->key, serialize($flag));
         } catch (InvalidArgumentException $e) {
             $key = $flag->key;
-
             // Simple cache throws exceptions when a keystring is not a legal value (characters {}()/@: are illegal)
             throw new InvalidConfigurationException("Illegal flag key ${key}: " . $e->getMessage(), $e->getCode(), $e);
         }

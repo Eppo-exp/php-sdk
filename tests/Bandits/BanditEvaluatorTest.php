@@ -37,7 +37,7 @@ class BanditEvaluatorTest extends TestCase
 
     public function testScoreNumericAttributesWithZeroValue(): void
     {
-        $numericAttributes = ['brand_affinity'=>0.0];
+        $numericAttributes = ['brand_affinity' => 0.0];
         $numericCoefficients = [
             new NumericAttributeCoefficient('brand_affinity', 20.0, -10)
         ];
