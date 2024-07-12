@@ -50,7 +50,7 @@ class ConfigurationLoaderTest extends TestCase
 
         $configStore = new ConfigurationStore(DefaultCacheFactory::create());
 
-        $loader = new ConfigurationLoader($apiWrapper, $configStore, cacheAgeLimit: PHP_INT_MAX);
+        $loader = new ConfigurationLoader($apiWrapper, $configStore);
         $loader->fetchAndStoreConfigurations(null);
 
 
