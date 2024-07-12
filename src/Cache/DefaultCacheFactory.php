@@ -4,7 +4,8 @@ namespace Eppo\Cache;
 
 use Exception;
 use Psr\SimpleCache\CacheInterface;
-use Sarahman\SimpleCache\FileSystemCache;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\Cache\Psr16Cache;
 
 class DefaultCacheFactory
 {
@@ -13,7 +14,11 @@ class DefaultCacheFactory
      */
     public static function create(): CacheInterface
     {
-        return new FileSystemCache(sys_get_temp_dir() . DIRECTORY_SEPARATOR . ".EppoCache");
+        $psr6Cache = new FilesystemAdapter(
+            ".EppoCache"
+        );
+
+        return new Psr16Cache($psr6Cache);
     }
 
     /**
