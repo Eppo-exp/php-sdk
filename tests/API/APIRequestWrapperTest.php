@@ -185,7 +185,6 @@ class APIRequestWrapperTest extends TestCase
         $body = "RESPONSE BODY";
         $ETag = "00FF22EEFF";
 
-        $http = $this->getHttpClientMock(200, $body, ["ETag" => $ETag]);
 
         $httpClientMock = $this->getMockBuilder(ClientInterface::class)->setConstructorArgs([])->getMock();
 
@@ -203,7 +202,7 @@ class APIRequestWrapperTest extends TestCase
         $httpClientMock->expects($this->any())
             ->method('sendRequest')
             ->willReturnCallback(function ($request) use ($mockSameResponse, $ETag, $mockNewResponse): Response {
-                if ($request->getHeader('ETag') === $ETag) {
+                if (in_array($ETag, $request->getHeader('IF-NONE-MATCH'))) {
                     return $mockSameResponse;
                 }
                 return $mockNewResponse;
@@ -213,7 +212,7 @@ class APIRequestWrapperTest extends TestCase
         $api = new APIRequestWrapper(
             'APIKEY',
             [],
-            $http,
+            $httpClientMock,
             new Psr17Factory()
         );
 
@@ -231,6 +230,6 @@ class APIRequestWrapperTest extends TestCase
         $this->assertNotNull($result);
         $this->assertFalse($result->isModified);
         $this->assertEquals($ETag, $result->meta->ETag);
-        $this->assertEquals('', $result->body);
+        $this->assertNull($result->body);
     }
 }
