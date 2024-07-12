@@ -24,7 +24,7 @@
   "require": {
     "php": "^8.1",
     "ext-json": "*",
-    "psr/simple-cache": "*",
+    "psr/simple-cache": "3.*",
     "shrikeh/teapot": "^2.3",
     "composer/semver": "^3.4",
     "php-http/discovery": "^1.17",
