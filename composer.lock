@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "cc1b9df0843872d99ac5dc33a8f71d81",
+    "content-hash": "d1498101e5ddfabda19ce2269e95b46a",
     "packages": [
         {
             "name": "composer/semver",
@@ -473,53 +473,6 @@
                 "source": "https://github.com/php-fig/simple-cache/tree/3.0.0"
             },
             "time": "2021-10-29T13:26:27+00:00"
-        },
-        {
-            "name": "sarahman/simple-filesystem-cache",
-            "version": "1.0.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/sarahman/simple-filesystem-cache.git",
-                "reference": "adb8f79a3890e51692db02aadeaa42999f7ff5e3"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/sarahman/simple-filesystem-cache/zipball/adb8f79a3890e51692db02aadeaa42999f7ff5e3",
-                "reference": "adb8f79a3890e51692db02aadeaa42999f7ff5e3",
-                "shasum": ""
-            },
-            "require": {
-                "ext-json": "*",
-                "psr/simple-cache": "*"
-            },
-            "provide": {
-                "psr/simple-cache-implementation": "1.0"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "^4.8"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Sarahman\\SimpleCache\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Syed Abidur Rahman",
-                    "email": "aabid048@gmail.com"
-                }
-            ],
-            "description": "Simple file system cache library for PHP built on top of PSR-16.",
-            "support": {
-                "issues": "https://github.com/sarahman/simple-filesystem-cache/issues",
-                "source": "https://github.com/sarahman/simple-filesystem-cache/tree/v1.0.2"
-            },
-            "time": "2020-08-09T05:14:17+00:00"
         },
         {
             "name": "shrikeh/teapot",
