@@ -1,6 +1,6 @@
 <?php
 
-namespace Eppo\Tests;
+namespace Eppo\Tests\API;
 
 use Eppo\API\APIRequestWrapper;
 use Eppo\Exception\HttpRequestException;
@@ -29,6 +29,28 @@ class APIRequestWrapperTest extends TestCase
         );
         $api->get();
     }
+
+
+    public function testApiGetsResource(): void
+    {
+        // Note: this test also verifies that the correct endpoint is called via mock expectations.
+        $body = "RESPONSE BODY";
+        $ETag = "00FF22EEFF";
+
+        $http = $this->getHttpClientMock(200, $body, ["ETag" => $ETag]);
+        $api = new APIRequestWrapper(
+            'APIKEY',
+            [],
+            $http,
+            new Psr17Factory()
+        );
+        $result = $api->get();
+        $this->assertNotNull($result);
+        $this->assertTrue($result->isModified);
+        $this->assertEquals($ETag, $result->meta->ETag);
+        $this->assertEquals($body, $result->body);
+    }
+
 
     public function testUnauthorizedClient(): void
     {
@@ -98,9 +120,8 @@ class APIRequestWrapperTest extends TestCase
     }
 
 
-    private function getHttpClientMock(int $statusCode, string $body): ClientInterface
+    private function getHttpClientMock(int $statusCode, string $body, $responseHeaders = []): ClientInterface
     {
-
         $httpClientMock = $this->getMockBuilder(ClientInterface::class)->setConstructorArgs([
         ])->getMock();
 
@@ -110,6 +131,9 @@ class APIRequestWrapperTest extends TestCase
             statusCode: $statusCode,
             stream: $stream
         );
+        if ($responseHeaders) {
+            $mockResponse = $mockResponse->withHeaders($responseHeaders);
+        }
 
         $httpClientMock->expects($this->any())
             ->method('sendRequest')
@@ -132,16 +156,18 @@ class APIRequestWrapperTest extends TestCase
 
         $httpClientMock->expects($this->exactly(2))
             ->method('sendRequest')
-            ->with($this->callback(function ($request) use ($resourceUri, $redirectLocation) {
-                $uri = $request->getUri()->__toString();
+            ->with(
+                $this->callback(function ($request) use ($resourceUri, $redirectLocation) {
+                    $uri = $request->getUri()->__toString();
 
-                $this->assertContains(
-                    $uri,
-                    [$resourceUri, $redirectLocation]
-                );
+                    $this->assertContains(
+                        $uri,
+                        [$resourceUri, $redirectLocation]
+                    );
 
-                return true;
-            }))
+                    return true;
+                })
+            )
             ->willReturnCallback(function ($request) use ($resourceUri, $redirectResponse) {
                 $mockResponse = new Response(
                     statusCode: RFC7231::OK,
@@ -151,5 +177,60 @@ class APIRequestWrapperTest extends TestCase
             });
 
         return $httpClientMock;
+    }
+
+    public function testSendsLastETagAndComputesIsModified(): void
+    {
+        // Note: this test also verifies that the correct endpoint is called via mock expectations.
+        $body = "RESPONSE BODY";
+        $ETag = "00FF22EEFF";
+
+        $http = $this->getHttpClientMock(200, $body, ["ETag" => $ETag]);
+
+        $httpClientMock = $this->getMockBuilder(ClientInterface::class)->setConstructorArgs([])->getMock();
+
+        $stream = new Stream($body);
+
+        $mockNewResponse = (new Response(
+            statusCode: 200,
+            stream: $stream
+        ))->withAddedHeader('ETag', $ETag);
+        $mockSameResponse = (new Response(
+            statusCode: 304,
+            stream: null
+        ))->withAddedHeader('ETag', $ETag);
+
+        $httpClientMock->expects($this->any())
+            ->method('sendRequest')
+            ->willReturnCallback(function ($request) use ($mockSameResponse, $ETag, $mockNewResponse): Response {
+                if ($request->getHeader('ETag') === $ETag) {
+                    return $mockSameResponse;
+                }
+                return $mockNewResponse;
+            });
+
+
+        $api = new APIRequestWrapper(
+            'APIKEY',
+            [],
+            $http,
+            new Psr17Factory()
+        );
+
+
+        $result = $api->get("OLDER ETAG");
+
+        $this->assertNotNull($result);
+        $this->assertTrue($result->isModified);
+        $this->assertEquals($ETag, $result->meta->ETag);
+        $this->assertEquals($body, $result->body);
+
+        // Second requests uses the ETag from the first.
+        $result = $api->get($ETag);
+
+        $this->assertNotNull($result);
+        $this->assertFalse($result->isModified);
+        $this->assertEquals($ETag, $result->meta->ETag);
+        $this->assertEquals('', $result->body);
     }
 }
