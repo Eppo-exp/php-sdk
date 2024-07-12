@@ -15,6 +15,11 @@ use PHPUnit\Framework\TestCase;
 
 class ConfigurationStoreTest extends TestCase
 {
+    public function tearDown(): void
+    {
+        DefaultCacheFactory::clearCache();
+    }
+
     public function testFlushesCacheOnReload(): void
     {
         $flag1 = new Flag('flag1', true, [], VariationType::STRING, [], 10_000);

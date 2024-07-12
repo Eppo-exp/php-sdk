@@ -21,7 +21,7 @@ class ConfigurationLoaderTest extends TestCase
         DIRECTORY_SEPARATOR . 'ufc-v1.json';
 
 
-    public function setUp(): void
+    public function tearDown(): void
     {
         DefaultCacheFactory::clearCache();
     }
