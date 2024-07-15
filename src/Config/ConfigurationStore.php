@@ -174,4 +174,19 @@ class ConfigurationStore implements IConfigurationStore
             );
         }
     }
+
+    public function setBanditModels(array $bandits):  void {
+        try {
+            // Clear all stored config before setting data.
+            $this->rootCache->clear();
+
+            // Set last fetch timestamp.
+            //$this->metadataCache->set(self::FLAG_TIMESTAMP, time());
+            $this->setBandits($bandits);
+
+        } catch (InvalidArgumentException $e) {
+            throw InvalidConfigurationException::from($e);
+        }
+    }
+
 }
