@@ -21,6 +21,7 @@ class APIRequestWrapper
 {
     /** @var string */
     private const UFC_ENDPOINT = '/flag-config/v1/config';
+    private const BANDIT_ENDPOINT = '/flag-config/v1/bandits';
     private const CONFIG_BASE = 'https://fscdn.eppo.cloud/api';
 
     private string $baseUrl;
@@ -96,9 +97,9 @@ class APIRequestWrapper
     /**
      * @throws HttpRequestException|InvalidApiKeyException
      */
-    public function getUFC(): APIResource
+    public function getUFC(?string $lastETag = null): APIResource
     {
-        return $this->getResource(self::UFC_ENDPOINT);
+        return $this->getResource(self::UFC_ENDPOINT, $lastETag);
     }
 
 

@@ -112,9 +112,9 @@ class APIRequestWrapperTest extends TestCase
         );
 
         $response = $api->getUFC();
-        $this->assertEquals('UFC', $response);
+        $this->assertEquals('UFC', $response->body);
         $response = $api->getBandits();
-        $this->assertEquals('BANDIT', $response);
+        $this->assertEquals('BANDIT', $response->body);
     }
 
     private function assertStatusRecoverable(bool $recoverable, int $status): void
@@ -269,7 +269,7 @@ class APIRequestWrapperTest extends TestCase
         );
 
 
-        $result = $api->get("OLDER ETAG");
+        $result = $api->getUFC("OLDER ETAG");
 
         $this->assertNotNull($result);
         $this->assertTrue($result->isModified);
@@ -277,7 +277,7 @@ class APIRequestWrapperTest extends TestCase
         $this->assertEquals($body, $result->body);
 
         // Second requests uses the ETag from the first.
-        $result = $api->get($ETag);
+        $result = $api->getUFC($ETag);
 
         $this->assertNotNull($result);
         $this->assertFalse($result->isModified);
