@@ -11,6 +11,7 @@ use Eppo\DTO\Bandit\BanditModelData;
 use Eppo\DTO\Bandit\BanditVariation;
 use Eppo\DTO\Flag;
 use Eppo\DTO\VariationType;
+use Eppo\Exception\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 class ConfigurationStoreTest extends TestCase
@@ -110,6 +111,15 @@ class ConfigurationStoreTest extends TestCase
             $banditVariations->getBanditByVariation('bandit_flag', 'bandit_flag_variation'),
             $recoveredBanditVariations->getBanditByVariation('bandit_flag', 'bandit_flag_variation')
         );
+    }
+
+    public function testThrowsOnReservedKey(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $configStore = new ConfigurationStore(DefaultCacheFactory::create());
+
+        $configStore->setMetadata('banditVariations', ["foo" => "bar"]);
     }
 
     public function testStoresBandits(): void
