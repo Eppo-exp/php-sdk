@@ -52,7 +52,7 @@ final class BanditVariationIndexerTest extends TestCase
 
     public function testSurvivesSerialization(): void
     {
-        $indexer = new BanditVariationIndexer(self::$variations);
+        $indexer = BanditVariationIndexer::from(self::$variations);
         $this->assertTrue($indexer->isBanditFlag('bandit_one_flag'));
 
         $serialized = serialize($indexer);
@@ -62,7 +62,7 @@ final class BanditVariationIndexerTest extends TestCase
 
     public function testIsBanditFlag()
     {
-        $indexer = new BanditVariationIndexer(self::$variations);
+        $indexer = BanditVariationIndexer::from(self::$variations);
         $this->assertTrue($indexer->isBanditFlag('bandit_one_flag'));
         $this->assertTrue($indexer->isBanditFlag('multi_bandit_flag'));
         $this->assertTrue($indexer->isBanditFlag('bandit_two_flag'));
@@ -73,9 +73,15 @@ final class BanditVariationIndexerTest extends TestCase
         $this->assertFalse($indexer->isBanditFlag('bandit_one_flag_variation'));
     }
 
+    public function testEmptyIndexerWorks() : void {
+        $indexer = BanditVariationIndexer::empty();
+        $this->assertFalse($indexer->isBanditFlag('bandit_one_flag'));
+        $this->assertNull($indexer->getBanditByVariation('bandit_one_flag', 'bandit_one_flag_variation'));
+    }
+
     public function testGetBanditByVariation(): void
     {
-        $indexer = new BanditVariationIndexer(self::$variations);
+        $indexer = BanditVariationIndexer::from(self::$variations);
         $this->expectBandit($indexer, null, 'non_bandit_flag', 'control');
         $this->expectBandit($indexer, null, 'bandit_one_flag', 'control');
         $this->expectBandit($indexer, null, 'bandit_one_flag', 'bandit_two_flag_variation');
@@ -99,7 +105,7 @@ final class BanditVariationIndexerTest extends TestCase
 
         $this->expectException(InvalidConfigurationException::class);
 
-        new BanditVariationIndexer(self::$variations);
+        BanditVariationIndexer::from(self::$variations);
     }
 
     private function expectBandit(
