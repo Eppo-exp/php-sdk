@@ -146,7 +146,7 @@ class ConfigurationLoader implements IFlags, IBandits
             $bandits = array_map(fn($json) => Bandit::fromJson($json), $banditModelResponse['bandits']);
         }
 
-        $this->configurationStore->setBanditModels($bandits);
+        $this->configurationStore->setBandits($bandits);
     }
 
     public function getBandit(string $banditKey): ?Bandit

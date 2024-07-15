@@ -125,8 +125,8 @@ class ConfigurationStoreTest extends TestCase
     public function testStoresBandits(): void
     {
         $bandits = [
-            'banditOne' => new Bandit(
-                'banditOne',
+            'weaklyTheBanditKey' => new Bandit(
+                'stronglyTheBanditKey',
                 'falcon',
                 new DateTime(),
                 'v123',
@@ -135,13 +135,14 @@ class ConfigurationStoreTest extends TestCase
         ];
 
         $configStore = new ConfigurationStore(DefaultCacheFactory::create());
-        $configStore->setConfigurations([], $bandits);
+        $configStore->setBandits($bandits);
 
-        $banditOne = $configStore->getBandit('banditOne');
+        $banditOne = $configStore->getBandit('stronglyTheBanditKey');
 
+        $this->assertNull($configStore->getBandit('weaklyTheBanditKey'));
         $this->assertNotNull($banditOne);
 
-        $this->assertEquals('banditOne', $banditOne->banditKey);
+        $this->assertEquals('stronglyTheBanditKey', $banditOne->banditKey);
         $this->assertEquals('falcon', $banditOne->modelName);
     }
 

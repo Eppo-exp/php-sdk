@@ -25,8 +25,9 @@ interface IConfigurationStore extends IFlags, IBandits
      * Sets the Bandit model configurations in the data store.
      * @param Bandit[] $bandits
      * @return void
+     * @throws InvalidConfigurationException
      */
-    public function setBanditModels(array $bandits): void;
+    public function setBandits(array $bandits): void;
 
     /**
      * Gets the metadata from the data store.
