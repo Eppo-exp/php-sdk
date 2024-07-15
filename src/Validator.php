@@ -20,4 +20,11 @@ class Validator
             throw new InvalidArgumentException($errorMessage);
         }
     }
+
+    public static function validateNotEqual(string $input, string $reserved, string $errorMessage)
+    {
+        if ($input === $reserved) {
+            throw new InvalidArgumentException($errorMessage);
+        }
+    }
 }
