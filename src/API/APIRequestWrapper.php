@@ -80,7 +80,7 @@ class APIRequestWrapper
 
         if ($response->getStatusCode() == 304) { // Not modified
             // Quick Return
-            return new APIResource(null, time(), false, $lastEtag);
+            return new APIResource(null, false, $lastEtag);
         }
 
         // The server should have returned a 304 status code when `IF-NONE-MATCH` is set and the content hasn't changed.
@@ -92,7 +92,6 @@ class APIRequestWrapper
 
         return new APIResource(
             $response->getBody()->getContents(),
-            time(),
             $isModified,
             $responseETag
         );
