@@ -6,7 +6,6 @@ use Eppo\Bandits\IBanditVariationIndexer;
 use Eppo\DTO\Flag;
 use Eppo\IFlags;
 
-
 interface IConfigurationStore extends IFlags
 {
     /**

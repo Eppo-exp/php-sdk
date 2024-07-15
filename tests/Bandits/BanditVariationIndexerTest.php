@@ -77,21 +77,24 @@ final class BanditVariationIndexerTest extends TestCase
         $this->assertFalse($indexer->isBanditFlag('bandit_one_flag_variation'));
     }
 
-    public function testEmptyIndexerWorks() : void {
+    public function testEmptyIndexerWorks(): void
+    {
         $indexer = BanditVariationIndexer::empty();
         $this->assertFalse($indexer->isBanditFlag('bandit_one_flag'));
         $this->assertNull($indexer->getBanditByVariation('bandit_one_flag', 'bandit_one_flag_variation'));
         $this->assertFalse($indexer->hasBandits());
     }
 
-    public function testFromEmpty() : void {
+    public function testFromEmpty(): void
+    {
         $indexer = BanditVariationIndexer::from([]);
         $this->assertFalse($indexer->isBanditFlag('bandit_one_flag'));
         $this->assertNull($indexer->getBanditByVariation('bandit_one_flag', 'bandit_one_flag_variation'));
         $this->assertFalse($indexer->hasBandits());
     }
 
-    public function testFlagWithNoBanditVariations() : void {
+    public function testFlagWithNoBanditVariations(): void
+    {
         // `bandit_one_flag` is passed but it points to an empty array, so Indexer should still be empty
         $indexer = BanditVariationIndexer::from(['bandit_one_flag' => []]);
 
