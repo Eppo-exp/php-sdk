@@ -20,7 +20,7 @@ interface IConfigurationStore extends IFlags
     /**
      * Gets the metadata from the data store.
      */
-    public function getMetadata(string $key): ?string;
+    public function getMetadata(string $key): mixed;
 
     /**
      * Sets metadata in the data store.

@@ -86,7 +86,7 @@ class ConfigurationStore implements IConfigurationStore
         }
     }
 
-    public function getMetadata(string $key): ?string
+    public function getMetadata(string $key): mixed
     {
         try {
             $meta = $this->metadataCache->get($key);
