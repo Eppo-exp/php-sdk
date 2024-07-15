@@ -5,6 +5,7 @@ namespace Eppo\Config;
 use Eppo\Bandits\BanditVariationIndexer;
 use Eppo\Bandits\IBandits;
 use Eppo\DTO\Bandit\Bandit;
+use Eppo\Bandits\IBanditVariationIndexer;
 use Eppo\DTO\Flag;
 use Eppo\Exception\InvalidConfigurationException;
 use Eppo\Flags\IFlags;
@@ -12,19 +13,13 @@ use Eppo\Flags\IFlags;
 interface IConfigurationStore extends IFlags, IBandits
 {
     /**
-     * Sets configuration objects in the data store.
-     *
-     * Implementations of this method should also store the time in order to respond to `getFlagCacheAgeSeconds` calls.
+     * Sets flag configuration in the data store.
      *
      * @param Flag[] $flags
-     * @param BanditVariationIndexer|null $banditVariations
+     * @param IBanditVariationIndexer|null $banditVariations
      * @return void
-     * @throws InvalidConfigurationException
      */
-    public function setConfigurations(
-        array $flags,
-        BanditVariationIndexer $banditVariations = null
-    ): void;
+    public function setUnifiedFlagConfiguration(array $flags, ?IBanditVariationIndexer $banditVariations = null): void;
 
     /**
      * Sets the Bandit model configurations in the data store.
@@ -34,16 +29,16 @@ interface IConfigurationStore extends IFlags, IBandits
     public function setBanditModels(array $bandits): void;
 
     /**
-     * Gets the `BanditVariationIndexer` for mapping from flag variations to bandits.
-     * @return BanditVariationIndexer
-     * @throws InvalidConfigurationException
+     * Gets the metadata from the data store.
      */
-    public function getBanditVariations(): BanditVariationIndexer;
+    public function getMetadata(string $key): mixed;
 
     /**
-     * Gets the age of the cache
+     * Sets metadata in the data store.
      *
-     * @return int The age of the cache in seconds. -1 if there has been no cache set.
+     * @param string $key
+     * @param mixed $metadata
+     * @return void
      */
-    public function getFlagCacheAgeSeconds(): int;
+    public function setMetadata(string $key, mixed $metadata): void;
 }

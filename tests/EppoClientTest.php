@@ -2,7 +2,8 @@
 
 namespace Eppo\Tests;
 
-use Eppo\APIRequestWrapper;
+use Eppo\API\APIRequestWrapper;
+use Eppo\API\APIResource;
 use Eppo\Cache\DefaultCacheFactory;
 use Eppo\Config\ConfigurationLoader;
 use Eppo\Config\ConfigurationStore;
@@ -115,7 +116,7 @@ class EppoClientTest extends TestCase
             ->willThrowException(new HttpRequestException());
 
         $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
-        $configStore->expects($this->any())->method('getFlagCacheAgeSeconds')->willReturn(-1);
+        $configStore->expects($this->any())->method('getMetadata')->willReturn(null);
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
 
         $this->expectException(EppoClientInitializationException::class);
@@ -140,7 +141,7 @@ class EppoClientTest extends TestCase
             ->willThrowException(new HttpRequestException());
 
         $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
-        $configStore->expects($this->any())->method('getFlagCacheAgeSeconds')->willReturn(-1);
+        $configStore->expects($this->any())->method('getMetadata')->willReturn(null);
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
 
         $this->expectException(EppoClientInitializationException::class);

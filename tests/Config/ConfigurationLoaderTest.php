@@ -2,7 +2,8 @@
 
 namespace Eppo\Tests\Config;
 
-use Eppo\APIRequestWrapper;
+use Eppo\API\APIResource;
+use Eppo\API\APIRequestWrapper;
 use Eppo\Cache\DefaultCacheFactory;
 use Eppo\Config\ConfigurationLoader;
 use Eppo\Config\ConfigurationStore;
@@ -30,6 +31,11 @@ class ConfigurationLoaderTest extends TestCase
     {
         // Load mock response data
         $flagsRaw = file_get_contents(self::MOCK_RESPONSE_FILENAME);
+        $flagsResourceResponse = new APIResource(
+            $flagsRaw,
+            true,
+            "ETAG"
+        );
         $flagsJson = json_decode($flagsRaw, true);
         $flags = array_map(fn($flag) => (new UFCParser())->parseFlag($flag), $flagsJson['flags']);
         $banditsRaw = '{
@@ -56,7 +62,7 @@ class ConfigurationLoaderTest extends TestCase
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->once())
             ->method('getUFC')
-            ->willReturn($flagsRaw);
+            ->willReturn($flagsResourceResponse);
         $apiWrapper->expects($this->once())
             ->method('getBandits')
             ->willReturn($banditsRaw);
@@ -64,7 +70,7 @@ class ConfigurationLoaderTest extends TestCase
         $configStore = new ConfigurationStore(DefaultCacheFactory::create());
 
         $loader = new ConfigurationLoader($apiWrapper, $configStore);
-        $loader->fetchAndStoreConfigurations();
+        $loader->fetchAndStoreConfigurations(null);
 
 
         $flag = $loader->getFlag(self::FLAG_KEY);
@@ -103,7 +109,7 @@ class ConfigurationLoaderTest extends TestCase
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->once())
             ->method('getUFC')
-            ->willReturn($flagsRaw);
+            ->willReturn(new APIResource($flagsRaw, true, "ETAG"));
         $apiWrapper->expects($this->once())
             ->method('getBandits')
             ->willReturn($banditsRaw);
@@ -131,7 +137,7 @@ class ConfigurationLoaderTest extends TestCase
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->exactly(2))
             ->method('getUFC')
-            ->willReturn($flagsRaw);
+            ->willReturn(new APIResource($flagsRaw, true, "ETAG"));
         $apiWrapper->expects($this->exactly(2))
             ->method('getBandits')
             ->willReturn($banditsRaw);

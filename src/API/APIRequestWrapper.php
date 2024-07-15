@@ -1,6 +1,6 @@
 <?php
 
-namespace Eppo;
+namespace Eppo\API;
 
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
@@ -19,8 +19,8 @@ use Webclient\Extension\Redirect\RedirectClientDecorator;
  */
 class APIRequestWrapper
 {
+    /** @var string */
     private const UFC_ENDPOINT = '/flag-config/v1/config';
-    private const BANDIT_ENDPOINT = '/flag-config/v1/bandits';
     private const CONFIG_BASE = 'https://fscdn.eppo.cloud/api';
 
     private string $baseUrl;
@@ -53,7 +53,7 @@ class APIRequestWrapper
     /**
      * @throws HttpRequestException|InvalidApiKeyException
      */
-    private function getResource(string $endpoint): string
+    private function getResource(string $endpoint, ?string $lastETag = null): APIResource
     {
         try {
             // Prepare the URL with query params
@@ -62,6 +62,9 @@ class APIRequestWrapper
             );
 
             $request = $this->requestFactory->createRequest('GET', $resourceURI);
+            if ($lastETag != null) {
+                $request = $request->withAddedHeader('IF-NONE-MATCH', $lastETag);
+            }
 
             $response = $this->httpClient->sendRequest($request);
         } catch (ClientExceptionInterface $e) {
@@ -71,13 +74,29 @@ class APIRequestWrapper
             $this->handleHttpError($response->getStatusCode(), $response->getBody());
         }
 
-        return $response->getBody()->getContents();
+        if ($response->getStatusCode() == 304) { // Not modified
+            // Quick Return
+            return new APIResource(null, false, $lastETag);
+        }
+
+        // The server should have returned a 304 status code when `IF-NONE-MATCH` is set and the content hasn't changed.
+        // The code below works the same if the server returns a new/modified payload or with an ETag matching
+        // `lastEtag` (unexpected).
+        $responseETag = $response->getHeader('ETag')[0] ?? null;
+        // If there's no ETag header (unexpected), we need to assume the data has changed otherwise we'll never load it.
+        $isModified = $responseETag == null || $lastETag != $responseETag;
+
+        return new APIResource(
+            $response->getBody()->getContents(),
+            $isModified,
+            $responseETag
+        );
     }
 
     /**
      * @throws HttpRequestException|InvalidApiKeyException
      */
-    public function getUFC(): string
+    public function getUFC(): APIResource
     {
         return $this->getResource(self::UFC_ENDPOINT);
     }
@@ -87,7 +106,7 @@ class APIRequestWrapper
      * @throws HttpRequestException
      * @throws InvalidApiKeyException
      */
-    public function getBandits(): string
+    public function getBandits(): APIResource
     {
         return $this->getResource(self::BANDIT_ENDPOINT);
     }

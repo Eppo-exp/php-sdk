@@ -23,4 +23,10 @@ interface IBanditVariationIndexer
      * @return bool
      */
     public function isBanditFlag(string $flagKey): bool;
+
+    /**
+     * Determines whether the indexer has indexed any Bandit references.
+     * @return bool
+     */
+    public function hasBandits(): bool;
 }

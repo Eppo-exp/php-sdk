@@ -3,22 +3,23 @@
 namespace Eppo\Config;
 
 use Eppo\Bandits\BanditVariationIndexer;
+use Eppo\Bandits\IBanditVariationIndexer;
 use Eppo\Cache\CacheType;
 use Eppo\Cache\NamespaceCache;
 use Eppo\DTO\Bandit\Bandit;
 use Eppo\DTO\Flag;
+use Eppo\Exception\EppoClientException;
+use Eppo\Exception\InvalidArgumentException;
+use Eppo\Validator;
 use Eppo\Exception\InvalidConfigurationException;
 use Psr\SimpleCache\CacheInterface;
-use Psr\SimpleCache\InvalidArgumentException;
 
 class ConfigurationStore implements IConfigurationStore
 {
-    private CacheInterface $rootCache;
     private CacheInterface $flagCache;
     private CacheInterface $banditCache;
     private CacheInterface $metadataCache;
-
-    private const FLAG_TIMESTAMP = "flagTimestamp";
+    private const FLAG_META = "flagResourceMetadata";
     private const BANDIT_VARIATION_KEY = 'banditVariations';
 
     /**
@@ -26,7 +27,6 @@ class ConfigurationStore implements IConfigurationStore
      */
     public function __construct(CacheInterface $cache)
     {
-        $this->rootCache = $cache;
         $this->flagCache = new NamespaceCache(CacheType::FLAG, $cache);
         $this->banditCache = new NamespaceCache(CacheType::BANDIT, $cache);
         $this->metadataCache = new NamespaceCache(CacheType::META, $cache);
@@ -46,7 +46,7 @@ class ConfigurationStore implements IConfigurationStore
 
             $inflated = unserialize($result);
             return $inflated === false ? null : $inflated;
-        } catch (InvalidArgumentException $e) {
+        } catch (\Psr\SimpleCache\InvalidArgumentException $e) {
             // Simple cache throws exceptions when a keystring is not a legal value (characters {}()/@: are illegal)
             syslog(LOG_WARNING, "[EPPO SDK] Illegal flag key ${key}: " . $e->getMessage());
             return null;
@@ -54,42 +54,24 @@ class ConfigurationStore implements IConfigurationStore
     }
 
     /**
-     * @throws InvalidConfigurationException
+     * @param array $flags
+     * @param IBanditVariationIndexer|null $banditVariations
+     * @throws EppoClientException
      */
-    private function setFlag(Flag $flag): void
+    public function setUnifiedFlagConfiguration(array $flags, ?IBanditVariationIndexer $banditVariations = null): void
     {
         try {
-            $this->flagCache->set($flag->key, serialize($flag));
-        } catch (InvalidArgumentException $e) {
-            $key = $flag->key;
-            // Simple cache throws exceptions when a keystring is not a legal value (characters {}()/@: are illegal)
-            throw new InvalidConfigurationException("Illegal flag key ${key}: " . $e->getMessage(), $e->getCode(), $e);
-        }
-    }
+            // Clear stored config before setting data.
+            $this->flagCache->clear();
 
-    /**
-     * @param array $flags
-     * @param array $bandits
-     * @param BanditVariationIndexer|null $banditVariations
-     * @return void
-     * @throws InvalidConfigurationException
-     */
-    public function setConfigurations(
-        array $flags,
-        array $bandits,
-        BanditVariationIndexer $banditVariations = null
-    ): void {
-        try {
-            // Clear all stored config before setting data.
-            $this->rootCache->clear();
-
-            // Set last fetch timestamp.
-            $this->metadataCache->set(self::FLAG_TIMESTAMP, time());
             $this->setFlags($flags);
-            $this->setBandits($bandits);
-            $this->metadataCache->set(self::BANDIT_VARIATION_KEY, serialize($banditVariations));
-        } catch (InvalidArgumentException $e) {
-            throw InvalidConfigurationException::from($e);
+            if ($banditVariations == null) {
+                $this->metadataCache->delete(self::BANDIT_VARIATION_KEY);
+            } else {
+                $this->metadataCache->set(self::BANDIT_VARIATION_KEY, serialize($banditVariations));
+            }
+        } catch (\Psr\SimpleCache\InvalidArgumentException $e) {
+            throw EppoClientException::from($e);
         }
     }
 
@@ -106,38 +88,57 @@ class ConfigurationStore implements IConfigurationStore
 
         try {
             $this->flagCache->setMultiple($serialized);
-        } catch (InvalidArgumentException $e) {
+        } catch (\Psr\SimpleCache\InvalidArgumentException $e) {
             // Simple cache throws exceptions when a keystring is not a legal value (characters {}()/@: are illegal)
             syslog(LOG_WARNING, "[EPPO SDK] Illegal flag key: " . $e->getMessage());
         }
     }
 
-    public function getFlagCacheAgeSeconds(): int
+    public function getMetadata(string $key): ?string
     {
         try {
-            $lastFetch = $this->metadataCache->get(self::FLAG_TIMESTAMP);
-            if ($lastFetch == null) {
-                return -1;
+            $meta = $this->metadataCache->get($key);
+            if ($meta != null) {
+                return unserialize($meta) ?: null; // unserialize returns false if there was a problem decoding.
             }
-        } catch (InvalidArgumentException $e) {
-            return -1;
+        } catch (\Psr\SimpleCache\InvalidArgumentException $e) {
+            syslog(LOG_WARNING, "[EPPO SDK] Illegal flag key: " . $e->getMessage());
         }
-        return time() - $lastFetch;
+
+        return null;
     }
 
     /**
      * @return BanditVariationIndexer
      * @throws InvalidConfigurationException
      */
-    public function getBanditVariations(): BanditVariationIndexer
+    public function getBanditVariations(): IBanditVariationIndexer
     {
         try {
-            return unserialize($this->metadataCache->get(self::BANDIT_VARIATION_KEY));
-        } catch (InvalidArgumentException $e) {
-            // We know that the key does not contain illegal characters, so we should not end up here.
-            throw InvalidConfigurationException::From($e);
+            $data = $this->metadataCache->get(self::BANDIT_VARIATION_KEY);
+            if ($data !== null) {
+                return unserialize($data);
+            }
+            return BanditVariationIndexer::empty();
+        } catch (\Psr\SimpleCache\InvalidArgumentException $e) {
+            // We know that the key does not contain illegal characters so we should not end up here.
+            throw EppoClientException::From($e);
         }
     }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    public function setMetadata(string $key, mixed $metadata): void
+    {
+        Validator::validateNotEqual($key, self::FLAG_META, "Unable to use reserved key, {self::FLAG_META}");
+        try {
+            $this->metadataCache->set($key, serialize($metadata));
+        } catch (\Psr\SimpleCache\InvalidArgumentException $e) {
+            syslog(LOG_WARNING, "[EPPO SDK] Illegal flag key: " . $e->getMessage());
+        }
+    }
+
 
     /**
      * @param Bandit[] $bandits
