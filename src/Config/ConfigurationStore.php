@@ -16,7 +16,6 @@ class ConfigurationStore implements IConfigurationStore
 {
     private CacheInterface $flagCache;
     private CacheInterface $metadataCache;
-    private const FLAG_META = "flagResourceMetadata";
     private const BANDIT_VARIATION_KEY = 'banditVariations';
 
     /**
@@ -122,7 +121,11 @@ class ConfigurationStore implements IConfigurationStore
      */
     public function setMetadata(string $key, mixed $metadata): void
     {
-        Validator::validateNotEqual($key, self::FLAG_META, "Unable to use reserved key, {self::FLAG_META}");
+        Validator::validateNotEqual(
+            $key,
+            self::BANDIT_VARIATION_KEY,
+            'Unable to use reserved key, ' . self::BANDIT_VARIATION_KEY
+        );
         try {
             $this->metadataCache->set($key, serialize($metadata));
         } catch (\Psr\SimpleCache\InvalidArgumentException $e) {
