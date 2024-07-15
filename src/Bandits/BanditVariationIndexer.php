@@ -87,4 +87,9 @@ class BanditVariationIndexer implements IBanditVariationIndexer
         $bvi->setVariations($banditVariations);
         return $bvi;
     }
+
+    public function hasBandits(): bool
+    {
+        return count($this->banditFlags) > 0;
+    }
 }

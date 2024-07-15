@@ -53,6 +53,8 @@ final class BanditVariationIndexerTest extends TestCase
     public function testSurvivesSerialization(): void
     {
         $indexer = BanditVariationIndexer::from(self::$variations);
+        $this->assertTrue($indexer->hasBandits());
+
         $this->assertTrue($indexer->isBanditFlag('bandit_one_flag'));
 
         $serialized = serialize($indexer);
@@ -63,6 +65,8 @@ final class BanditVariationIndexerTest extends TestCase
     public function testIsBanditFlag()
     {
         $indexer = BanditVariationIndexer::from(self::$variations);
+        $this->assertTrue($indexer->hasBandits());
+
         $this->assertTrue($indexer->isBanditFlag('bandit_one_flag'));
         $this->assertTrue($indexer->isBanditFlag('multi_bandit_flag'));
         $this->assertTrue($indexer->isBanditFlag('bandit_two_flag'));
@@ -77,11 +81,30 @@ final class BanditVariationIndexerTest extends TestCase
         $indexer = BanditVariationIndexer::empty();
         $this->assertFalse($indexer->isBanditFlag('bandit_one_flag'));
         $this->assertNull($indexer->getBanditByVariation('bandit_one_flag', 'bandit_one_flag_variation'));
+        $this->assertFalse($indexer->hasBandits());
+    }
+
+    public function testFromEmpty() : void {
+        $indexer = BanditVariationIndexer::from([]);
+        $this->assertFalse($indexer->isBanditFlag('bandit_one_flag'));
+        $this->assertNull($indexer->getBanditByVariation('bandit_one_flag', 'bandit_one_flag_variation'));
+        $this->assertFalse($indexer->hasBandits());
+    }
+
+    public function testFlagWithNoBanditVariations() : void {
+        // `bandit_one_flag` is passed but it points to an empty array, so Indexer should still be empty
+        $indexer = BanditVariationIndexer::from(['bandit_one_flag' => []]);
+
+        $this->assertFalse($indexer->isBanditFlag('bandit_one_flag'));
+        $this->assertNull($indexer->getBanditByVariation('bandit_one_flag', 'bandit_one_flag_variation'));
+        $this->assertFalse($indexer->hasBandits());
     }
 
     public function testGetBanditByVariation(): void
     {
         $indexer = BanditVariationIndexer::from(self::$variations);
+        $this->assertTrue($indexer->hasBandits());
+
         $this->expectBandit($indexer, null, 'non_bandit_flag', 'control');
         $this->expectBandit($indexer, null, 'bandit_one_flag', 'control');
         $this->expectBandit($indexer, null, 'bandit_one_flag', 'bandit_two_flag_variation');
