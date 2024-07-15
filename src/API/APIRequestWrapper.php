@@ -57,7 +57,7 @@ class APIRequestWrapper
     /**
      * @throws HttpRequestException|InvalidApiKeyException
      */
-    public function get(?string $lastEtag = null): APIResource
+    public function get(?string $lastETag = null): APIResource
     {
         try {
             // Prepare the URL with query params
@@ -66,8 +66,8 @@ class APIRequestWrapper
             );
 
             $request = $this->requestFactory->createRequest('GET', $resourceURI);
-            if ($lastEtag != null) {
-                $request = $request->withAddedHeader('IF-NONE-MATCH', $lastEtag);
+            if ($lastETag != null) {
+                $request = $request->withAddedHeader('IF-NONE-MATCH', $lastETag);
             }
 
             $response = $this->httpClient->sendRequest($request);
@@ -80,7 +80,7 @@ class APIRequestWrapper
 
         if ($response->getStatusCode() == 304) { // Not modified
             // Quick Return
-            return new APIResource(null, false, $lastEtag);
+            return new APIResource(null, false, $lastETag);
         }
 
         // The server should have returned a 304 status code when `IF-NONE-MATCH` is set and the content hasn't changed.
@@ -88,7 +88,7 @@ class APIRequestWrapper
         // `lastEtag` (unexpected).
         $responseETag = $response->getHeader('ETag')[0] ?? null;
         // If there's no ETag header (unexpected), we need to assume the data has changed otherwise we'll never load it.
-        $isModified = $responseETag == null || $lastEtag != $responseETag;
+        $isModified = $responseETag == null || $lastETag != $responseETag;
 
         return new APIResource(
             $response->getBody()->getContents(),
