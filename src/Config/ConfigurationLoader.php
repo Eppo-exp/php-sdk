@@ -13,9 +13,12 @@ use Eppo\Exception\InvalidConfigurationException;
 use Eppo\IFlags;
 use Eppo\UFCParser;
 
-class ConfigurationLoader implements IFlags, IBanditVariationIndexer
+class ConfigurationLoader implements IFlags
 {
     private UFCParser $parser;
+
+    private const FLAG_TIMESTAMP = "flagTimestamp";
+    private const FLAG_ETAG = "flagETag";
 
     public function __construct(
         private readonly APIRequestWrapper $apiRequestWrapper,
@@ -28,6 +31,7 @@ class ConfigurationLoader implements IFlags, IBanditVariationIndexer
     /**
      * @throws InvalidApiKeyException
      * @throws HttpRequestException
+     * @throws InvalidConfigurationException
      */
     public function getFlag(string $key): ?Flag
     {
@@ -38,6 +42,7 @@ class ConfigurationLoader implements IFlags, IBanditVariationIndexer
     /**
      * @throws HttpRequestException
      * @throws InvalidApiKeyException
+     * @throws InvalidConfigurationException
      */
     public function getBanditByVariation($flagKey, $variation): ?string
     {
@@ -48,6 +53,7 @@ class ConfigurationLoader implements IFlags, IBanditVariationIndexer
     /**
      * @throws InvalidApiKeyException
      * @throws HttpRequestException
+     * @throws InvalidConfigurationException
      */
     public function isBanditFlag($flagKey): bool
     {
@@ -62,10 +68,10 @@ class ConfigurationLoader implements IFlags, IBanditVariationIndexer
      */
     public function reloadConfigurationIfExpired(): void
     {
-        $cacheMeta = $this->configurationStore->getFlagCacheMetadata();
-        // A null metadata indicates the data has not yet been fetched. Otherwise, check the age.
-        if ($cacheMeta == null  || $cacheMeta->getCacheAgeSeconds() >= $this->cacheAgeLimit) {
-            $this->fetchAndStoreConfigurations($cacheMeta?->ETag ?? null);
+        $flagCacheAge = $this->getCacheAgeSeconds();
+        if ($flagCacheAge === -1 || $flagCacheAge >= $this->cacheAgeLimit) {
+            $flagETag = $this->configurationStore->getMetadata(self::FLAG_ETAG);
+            $this->fetchAndStoreConfigurations($flagETag);
         }
     }
 
@@ -99,11 +105,26 @@ class ConfigurationLoader implements IFlags, IBanditVariationIndexer
                 syslog(LOG_WARNING, "[EPPO SDK] No bandit-flag variations found in UFC response.");
             }
 
-            $indexer = new BanditVariationIndexer($variations);
-            $this->configurationStore->setFlagConfigurations($inflated, $indexer);
+            $indexer = BanditVariationIndexer::from($variations);
+            $this->configurationStore->setUnifiedFlagConfiguration($inflated, $indexer);
         }
 
         // Store metadata for next time.
-        $this->configurationStore->setFlagCacheMetadata($response->meta);
+        $this->configurationStore->setMetadata(self::FLAG_TIMESTAMP, time());
+        $this->configurationStore->setMetadata(self::FLAG_ETAG, $response->ETag);
+    }
+
+    private function getCacheAgeSeconds(): int
+    {
+        $timestamp = $this->configurationStore->getMetadata(self::FLAG_TIMESTAMP);
+        if ($timestamp != null) {
+            return time() - $timestamp;
+        }
+        return -1;
+    }
+
+    public function getBanditVariations(): IBanditVariationIndexer
+    {
+        return $this->configurationStore->getBanditVariations();
     }
 }

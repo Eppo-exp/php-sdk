@@ -84,7 +84,7 @@ class ConfigurationLoaderTest extends TestCase
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->once())
             ->method('get')
-            ->willReturn(new APIResource($flagsRaw, time(), true, "ETAG"));
+            ->willReturn(new APIResource($flagsRaw, true, "ETAG"));
 
 
         $flag = $loader->getFlag(self::FLAG_KEY);
@@ -110,7 +110,7 @@ class ConfigurationLoaderTest extends TestCase
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->exactly(2))
             ->method('get')
-            ->willReturn(new APIResource($flagsRaw, time(), true, "ETAG"));
+            ->willReturn(new APIResource($flagsRaw, true, "ETAG"));
 
         $flag = $loader->getFlag(self::FLAG_KEY);
         $flagAgain = $loader->getFlag(self::FLAG_KEY);

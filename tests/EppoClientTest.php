@@ -116,7 +116,7 @@ class EppoClientTest extends TestCase
             ->willThrowException(new HttpRequestException());
 
         $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
-        $configStore->expects($this->any())->method('getFlagCacheMetadata')->willReturn(null);
+        $configStore->expects($this->any())->method('getMetadata')->willReturn(null);
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
 
         $this->expectException(EppoClientInitializationException::class);
@@ -141,7 +141,7 @@ class EppoClientTest extends TestCase
             ->willThrowException(new HttpRequestException());
 
         $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
-        $configStore->expects($this->any())->method('getFlagCacheMetadata')->willReturn(null);
+        $configStore->expects($this->any())->method('getMetadata')->willReturn(null);
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
 
         $this->expectException(EppoClientInitializationException::class);
@@ -237,7 +237,7 @@ class EppoClientTest extends TestCase
         ])->getMock();
         $apiRequestWrapper->expects($this->any())
             ->method('get')
-            ->willReturn(new APIResource('', time(), true, null));
+            ->willReturn(new APIResource('', true, null));
 
         $configStoreMock = $this->getMockBuilder(ConfigurationStore::class)->setConstructorArgs([$cache])->getMock();
 

@@ -30,17 +30,51 @@ class ConfigurationStoreTest extends TestCase
         $configStore = new ConfigurationStore(DefaultCacheFactory::create());
 
 
-        $configStore->setFlagConfigurations($firstFlags);
+        $configStore->setUnifiedFlagConfiguration($firstFlags);
 
         $this->assertHasFlag($flag1, 'flag1', $configStore);
         $this->assertHasFlag($flag2, 'flag2', $configStore);
         $this->assertHasFlag($flag3, 'flag3', $configStore, hasFlag: false);
 
-        $configStore->setFlagConfigurations($secondFlags);
+        $configStore->setUnifiedFlagConfiguration($secondFlags);
 
         $this->assertHasFlag($flag1, 'flag1', $configStore);
         $this->assertHasFlag($flag2, 'flag2', $configStore, hasFlag: false);
         $this->assertHasFlag($flag3, 'flag3', $configStore);
+    }
+
+    public function testSetsEmptyVariationsWhenNull(): void
+    {
+        $configStore = new ConfigurationStore(DefaultCacheFactory::create());
+
+        $variations = [
+            'bandit' => [
+                new BanditVariation(
+                    'bandit',
+                    'bandit_flag',
+                    'bandit_flag_variation',
+                    'bandit_flag_variation'
+                )
+            ]
+        ];
+
+        $banditVariations = BanditVariationIndexer::from($variations);
+
+        $configStore->setUnifiedFlagConfiguration([], $banditVariations);
+
+        // Verify Object stored.
+        $recoveredBanditVariations = $configStore->getBanditVariations();
+        $this->assertNotNull($recoveredBanditVariations);
+        $this->assertTrue($recoveredBanditVariations->hasBandits());
+
+
+        // The action that we're testing
+        $configStore->setUnifiedFlagConfiguration([], null);
+
+        // Assert the variations have been emptied.
+        $recoveredBanditVariations = $configStore->getBanditVariations();
+        $this->assertNotNull($recoveredBanditVariations);
+        $this->assertFalse($recoveredBanditVariations->hasBandits());
     }
 
     public function testStoresBanditVariations(): void
@@ -58,9 +92,9 @@ class ConfigurationStoreTest extends TestCase
             ]
         ];
 
-        $banditVariations = new BanditVariationIndexer($variations);
+        $banditVariations = BanditVariationIndexer::from($variations);
 
-        $configStore->setFlagConfigurations([], $banditVariations);
+        $configStore->setUnifiedFlagConfiguration([], $banditVariations);
 
         $recoveredBanditVariations = $configStore->getBanditVariations();
 

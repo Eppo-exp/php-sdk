@@ -2,10 +2,10 @@
 
 namespace Eppo\Config;
 
-use Eppo\API\CachedResourceMeta;
-use Eppo\Bandits\BanditVariationIndexer;
+use Eppo\Bandits\IBanditVariationIndexer;
 use Eppo\DTO\Flag;
 use Eppo\IFlags;
+
 
 interface IConfigurationStore extends IFlags
 {
@@ -13,22 +13,22 @@ interface IConfigurationStore extends IFlags
      * Sets multiple flags in the data store.
      *
      * @param Flag[] $flags
-     * @param BanditVariationIndexer|null $banditVariations
+     * @param IBanditVariationIndexer|null $banditVariations
      * @return void
      */
-    public function setFlagConfigurations(array $flags, ?BanditVariationIndexer $banditVariations = null): void;
+    public function setUnifiedFlagConfiguration(array $flags, ?IBanditVariationIndexer $banditVariations = null): void;
 
     /**
-     * Gets the `BanditVariationIndexer` for mapping from flag variations to bandits.
-     * @return BanditVariationIndexer
+     * Gets the metadata from the data store.
      */
-    public function getBanditVariations(): BanditVariationIndexer;
+    public function getMetadata(string $key): ?string;
 
     /**
-     * Gets the metadata from the last flag fetch.
+     * Sets metadata in the data store.
      *
-     * @return CachedResourceMeta|null Null if no value is available in the config store.
+     * @param string $key
+     * @param mixed $metadata
+     * @return void
      */
-    public function getFlagCacheMetadata(): ?CachedResourceMeta;
-    public function setFlagCacheMetadata(CachedResourceMeta $metadata): void;
+    public function setMetadata(string $key, mixed $metadata): void;
 }

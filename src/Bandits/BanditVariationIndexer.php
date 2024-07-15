@@ -73,7 +73,7 @@ class BanditVariationIndexer implements IBanditVariationIndexer
         return isset($this->banditFlags[$flagKey]);
     }
 
-    public static function empty(): BanditVariationIndexer
+    public static function empty(): IBanditVariationIndexer
     {
         return new BanditVariationIndexer();
     }
@@ -81,7 +81,7 @@ class BanditVariationIndexer implements IBanditVariationIndexer
     /**
      * @throws InvalidConfigurationException
      */
-    public static function from(array $banditVariations): BanditVariationIndexer
+    public static function from(array $banditVariations): IBanditVariationIndexer
     {
         $bvi = new BanditVariationIndexer();
         $bvi->setVariations($banditVariations);
