@@ -63,7 +63,11 @@ class BanditVariationIndexer implements IBanditVariationIndexer
         }
     }
 
-
+    /**
+     * @param string $flagKey
+     * @param string $variation
+     * @return string|null
+     */
     public function getBanditByVariation(string $flagKey, string $variation): ?string
     {
         return $this->banditFlags[$flagKey][$variation] ?? null;
