@@ -237,7 +237,7 @@ class EppoClientTest extends TestCase
         ])->getMock();
         $apiRequestWrapper->expects($this->any())
             ->method('getUFC')
-            ->willReturn('');
+            ->willReturn(new APIResource('',true, null));
 
         $configStoreMock = $this->getMockBuilder(ConfigurationStore::class)->setConstructorArgs([$cache])->getMock();
 
