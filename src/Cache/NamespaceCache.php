@@ -41,7 +41,7 @@ class NamespaceCache implements CacheInterface
         return $this->internalCache->get($this->nestKey($key), $default);
     }
 
-    public function set(string $key, mixed $value, \DateInterval|int|null $ttl = 3600): bool
+    public function set(string $key, mixed $value, \DateInterval|int|null $ttl = null): bool
     {
         $this->keys[$key] ??= $this->nestKey($key);
         return $this->internalCache->set($this->keys[$key], $value, $ttl);
