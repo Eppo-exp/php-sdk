@@ -10,6 +10,4 @@ interface LoggerInterface
      * try to log this information.
      */
     public function logAssignment(AssignmentEvent $assignmentEvent): void;
-
 }
-

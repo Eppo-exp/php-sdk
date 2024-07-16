@@ -2,7 +2,6 @@
 
 namespace Eppo\Logger;
 
-use DateTime;
 use Eppo\DTO\Bandit\Bandit;
 use Eppo\DTO\Bandit\BanditEvaluation;
 use JsonSerializable;
@@ -14,11 +13,11 @@ class BanditActionEvent implements Serializable, JsonSerializable
         public readonly string $flagKey,
         public readonly string $banditKey,
         public readonly string $subjectKey,
-        public readonly ?string $action,
-        public readonly ?float $actionProbability,
-        public readonly ?float $optimalityGap,
-        public readonly ?string $modelVersion,
-        public readonly DateTime $timestamp,
+        public readonly string $action,
+        public readonly float $actionProbability,
+        public readonly float $optimalityGap,
+        public readonly string $modelVersion,
+        public readonly float $timestamp,
         public readonly array $subjectNumericAttributes,
         public readonly array $subjectCategoricalAttributes,
         public readonly array $actionNumericAttributes,
@@ -41,7 +40,7 @@ class BanditActionEvent implements Serializable, JsonSerializable
             $result->actionWeight,
             $result->optimalityGap,
             $bandit->modelVersion,
-            new DateTime(),
+            microtime(true),
             $result->subjectAttributes->numericAttributes,
             $result->subjectAttributes->categoricalAttributes,
             $result->actionAttributes->numericAttributes,
@@ -71,7 +70,7 @@ class BanditActionEvent implements Serializable, JsonSerializable
             'actionProbability' => $this->actionProbability,
             'optimalityGap' => $this->optimalityGap,
             'modelVersion' => $this->modelVersion,
-            'timestamp' => $this->timestamp->format('Y-m-d\TH:i:sP'), // Convert DateTime to a serializable format
+            'timestamp' => $this->timestamp,
             'subjectNumericAttributes' => $this->subjectNumericAttributes,
             'subjectCategoricalAttributes' => $this->subjectCategoricalAttributes,
             'actionNumericAttributes' => $this->actionNumericAttributes,
@@ -89,7 +88,7 @@ class BanditActionEvent implements Serializable, JsonSerializable
         $this->actionProbability = $data['actionProbability'];
         $this->optimalityGap = $data['optimalityGap'];
         $this->modelVersion = $data['modelVersion'];
-        $this->timestamp = DateTime::createFromFormat('Y-m-d\TH:i:sP', $data['timestamp']); // Convert back to DateTime
+        $this->timestamp = $data['timestamp'];
         $this->subjectNumericAttributes = $data['subjectNumericAttributes'];
         $this->subjectCategoricalAttributes = $data['subjectCategoricalAttributes'];
         $this->actionNumericAttributes = $data['actionNumericAttributes'];
@@ -97,7 +96,7 @@ class BanditActionEvent implements Serializable, JsonSerializable
         $this->metaData = $data['metaData'];
     }
 
-    public function jsonSerialize(): mixed
+    public function jsonSerialize(): array
     {
         return $this->__serialize();
     }

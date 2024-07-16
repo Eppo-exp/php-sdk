@@ -363,7 +363,7 @@ class EppoClient
                         $allocationKey,
                         $flagKey,
                         $subjectKey,
-                        time(),
+                        microtime(true),
                         $subjectAttributes,
                         $sdkData,
                         $evaluationResult->extraLogging ?? []
@@ -409,6 +409,7 @@ class EppoClient
      * ];
      *
      * $result = $client->getBanditAction($flagKey, $subject, $subjectContext, $actions, 'control');
+     *
      *
      * Example 2:
      *
@@ -581,7 +582,6 @@ class EppoClient
         Exception $exception,
         array|bool|float|int|string|null $defaultValue
     ): array|bool|float|int|string|null {
-        // TODO: handle different exception types such as bad api key and invalid config exceptions.
         if ($this->isGracefulMode) {
             error_log('[Eppo SDK] Error getting assignment: ' . $exception->getMessage());
             return $defaultValue;

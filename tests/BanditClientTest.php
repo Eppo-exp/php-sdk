@@ -37,7 +37,7 @@ class BanditClientTest extends TestCase
         }
 
         try {
-           self::$client= EppoClient::init('dummy', 'http://localhost:4000',);
+            self::$client = EppoClient::init('dummy', 'http://localhost:4000',);
         } catch (Exception $exception) {
             self::fail('Failed to initialize EppoClient: ' . $exception->getMessage());
         }
@@ -73,11 +73,49 @@ class BanditClientTest extends TestCase
         $client->getBanditAction($flagKey, $subjectKey, $subject, $actions, $default);
     }
 
+    public function testBanditWithEmptyActionsGracefulMode(): void
+    {
+        $flagKey = 'bandit';
+        $actions = [];
+        $subjectKey = 'user123';
+        $subject = ['country' => 'USA', 'age' => 25];
+        $default = 'defaultVariation';
+
+
+        $config = $this->getMockBuilder(ConfigurationLoader::class)->disableOriginalConstructor()->getMock();
+
+        $config->expects($this->once())
+            ->method('isBanditFlag')
+            ->with($flagKey)
+            ->willReturn(true);
+
+        $mockLogger = $this->getMockBuilder(IBanditLogger::class)->getMock();
+
+        // EppoClient won't log this assignment as it's not computed, just returning the default.
+        $mockLogger->expects($this->never())->method('logAssignment');
+
+        $mockLogger->expects($this->never())->method('logBanditAction');
+
+        $client = EppoClient::createTestClient(
+            $config,
+            poller: $this->getPollerMock(),
+            logger: $mockLogger,
+            isGracefulMode: true
+        );
+
+
+        $result = $client->getBanditAction($flagKey, $subjectKey, $subject, $actions, $default);
+        $this->assertNotNull($result);
+        $this->assertEquals($default, $result->variation);
+        $this->assertNull($result->action);
+    }
+
     public function testNonBandit(): void
     {
         $flagKey = 'non_bandit';
         $actions = [];
         $subjectKey = 'user123';
+        $subject = ['country' => 'USA', 'age' => 25];
         $subject = ['country' => 'USA', 'age' => 25];
         $default = 'defaultVariation';
 
@@ -98,7 +136,7 @@ class BanditClientTest extends TestCase
         $this->assertEquals(null, $result->action);
     }
 
-    public function testBanditModelDNE(): void
+    public function testBanditModelDoesNotExist(): void
     {
         $flagKey = 'bandit';
         $actions = ['foo', 'bar', 'baz'];
@@ -218,7 +256,10 @@ class BanditClientTest extends TestCase
         $testCases = $this->loadTestCases();
         $client = self::$client;
 
+        $this->assertNotEmpty($testCases);
         foreach ($testCases as $testFile => $test) {
+            $this->assertNotEmpty($test['subjects']);
+
             foreach ($test['subjects'] as $subject) {
                 $actions = [];
                 foreach ($subject['actions'] as $action) {
