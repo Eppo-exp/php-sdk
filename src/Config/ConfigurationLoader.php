@@ -2,7 +2,7 @@
 
 namespace Eppo\Config;
 
-use Eppo\APIRequestWrapper;
+use Eppo\API\APIRequestWrapper;
 use Eppo\Bandits\BanditVariationIndexer;
 use Eppo\Bandits\IBanditVariationIndexer;
 use Eppo\DTO\Bandit\BanditVariation;
@@ -13,9 +13,12 @@ use Eppo\Exception\InvalidConfigurationException;
 use Eppo\IFlags;
 use Eppo\UFCParser;
 
-class ConfigurationLoader implements IFlags, IBanditVariationIndexer
+class ConfigurationLoader implements IFlags
 {
     private UFCParser $parser;
+
+    private const FLAG_TIMESTAMP = "flagTimestamp";
+    private const FLAG_ETAG = "flagETag";
 
     public function __construct(
         private readonly APIRequestWrapper $apiRequestWrapper,
@@ -28,6 +31,7 @@ class ConfigurationLoader implements IFlags, IBanditVariationIndexer
     /**
      * @throws InvalidApiKeyException
      * @throws HttpRequestException
+     * @throws InvalidConfigurationException
      */
     public function getFlag(string $key): ?Flag
     {
@@ -38,6 +42,7 @@ class ConfigurationLoader implements IFlags, IBanditVariationIndexer
     /**
      * @throws HttpRequestException
      * @throws InvalidApiKeyException
+     * @throws InvalidConfigurationException
      */
     public function getBanditByVariation($flagKey, $variation): ?string
     {
@@ -48,6 +53,7 @@ class ConfigurationLoader implements IFlags, IBanditVariationIndexer
     /**
      * @throws InvalidApiKeyException
      * @throws HttpRequestException
+     * @throws InvalidConfigurationException
      */
     public function isBanditFlag($flagKey): bool
     {
@@ -62,9 +68,10 @@ class ConfigurationLoader implements IFlags, IBanditVariationIndexer
      */
     public function reloadConfigurationIfExpired(): void
     {
-        $cacheAge = $this->configurationStore->getFlagCacheAgeSeconds();
-        if ($cacheAge < 0 || $cacheAge >= $this->cacheAgeLimit) {
-            $this->fetchAndStoreConfigurations();
+        $flagCacheAge = $this->getCacheAgeSeconds();
+        if ($flagCacheAge === -1 || $flagCacheAge >= $this->cacheAgeLimit) {
+            $flagETag = $this->configurationStore->getMetadata(self::FLAG_ETAG);
+            $this->fetchAndStoreConfigurations($flagETag);
         }
     }
 
@@ -73,26 +80,51 @@ class ConfigurationLoader implements IFlags, IBanditVariationIndexer
      * @throws InvalidApiKeyException
      * @throws InvalidConfigurationException
      */
-    public function fetchAndStoreConfigurations(): void
+    public function fetchAndStoreConfigurations(?string $flagETag): void
     {
-        $responseData = json_decode($this->apiRequestWrapper->get(), true);
-        if (!$responseData) {
-            syslog(LOG_WARNING, "[Eppo SDK] Empty or invalid response from the configuration server.");
-            return;
+        $response = $this->apiRequestWrapper->get($flagETag);
+        if ($response->isModified) {
+            // Decode and set the data.
+            $responseData = json_decode($response->body, true);
+            if (!$responseData) {
+                syslog(LOG_WARNING, "[Eppo SDK] Empty or invalid response from the configuration server.");
+                return;
+            }
+
+            $inflated = array_map(fn($object) => $this->parser->parseFlag($object), $responseData['flags']);
+            $variations = [];
+            if (isset($responseData['bandits'])) {
+                $variations = array_map(
+                    fn($listOfVariations) => array_map(
+                        fn($json) => BanditVariation::fromJson($json),
+                        $listOfVariations
+                    ),
+                    $responseData['bandits']
+                );
+            } else {
+                syslog(LOG_WARNING, "[EPPO SDK] No bandit-flag variations found in UFC response.");
+            }
+
+            $indexer = BanditVariationIndexer::from($variations);
+            $this->configurationStore->setUnifiedFlagConfiguration($inflated, $indexer);
         }
 
-        $inflated = array_map(fn($object) => $this->parser->parseFlag($object), $responseData['flags']);
-        $variations = [];
-        if (isset($responseData['bandits'])) {
-            $variations = array_map(
-                fn($listOfVariations) => array_map(fn($json) => BanditVariation::fromJson($json), $listOfVariations),
-                $responseData['bandits']
-            );
-        } else {
-            syslog(LOG_WARNING, "[EPPO SDK] No bandit-flag variations found in UFC response.");
-        }
+        // Store metadata for next time.
+        $this->configurationStore->setMetadata(self::FLAG_TIMESTAMP, time());
+        $this->configurationStore->setMetadata(self::FLAG_ETAG, $response->ETag);
+    }
 
-        $indexer = new BanditVariationIndexer($variations);
-        $this->configurationStore->setConfigurations($inflated, $indexer);
+    private function getCacheAgeSeconds(): int
+    {
+        $timestamp = $this->configurationStore->getMetadata(self::FLAG_TIMESTAMP);
+        if ($timestamp != null) {
+            return time() - $timestamp;
+        }
+        return -1;
+    }
+
+    public function getBanditVariations(): IBanditVariationIndexer
+    {
+        return $this->configurationStore->getBanditVariations();
     }
 }

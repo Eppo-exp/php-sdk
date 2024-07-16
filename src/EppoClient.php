@@ -2,6 +2,7 @@
 
 namespace Eppo;
 
+use Eppo\API\APIRequestWrapper;
 use Eppo\Cache\DefaultCacheFactory;
 use Eppo\Config\ConfigurationLoader;
 use Eppo\Config\ConfigurationStore;
@@ -106,7 +107,7 @@ class EppoClient
                 self::POLL_INTERVAL_MILLIS,
                 self::JITTER_MILLIS,
                 function () use ($configLoader) {
-                    $configLoader->fetchAndStoreConfigurations();
+                    $configLoader->reloadConfigurationIfExpired();
                 }
             );
 

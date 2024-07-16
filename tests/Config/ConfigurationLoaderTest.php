@@ -2,13 +2,12 @@
 
 namespace Eppo\Tests\Config;
 
-use Eppo\APIRequestWrapper;
+use Eppo\API\APIResource;
+use Eppo\API\APIRequestWrapper;
 use Eppo\Cache\DefaultCacheFactory;
 use Eppo\Config\ConfigurationLoader;
 use Eppo\Config\ConfigurationStore;
 use Eppo\DTO\Flag;
-use Eppo\FlagConfigurationLoader;
-use Eppo\IConfigurationStore;
 use Eppo\UFCParser;
 use Http\Discovery\Psr17Factory;
 use Http\Discovery\Psr18Client;
@@ -31,6 +30,12 @@ class ConfigurationLoaderTest extends TestCase
     {
         // Load mock response data
         $flagsRaw = file_get_contents(self::MOCK_RESPONSE_FILENAME);
+        $flagsResourceResponse = new APIResource(
+            $flagsRaw,
+            time(),
+            true,
+            "ETAG"
+        );
         $flagsJson = json_decode($flagsRaw, true);
         $flags = array_map(fn($flag) => (new UFCParser())->parseFlag($flag), $flagsJson['flags']);
 
@@ -41,12 +46,12 @@ class ConfigurationLoaderTest extends TestCase
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->once())
             ->method('get')
-            ->willReturn($flagsRaw);
+            ->willReturn($flagsResourceResponse);
 
         $configStore = new ConfigurationStore(DefaultCacheFactory::create());
 
         $loader = new ConfigurationLoader($apiWrapper, $configStore);
-        $loader->fetchAndStoreConfigurations();
+        $loader->fetchAndStoreConfigurations(null);
 
 
         $flag = $loader->getFlag(self::FLAG_KEY);
@@ -79,7 +84,7 @@ class ConfigurationLoaderTest extends TestCase
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->once())
             ->method('get')
-            ->willReturn($flagsRaw);
+            ->willReturn(new APIResource($flagsRaw, true, "ETAG"));
 
 
         $flag = $loader->getFlag(self::FLAG_KEY);
@@ -105,7 +110,7 @@ class ConfigurationLoaderTest extends TestCase
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->exactly(2))
             ->method('get')
-            ->willReturn($flagsRaw);
+            ->willReturn(new APIResource($flagsRaw, true, "ETAG"));
 
         $flag = $loader->getFlag(self::FLAG_KEY);
         $flagAgain = $loader->getFlag(self::FLAG_KEY);

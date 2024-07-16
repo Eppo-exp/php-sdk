@@ -2,10 +2,11 @@
 
 namespace Eppo;
 
+use Eppo\Bandits\IBanditVariationIndexer;
 use Eppo\DTO\Flag;
 
 /**
- * A collection of Flags indexed by key.
+ * This interface represents an object which can provide UFC (Unified Flag Config) data.
  */
 interface IFlags
 {
@@ -15,4 +16,10 @@ interface IFlags
      * @return ?Flag
      */
     public function getFlag(string $key): ?Flag;
+
+    /**
+     * Gets the `BanditVariationIndexer` for mapping from flag variations to bandits.
+     * @return IBanditVariationIndexer
+     */
+    public function getBanditVariations(): IBanditVariationIndexer;
 }
