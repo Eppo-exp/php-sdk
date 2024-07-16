@@ -2,6 +2,7 @@
 
 namespace Eppo;
 
+use Eppo\API\APIRequestWrapper;
 use Eppo\Bandits\BanditEvaluator;
 use Eppo\Bandits\IBanditEvaluator;
 use Eppo\Cache\DefaultCacheFactory;

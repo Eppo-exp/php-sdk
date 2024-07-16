@@ -26,11 +26,16 @@ class BanditVariationIndexer implements IBanditVariationIndexer
      */
     private array $banditFlags = [];
 
+
+    private function __construct()
+    {
+    }
+
     /**
      * @param array<string, array<BanditVariation>> $banditVariations
      * @throws InvalidConfigurationException
      */
-    public function __construct(array $banditVariations)
+    private function setVariations(array $banditVariations): void
     {
         foreach ($banditVariations as $listOfVariations) {
             foreach ($listOfVariations as $banditVariation) {
@@ -58,7 +63,11 @@ class BanditVariationIndexer implements IBanditVariationIndexer
         }
     }
 
-
+    /**
+     * @param string $flagKey
+     * @param string $variation
+     * @return string|null
+     */
     public function getBanditByVariation(string $flagKey, string $variation): ?string
     {
         return $this->banditFlags[$flagKey][$variation] ?? null;
@@ -67,5 +76,25 @@ class BanditVariationIndexer implements IBanditVariationIndexer
     public function isBanditFlag(string $flagKey): bool
     {
         return isset($this->banditFlags[$flagKey]);
+    }
+
+    public static function empty(): IBanditVariationIndexer
+    {
+        return new BanditVariationIndexer();
+    }
+
+    /**
+     * @throws InvalidConfigurationException
+     */
+    public static function from(array $banditVariations): IBanditVariationIndexer
+    {
+        $bvi = new BanditVariationIndexer();
+        $bvi->setVariations($banditVariations);
+        return $bvi;
+    }
+
+    public function hasBandits(): bool
+    {
+        return count($this->banditFlags) > 0;
     }
 }

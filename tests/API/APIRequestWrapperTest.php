@@ -1,8 +1,8 @@
 <?php
 
-namespace Eppo\Tests;
+namespace Eppo\Tests\API;
 
-use Eppo\APIRequestWrapper;
+use Eppo\API\APIRequestWrapper;
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
 use Exception;
@@ -31,6 +31,28 @@ class APIRequestWrapperTest extends TestCase
         );
         $api->getUFC();
     }
+
+
+    public function testApiGetsResource(): void
+    {
+        // Note: this test also verifies that the correct endpoint is called via mock expectations.
+        $body = "RESPONSE BODY";
+        $ETag = "00FF22EEFF";
+
+        $http = $this->getHttpClientMock(200, $body, ["ETag" => $ETag]);
+        $api = new APIRequestWrapper(
+            'APIKEY',
+            [],
+            $http,
+            new Psr17Factory()
+        );
+        $result = $api->getUFC();
+        $this->assertNotNull($result);
+        $this->assertTrue($result->isModified);
+        $this->assertEquals($ETag, $result->ETag);
+        $this->assertEquals($body, $result->body);
+    }
+
 
     public function testUnauthorizedClient(): void
     {
@@ -90,9 +112,9 @@ class APIRequestWrapperTest extends TestCase
         );
 
         $response = $api->getUFC();
-        $this->assertEquals('UFC', $response);
+        $this->assertEquals('UFC', $response->body);
         $response = $api->getBandits();
-        $this->assertEquals('BANDIT', $response);
+        $this->assertEquals('BANDIT', $response->body);
     }
 
     private function assertStatusRecoverable(bool $recoverable, int $status): void
@@ -115,7 +137,7 @@ class APIRequestWrapperTest extends TestCase
         }
     }
 
-    private function getHttpClientMock(int $statusCode, string $body): ClientInterface
+    private function getHttpClientMock(int $statusCode, string $body, $responseHeaders = []): ClientInterface
     {
         $httpClientMock = $this->getMockBuilder(ClientInterface::class)->setConstructorArgs([
         ])->getMock();
@@ -126,6 +148,9 @@ class APIRequestWrapperTest extends TestCase
             statusCode: $statusCode,
             stream: $stream
         );
+        if ($responseHeaders) {
+            $mockResponse = $mockResponse->withHeaders($responseHeaders);
+        }
 
         $httpClientMock->expects($this->any())
             ->method('sendRequest')
@@ -204,5 +229,59 @@ class APIRequestWrapperTest extends TestCase
             });
 
         return $httpClientMock;
+    }
+
+    public function testSendsLastETagAndComputesIsModified(): void
+    {
+        // Note: this test also verifies that the correct endpoint is called via mock expectations.
+        $body = "RESPONSE BODY";
+        $ETag = "00FF22EEFF";
+
+
+        $httpClientMock = $this->getMockBuilder(ClientInterface::class)->setConstructorArgs([])->getMock();
+
+        $stream = new Stream($body);
+
+        $mockNewResponse = (new Response(
+            statusCode: 200,
+            stream: $stream
+        ))->withAddedHeader('ETag', $ETag);
+        $mockSameResponse = (new Response(
+            statusCode: 304,
+            stream: null
+        ))->withAddedHeader('ETag', $ETag);
+
+        $httpClientMock->expects($this->any())
+            ->method('sendRequest')
+            ->willReturnCallback(function ($request) use ($mockSameResponse, $ETag, $mockNewResponse): Response {
+                if (in_array($ETag, $request->getHeader('IF-NONE-MATCH'))) {
+                    return $mockSameResponse;
+                }
+                return $mockNewResponse;
+            });
+
+
+        $api = new APIRequestWrapper(
+            'APIKEY',
+            [],
+            $httpClientMock,
+            new Psr17Factory()
+        );
+
+
+        $result = $api->getUFC("OLDER ETAG");
+
+        $this->assertNotNull($result);
+        $this->assertTrue($result->isModified);
+        $this->assertEquals($ETag, $result->ETag);
+        $this->assertEquals($body, $result->body);
+
+        // Second requests uses the ETag from the first.
+        $result = $api->getUFC($ETag);
+
+        $this->assertNotNull($result);
+        $this->assertFalse($result->isModified);
+        $this->assertEquals($ETag, $result->ETag);
+        $this->assertNull($result->body);
     }
 }
