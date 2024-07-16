@@ -446,7 +446,6 @@ class EppoClient
 
             return $this->getBanditDetail($flagKey, $subjectKey, $subject, $actionContexts, $defaultVariation);
         } catch (EppoException $e) {
-            // TODO: handle the different exception types.
             if ($this->isGracefulMode) {
                 error_log('[Eppo SDK] Error selecting bandit action: ' . $e->getMessage());
                 return new BanditResult($defaultVariation);
