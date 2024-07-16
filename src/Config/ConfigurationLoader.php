@@ -142,8 +142,14 @@ class ConfigurationLoader implements IFlags, IBandits
         return $this->configurationStore->getBanditVariations();
     }
 
+    /**
+     * @throws HttpRequestException
+     * @throws InvalidApiKeyException
+     * @throws InvalidConfigurationException
+     */
     private function fetchAndStoreBandits(): void
     {
+        // TODO: implement optimized fetching by checking for expected bandit models from UFC response.
         $banditModelResponse = json_decode($this->apiRequestWrapper->getBandits()->body, true);
         if (!$banditModelResponse || !isset($banditModelResponse['bandits'])) {
             syslog(LOG_WARNING, "[Eppo SDK] Empty or invalid response from the configuration server.");

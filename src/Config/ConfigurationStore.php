@@ -159,7 +159,7 @@ class ConfigurationStore implements IConfigurationStore
     {
         try {
             return $this->banditCache->get($banditKey);
-        } catch (InvalidArgumentException $e) {
+        } catch (\Psr\SimpleCache\InvalidArgumentException $e) {
             // Simple cache throws exceptions when a keystring is not a legal value (characters {}()/@: are illegal)
             throw new InvalidConfigurationException(
                 "Illegal bandit key ${$banditKey}: " . $e->getMessage(),
