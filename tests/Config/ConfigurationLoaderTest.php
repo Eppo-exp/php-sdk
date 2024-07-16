@@ -112,7 +112,7 @@ class ConfigurationLoaderTest extends TestCase
             ->willReturn(new APIResource($flagsRaw, true, "ETAG"));
         $apiWrapper->expects($this->once())
             ->method('getBandits')
-            ->willReturn($banditsRaw);
+            ->willReturn(new APIResource($banditsRaw, true, "ETAG"));
 
         $flag = $loader->getFlag(self::FLAG_KEY);
 
@@ -140,7 +140,7 @@ class ConfigurationLoaderTest extends TestCase
             ->willReturn(new APIResource($flagsRaw, true, "ETAG"));
         $apiWrapper->expects($this->exactly(2))
             ->method('getBandits')
-            ->willReturn($banditsRaw);
+            ->willReturn(new APIResource($banditsRaw, true, "ETAG"));
 
         $flag = $loader->getFlag(self::FLAG_KEY);
         $flagAgain = $loader->getFlag(self::FLAG_KEY);
@@ -164,10 +164,10 @@ class ConfigurationLoaderTest extends TestCase
         $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->disableOriginalConstructor()->getMock();
         $apiWrapper->expects($this->exactly(1))
             ->method('getUFC')
-            ->willReturn($flagResponse);
-        $apiWrapper->expects($this->exactly(1))
+            ->willReturn(new APIResource($flagResponse, true, "ETAG"));
+        $apiWrapper->expects($this->exactly(0))
             ->method('getBandits')
-            ->willReturn("");
+            ->willReturn(new APIResource('', true, "ETAG"));
 
         // Act: Load a flag, expecting the Config loader not to throw and to successfully return the flag.
         $cache = DefaultCacheFactory::create();
