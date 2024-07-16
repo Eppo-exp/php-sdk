@@ -23,6 +23,7 @@ use Eppo\Exception\InvalidArgumentException;
 use Eppo\Exception\InvalidConfigurationException;
 use Eppo\Logger\AssignmentEvent;
 use Eppo\Logger\BanditActionEvent;
+use Eppo\Logger\IBanditLogger;
 use Eppo\Logger\LoggerInterface;
 use Exception;
 use Http\Discovery\Psr17Factory;
@@ -384,6 +385,9 @@ class EppoClient
      * are bucketed as "Categorical Attributes" while numeric are treated as "Numeric Attributes". Demonstrated in the
      * **Example 2** below is a means of explicitly classifying attributes as either Numeric or Categorical.
      *
+     * Logging selected bandits to your data warehouse is critical. Instead of just implementing `LoggerInterface`,
+     * implement `IBanditLogger`. This interface logging methods for both flag assignments and bandits.
+     *
      * Example 1:
      *
      * $flagKey = 'my-bandit-flag';
@@ -530,8 +534,9 @@ class EppoClient
             (new SDKData())->asArray()
         );
 
-        $this->eventLogger?->logBanditAction($banditActionLog);
-
+        if ($this->eventLogger instanceof IBanditLogger) {
+            $this->eventLogger->logBanditAction($banditActionLog);
+        }
         return new BanditResult($variation, $result->selectedAction);
     }
 

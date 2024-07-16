@@ -15,7 +15,7 @@ use Eppo\EppoClient;
 use Eppo\Exception\EppoClientException;
 use Eppo\Exception\EppoException;
 use Eppo\Logger\BanditActionEvent;
-use Eppo\Logger\LoggerInterface;
+use Eppo\Logger\IBanditLogger;
 use Eppo\PollerInterface;
 use Eppo\Tests\WebServer\MockWebServer;
 use Exception;
@@ -26,6 +26,8 @@ class BanditClientTest extends TestCase
     private const EXPERIMENT_NAME = 'numeric_flag';
     private const TEST_DATA_PATH = __DIR__ . '/data/ufc/bandit-tests';
 
+    private static ?EppoClient $client;
+
     public static function setUpBeforeClass(): void
     {
         try {
@@ -35,7 +37,7 @@ class BanditClientTest extends TestCase
         }
 
         try {
-            EppoClient::init('dummy', 'http://localhost:4000',);
+           self::$client= EppoClient::init('dummy', 'http://localhost:4000',);
         } catch (Exception $exception) {
             self::fail('Failed to initialize EppoClient: ' . $exception->getMessage());
         }
@@ -182,7 +184,7 @@ class BanditClientTest extends TestCase
             ->method('evaluateBandit')
             ->willReturn($evaluation);
 
-        $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
+        $mockLogger = $this->getMockBuilder(IBanditLogger::class)->getMock();
 
         // EppoClient won't log this assignment as it's not computed, just returning the default.
         $mockLogger->expects($this->never())->method('logAssignment');
@@ -214,7 +216,7 @@ class BanditClientTest extends TestCase
     {
         // Load all the test cases.
         $testCases = $this->loadTestCases();
-        $client = EppoClient::getInstance();
+        $client = self::$client;
 
         foreach ($testCases as $testFile => $test) {
             foreach ($test['subjects'] as $subject) {
