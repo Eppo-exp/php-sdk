@@ -16,6 +16,7 @@ class ConfigurationStore implements IConfigurationStore
 {
     private CacheInterface $flagCache;
     private CacheInterface $metadataCache;
+
     private const BANDIT_VARIATION_KEY = 'banditVariations';
 
     /**
