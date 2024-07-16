@@ -98,10 +98,7 @@ class ConfigurationStore implements IConfigurationStore
     public function getMetadata(string $key): mixed
     {
         try {
-            $meta = $this->metadataCache->get($key);
-            if ($meta != null) {
-                return $meta ?: null; // unserialize returns false if there was a problem decoding.
-            }
+            return $this->metadataCache->get($key);
         } catch (\Psr\SimpleCache\InvalidArgumentException $e) {
             syslog(LOG_WARNING, "[EPPO SDK] Illegal flag key: " . $e->getMessage());
         }
