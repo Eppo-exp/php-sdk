@@ -17,6 +17,7 @@ use Eppo\UFCParser;
 
 class ConfigurationLoader implements IFlags, IBandits
 {
+    private const BANDIT_TIMESTAMP = "banditTimestamp";
     private UFCParser $parser;
 
     private const FLAG_TIMESTAMP = "flagTimestamp";
@@ -115,6 +116,11 @@ class ConfigurationLoader implements IFlags, IBandits
 
             $indexer = BanditVariationIndexer::from($variations);
             $this->configurationStore->setUnifiedFlagConfiguration($inflated, $indexer);
+
+            // Only load bandits if there are any referenced by the flags.
+            if ($indexer->hasBandits()) {
+                $this->fetchAndStoreBandits();
+            }
         }
 
         // Store metadata for next time.
@@ -136,7 +142,7 @@ class ConfigurationLoader implements IFlags, IBandits
         return $this->configurationStore->getBanditVariations();
     }
 
-    private function fetchBandits(): void
+    private function fetchAndStoreBandits(): void
     {
         $banditModelResponse = json_decode($this->apiRequestWrapper->getBandits()->body, true);
         if (!$banditModelResponse || !isset($banditModelResponse['bandits'])) {
@@ -147,6 +153,7 @@ class ConfigurationLoader implements IFlags, IBandits
         }
 
         $this->configurationStore->setBandits($bandits);
+        $this->configurationStore->setMetadata(self::BANDIT_TIMESTAMP, time());
     }
 
     public function getBandit(string $banditKey): ?Bandit

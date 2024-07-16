@@ -65,7 +65,7 @@ class ConfigurationLoaderTest extends TestCase
             ->willReturn($flagsResourceResponse);
         $apiWrapper->expects($this->once())
             ->method('getBandits')
-            ->willReturn($banditsRaw);
+            ->willReturn(new APIResource($banditsRaw, true, null));
 
         $configStore = new ConfigurationStore(DefaultCacheFactory::create());
 
