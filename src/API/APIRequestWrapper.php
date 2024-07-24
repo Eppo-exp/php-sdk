@@ -21,6 +21,7 @@ class APIRequestWrapper
 {
     /** @var string */
     private const UFC_ENDPOINT = '/flag-config/v1/config';
+    private const BANDIT_ENDPOINT = '/flag-config/v1/bandits';
     private const CONFIG_BASE = 'https://fscdn.eppo.cloud/api';
 
     private string $baseUrl;
@@ -33,21 +34,17 @@ class APIRequestWrapper
 
     private RequestFactoryInterface $requestFactory;
 
-    private string $resource;
-
     public function __construct(
         string $apiKey,
         array $extraQueryParams,
         ClientInterface $baseHttpClient,
         RequestFactoryInterface $requestFactory,
-        ?string $baseUrl = null,
-        ?string $resource = null
+        ?string $baseUrl = null
     ) {
         // Our HTTP Client needs to be able to follow redirects.
         $this->httpClient = new RedirectClientDecorator($baseHttpClient);
         $this->baseUrl = $baseUrl ?? self::CONFIG_BASE;
         $this->requestFactory = $requestFactory;
-        $this->resource = $resource ?? self::UFC_ENDPOINT;
         $this->queryParams = [
             'apiKey' => $apiKey,
             ...$extraQueryParams
@@ -57,11 +54,11 @@ class APIRequestWrapper
     /**
      * @throws HttpRequestException|InvalidApiKeyException
      */
-    public function get(?string $lastETag = null): APIResource
+    private function getResource(string $endpoint, ?string $lastETag = null): APIResource
     {
         try {
             // Prepare the URL with query params
-            $resourceURI = $this->baseUrl . '/' . ltrim($this->resource, '/') . '?' . http_build_query(
+            $resourceURI = $this->baseUrl . '/' . ltrim($endpoint, '/') . '?' . http_build_query(
                 $this->queryParams
             );
 
@@ -95,6 +92,24 @@ class APIRequestWrapper
             $isModified,
             $responseETag
         );
+    }
+
+    /**
+     * @throws HttpRequestException|InvalidApiKeyException
+     */
+    public function getUFC(?string $lastETag = null): APIResource
+    {
+        return $this->getResource(self::UFC_ENDPOINT, $lastETag);
+    }
+
+
+    /**
+     * @throws HttpRequestException
+     * @throws InvalidApiKeyException
+     */
+    public function getBandits(): APIResource
+    {
+        return $this->getResource(self::BANDIT_ENDPOINT);
     }
 
     /**

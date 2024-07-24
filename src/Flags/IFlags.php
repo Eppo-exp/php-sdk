@@ -1,6 +1,6 @@
 <?php
 
-namespace Eppo;
+namespace Eppo\Flags;
 
 use Eppo\Bandits\IBanditVariationIndexer;
 use Eppo\DTO\Flag;

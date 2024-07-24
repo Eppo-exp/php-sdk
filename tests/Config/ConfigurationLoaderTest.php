@@ -7,6 +7,7 @@ use Eppo\API\APIRequestWrapper;
 use Eppo\Cache\DefaultCacheFactory;
 use Eppo\Config\ConfigurationLoader;
 use Eppo\Config\ConfigurationStore;
+use Eppo\DTO\Bandit\Bandit;
 use Eppo\DTO\Flag;
 use Eppo\UFCParser;
 use Http\Discovery\Psr17Factory;
@@ -32,12 +33,27 @@ class ConfigurationLoaderTest extends TestCase
         $flagsRaw = file_get_contents(self::MOCK_RESPONSE_FILENAME);
         $flagsResourceResponse = new APIResource(
             $flagsRaw,
-            time(),
             true,
             "ETAG"
         );
         $flagsJson = json_decode($flagsRaw, true);
         $flags = array_map(fn($flag) => (new UFCParser())->parseFlag($flag), $flagsJson['flags']);
+        $banditsRaw = '{
+            "bandits": {
+                "cold_start_bandit": {
+                    "banditKey": "cold_start_bandit",
+                    "modelName": "falcon",
+                    "updatedAt": "2023-09-13T04:52:06.462Z",
+                    "modelVersion": "cold start",
+                    "modelData": {
+                        "gamma": 1.0,
+                        "defaultActionScore": 0.0,
+                        "actionProbabilityFloor": 0.0,
+                        "coefficients": {}
+                    }
+                }
+            }
+        }';
 
         $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs(
             ['', [], new Psr18Client(), new Psr17Factory()]
@@ -45,8 +61,11 @@ class ConfigurationLoaderTest extends TestCase
 
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->once())
-            ->method('get')
+            ->method('getUFC')
             ->willReturn($flagsResourceResponse);
+        $apiWrapper->expects($this->once())
+            ->method('getBandits')
+            ->willReturn(new APIResource($banditsRaw, true, null));
 
         $configStore = new ConfigurationStore(DefaultCacheFactory::create());
 
@@ -65,6 +84,11 @@ class ConfigurationLoaderTest extends TestCase
             'cold_start_bandit',
             $loader->getBanditByVariation('cold_start_bandit_flag', 'cold_start_bandit')
         );
+
+        $bandit = $loader->getBandit('cold_start_bandit');
+        $this->assertNotNull($bandit);
+        $this->assertInstanceOf(Bandit::class, $bandit);
+        $this->assertEquals('cold_start_bandit', $bandit->banditKey);
     }
 
     public function testLoadsOnGet(): void
@@ -74,6 +98,7 @@ class ConfigurationLoaderTest extends TestCase
         $flagsRaw = file_get_contents(self::MOCK_RESPONSE_FILENAME);
         $flagsJson = json_decode($flagsRaw, true);
         $flags = array_map(fn($flag) => (new UFCParser())->parseFlag($flag), $flagsJson['flags']);
+        $banditsRaw = '{"bandits": {}}';
 
         $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->disableOriginalConstructor()->getMock();
 
@@ -83,9 +108,11 @@ class ConfigurationLoaderTest extends TestCase
 
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->once())
-            ->method('get')
+            ->method('getUFC')
             ->willReturn(new APIResource($flagsRaw, true, "ETAG"));
-
+        $apiWrapper->expects($this->once())
+            ->method('getBandits')
+            ->willReturn(new APIResource($banditsRaw, true, "ETAG"));
 
         $flag = $loader->getFlag(self::FLAG_KEY);
 
@@ -99,7 +126,7 @@ class ConfigurationLoaderTest extends TestCase
         // Load mock response data
         $flagsRaw = file_get_contents(self::MOCK_RESPONSE_FILENAME);
         $flagsJson = json_decode($flagsRaw, true);
-        $flags = array_map(fn($flag) => (new UFCParser())->parseFlag($flag), $flagsJson['flags']);
+        $banditsRaw = '{"bandits": {}}';
 
         $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->disableOriginalConstructor()->getMock();
 
@@ -109,8 +136,11 @@ class ConfigurationLoaderTest extends TestCase
 
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->exactly(2))
-            ->method('get')
+            ->method('getUFC')
             ->willReturn(new APIResource($flagsRaw, true, "ETAG"));
+        $apiWrapper->expects($this->exactly(2))
+            ->method('getBandits')
+            ->willReturn(new APIResource($banditsRaw, true, "ETAG"));
 
         $flag = $loader->getFlag(self::FLAG_KEY);
         $flagAgain = $loader->getFlag(self::FLAG_KEY);
@@ -119,5 +149,32 @@ class ConfigurationLoaderTest extends TestCase
         $this->assertNotNull($flag);
         $this->assertNotNull($flagAgain);
         $this->assertEquals($flag, $flagAgain);
+    }
+
+    public function testRunsWithoutBandits(): void
+    {
+        // Arrange: Load some flag data to be returned by the APIRequestWrapper
+        // Load mock response data
+        $flagsJson = json_decode(file_get_contents(self::MOCK_RESPONSE_FILENAME), true);
+
+        unset($flagsJson['bandits']); // Remove the Bandit Variations from the response
+        $flagResponse = json_encode($flagsJson);
+
+
+        $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->disableOriginalConstructor()->getMock();
+        $apiWrapper->expects($this->exactly(1))
+            ->method('getUFC')
+            ->willReturn(new APIResource($flagResponse, true, "ETAG"));
+        $apiWrapper->expects($this->exactly(0))
+            ->method('getBandits')
+            ->willReturn(new APIResource('', true, "ETAG"));
+
+        // Act: Load a flag, expecting the Config loader not to throw and to successfully return the flag.
+        $cache = DefaultCacheFactory::create();
+        $loader = new ConfigurationLoader($apiWrapper, new ConfigurationStore($cache));
+        $flag = $loader->getFlag(self::FLAG_KEY);
+
+        // Assert.
+        $this->assertNotNull($flag);
     }
 }

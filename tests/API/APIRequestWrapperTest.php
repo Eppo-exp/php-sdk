@@ -5,9 +5,11 @@ namespace Eppo\Tests\API;
 use Eppo\API\APIRequestWrapper;
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
+use Exception;
 use Http\Discovery\Psr17Factory;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Client\ClientInterface;
+use Psr\Http\Message\RequestInterface;
 use PsrMock\Psr7\Collections\Headers;
 use PsrMock\Psr7\Entities\Header;
 use PsrMock\Psr7\Response;
@@ -27,7 +29,7 @@ class APIRequestWrapperTest extends TestCase
             $http,
             new Psr17Factory()
         );
-        $api->get();
+        $api->getUFC();
     }
 
 
@@ -44,7 +46,7 @@ class APIRequestWrapperTest extends TestCase
             $http,
             new Psr17Factory()
         );
-        $result = $api->get();
+        $result = $api->getUFC();
         $this->assertNotNull($result);
         $this->assertTrue($result->isModified);
         $this->assertEquals($ETag, $result->ETag);
@@ -64,7 +66,7 @@ class APIRequestWrapperTest extends TestCase
 
         $this->expectException(InvalidApiKeyException::class);
 
-        $result = $api->get();
+        $result = $api->getUFC();
 
         $this->assertTrue($api->isUnauthorized);
     }
@@ -82,7 +84,7 @@ class APIRequestWrapperTest extends TestCase
         $this->expectException(HttpRequestException::class);
         $this->expectExceptionCode(RFC7231::INTERNAL_SERVER_ERROR);
 
-        $api->get();
+        $api->getUFC();
     }
 
     public function testRecoverableHttpError(): void
@@ -99,6 +101,22 @@ class APIRequestWrapperTest extends TestCase
         $this->assertStatusRecoverable(false, RFC7231::NOT_FOUND);
     }
 
+    public function testResourceFetching(): void
+    {
+        $http = $this->getRespondingHttpClientMock(RFC7231::OK, '');
+        $api = new APIRequestWrapper(
+            '',
+            [],
+            $http,
+            new Psr17Factory()
+        );
+
+        $response = $api->getUFC();
+        $this->assertEquals('UFC', $response->body);
+        $response = $api->getBandits();
+        $this->assertEquals('BANDIT', $response->body);
+    }
+
     private function assertStatusRecoverable(bool $recoverable, int $status): void
     {
         $http = $this->getHttpClientMock($status, '');
@@ -110,15 +128,14 @@ class APIRequestWrapperTest extends TestCase
         );
 
         try {
-            $api->get();
+            $api->getUFC();
             $this->fail('Exception not thrown');
         } catch (HttpRequestException $e) {
             $this->assertEquals($recoverable, $e->isRecoverable);
         } catch (InvalidApiKeyException $e) {
-            $this->assertEquals("", $e->getMessage());
+            $this->assertEquals('', $e->getMessage());
         }
     }
-
 
     private function getHttpClientMock(int $statusCode, string $body, $responseHeaders = []): ClientInterface
     {
@@ -140,6 +157,41 @@ class APIRequestWrapperTest extends TestCase
             ->willReturn($mockResponse);
 
         return $httpClientMock;
+    }
+
+    private function getRespondingHttpClientMock(int $statusCode): ClientInterface
+    {
+        $httpClientMock = $this->getMockBuilder(ClientInterface::class)->setConstructorArgs([])->getMock();
+
+        $httpClientMock->expects($this->exactly(2))
+            ->method('sendRequest')
+            ->willReturnCallback(fn($arg) => $this->httpCallback($statusCode, $arg));
+
+        return $httpClientMock;
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function httpCallback(int $statusCode, RequestInterface $request): Response
+    {
+        if (str_ends_with($request->getUri()->getPath(), 'config')) {
+            return $this->returnResponse($statusCode, 'UFC');
+        } elseif (str_ends_with($request->getUri()->getPath(), 'bandits')) {
+            return $this->returnResponse($statusCode, 'BANDIT');
+        } else {
+            throw new Exception('Unexpected http request');
+        }
+    }
+
+    private function returnResponse(int $statusCode, string $body): Response
+    {
+        $stream = new Stream($body);
+
+        return new Response(
+            statusCode: $statusCode,
+            stream: $stream
+        );
     }
 
     private function getRedirectingClientMock(): ClientInterface
@@ -217,7 +269,7 @@ class APIRequestWrapperTest extends TestCase
         );
 
 
-        $result = $api->get("OLDER ETAG");
+        $result = $api->getUFC("OLDER ETAG");
 
         $this->assertNotNull($result);
         $this->assertTrue($result->isModified);
@@ -225,7 +277,7 @@ class APIRequestWrapperTest extends TestCase
         $this->assertEquals($body, $result->body);
 
         // Second requests uses the ETag from the first.
-        $result = $api->get($ETag);
+        $result = $api->getUFC($ETag);
 
         $this->assertNotNull($result);
         $this->assertFalse($result->isModified);
