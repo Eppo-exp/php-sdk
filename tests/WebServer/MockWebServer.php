@@ -55,7 +55,6 @@ class MockWebServer
     }
 
     private static function getFreePort(): ?int
-
     {
         $sock = socket_create_listen(0);
         socket_getsockname($sock, $addr, $port);

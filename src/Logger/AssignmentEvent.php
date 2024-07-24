@@ -16,4 +16,18 @@ class AssignmentEvent
         public array $extraLogging = []
     ) {
     }
+    public function toArray(): array
+    {
+        return [
+            'experiment' => $this->experiment,
+            'variation' => $this->variation,
+            'allocation' => $this->allocation,
+            'featureFlag' => $this->featureFlag,
+            'subject' => $this->subject,
+            'timestamp' => $this->timestamp,
+            'subjectAttributes' => $this->subjectAttributes,
+            'sdkMetadata' => $this->sdkMetadata,
+            'extraLogging' => $this->extraLogging,
+        ];
+    }
 }

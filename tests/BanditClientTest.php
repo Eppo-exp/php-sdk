@@ -44,7 +44,7 @@ class BanditClientTest extends TestCase
         }
 
         try {
-            self::$client = EppoClient::init('dummy',  self::$mockServer->serverAddress);
+            self::$client = EppoClient::init('dummy', self::$mockServer->serverAddress);
         } catch (Exception $exception) {
             self::fail('Failed to initialize EppoClient: ' . $exception->getMessage());
         }

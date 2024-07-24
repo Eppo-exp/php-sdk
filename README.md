@@ -128,7 +128,7 @@ The `init` function accepts the following optional configuration arguments.
 
 ## Assignment logger 
 
-To use the Eppo SDK for experiments that require analysis, pass in a callback logging function to the `init` function on SDK initialization. The SDK invokes the callback to capture assignment data whenever a variation is assigned. The assignment data is needed in the warehouse to perform analysis.
+To use the Eppo SDK for experiments that require analysis, pass in an implementation of the `LoggerInterface` to the `init` function on SDK initialization. The SDK invokes the callback to capture assignment data whenever a variation is assigned. The assignment data is needed in the warehouse to perform analysis.
 
 The code below illustrates an example implementation of a logging callback using [Segment](https://segment.com/), but you can use any system you'd like. The only requirement is that the SDK receives a `logAssignment` callback function. Here we define an implementation of the Eppo `AssignmentLogger` interface containing a single function named `logAssignment`:
 
@@ -137,25 +137,55 @@ The code below illustrates an example implementation of a logging callback using
 
 use Eppo\Logger\LoggerInterface;
 
-class Logger implements LoggerInterface {
-  public function logAssignment(
-    string $experiment,
-    string $variation,
-    string $subject,
-    string $timestamp,
-    array $subjectAttributes = []
-  ) {
-    var_dump(
-      json_encode([
-        'experiment' => $experiment,
-        'variation' => $variation,
-        'subject' => $subject,
-        'timestamp' => $timestamp,
-      ]);
-    );
-  }
+
+use Eppo\Logger\AssignmentEvent;
+use Eppo\Logger\LoggerInterface;
+
+class SegmentLogger implements LoggerInterface
+{
+    public function logAssignment(AssignmentEvent $assignmentEvent): void
+    {
+        Segment::track([
+            'event' => 'Flag Assignment for ' . $assignmentEvent->featureFlag,
+            'userId' => $assignmentEvent->subject,
+            'properties' => $assignmentEvent->toArray()
+        ]);
+    }
 }
 ```
+
+### Bandit Action Logging
+When using Bandits, a different logging method is called. Your logging class must implement [`IBanditLogger`](https://github.com/Eppo-exp/php-sdk/blob/main/src/Logger/IBanditLogger.php) instead of `LoggerInterface`.
+
+```php
+<?php
+
+use Eppo\Logger\AssignmentEvent;
+use Eppo\Logger\BanditActionEvent;
+use Eppo\Logger\IBanditLogger;
+
+class SegmentLogger implements IBanditLogger
+{
+    public function logAssignment(AssignmentEvent $assignmentEvent): void
+    {
+        Segment::track([
+            'event' => 'Flag Assignment for ' . $assignmentEvent->featureFlag,
+            'userId' => $assignmentEvent->subject,
+            'properties' => $assignmentEvent->toArray()
+        ]);
+    }
+
+    public function logBanditAction(BanditActionEvent $banditActionEvent): void
+    {
+        Segment::track([
+            'event' => 'Bandit Action Selected',
+            'userId' => $banditActionEvent->subjectKey,
+            'properties' => $banditActionEvent->toArray()
+        ]);
+    }
+}
+```
+
 
 ## Background Polling
 To make the experience of using the library faster, there is an option to start a background polling for randomization params.
