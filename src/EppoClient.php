@@ -486,6 +486,7 @@ class EppoClient
 
         $isBanditFlag = $this->configurationLoader->isBanditFlag($flagKey);
 
+        // TODO NOT an error; return the `defaultVariation` in this case.
         if (empty($actionsWithContext) && $isBanditFlag) {
             // This exception is caught in graceful mode and the default is returned (@see getBanditAction)
             throw new BanditEvaluationException("No actions provided for bandit flag {$flagKey}");
