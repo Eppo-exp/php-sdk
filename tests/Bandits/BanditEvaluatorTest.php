@@ -344,6 +344,38 @@ class BanditEvaluatorTest extends TestCase
         $this->assertAssociativeArraysEqual($expectedWeights, $actualWeights);
     }
 
+    public function testWeighEvenBestScores(): void
+    {
+        $scores = array(
+            'action1' => 1,
+            'action2' => 1,
+            'action3' => 1,
+            'action4' => 0.1,
+            'action5' => 0.3,
+            'action6' => 0.04,
+            'action7' => 0.005,
+        );
+
+        $scoresInAnotherOrder = array(
+            'action2' => 1,
+            'action3' => 1,
+            'action4' => 0.1,
+            'action1' => 1,
+            'action5' => 0.3,
+            'action6' => 0.04,
+            'action7' => 0.005,
+        );
+
+        $gamma = 0.1;
+        $minProbability = 0.1;
+
+        $actualWeights = BanditEvaluator::weighActions($scores, $gamma, $minProbability);
+        $actualWeightsForADifferentOrder = BanditEvaluator::weighActions($scoresInAnotherOrder, $gamma, $minProbability);
+
+        // Weights should not depend on ordering.
+        $this->assertAssociativeArraysEqual($actualWeights, $actualWeightsForADifferentOrder);
+    }
+
     /**
      * Compare two associative arrays without order mattering.
      * @param array $expectedArray
