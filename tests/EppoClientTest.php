@@ -173,14 +173,13 @@ class EppoClientTest extends TestCase
     public function testRepoTestCases(): void
     {
         try {
-            EppoClient::init('dummy', 'http://localhost:4000', isGracefulMode: false);
+            $client = EppoClient::init('dummy', 'http://localhost:4000', isGracefulMode: false);
         } catch (Exception $exception) {
             self::fail('Failed to initialize EppoClient: ' . $exception->getMessage());
         }
 
         // Load all the test cases.
         $testCases = $this->loadTestCases();
-        $client = EppoClient::getInstance();
 
         foreach ($testCases as $testFile => $test) {
             foreach ($test['subjects'] as $subject) {
