@@ -146,23 +146,16 @@ class BanditEvaluator implements IBanditEvaluator
 
         $bestScore = $actionScores[$bestActionKey];
 
-        $weighScoreClosure = function ($score) use ($minProbability, $bestScore, $gamma, $numberOfActions) {
-            return max($minProbability, 1.0 / ($numberOfActions + $gamma * ($bestScore - $score)));
-        };
+        $weights = [];
+        foreach ($actionScores as $key => $actionScore) {
+            if ($key === $bestActionKey) {
+                continue; // Best score gets computed later.
+            }
 
-        // Except for the best score for each action score, compute the relative weight.
-        $weights = array_map(
-            $weighScoreClosure,
-            array_filter(
-                $actionScores,
-                function ($key) use ($bestActionKey) {
-                    return $key !== $bestActionKey;
-                },
-                ARRAY_FILTER_USE_KEY
-            )
-        );
+            $weights[$key] = max($minProbability, 1.0 / ($numberOfActions + $gamma * ($bestScore - $actionScore)));
+        }
 
-        // Best score gets the remaining weight.
+        // Best score gets the leftovers.
         $remainingWeight = max(0.0, 1.0 - array_sum($weights));
         $weights[$bestActionKey] = $remainingWeight;
 
