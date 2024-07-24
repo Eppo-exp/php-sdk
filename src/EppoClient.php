@@ -431,7 +431,7 @@ class EppoClient
      * @param string $subjectKey
      * @param array<string, ?object>|AttributeSet $subjectContext
      * @param array<string>|array<string, array<string, ?object>>|array<string, AttributeSet> $actions
-     * @param string $defaultVariation
+     * @param string $defaultValue
      * @return BanditResult
      *
      * @throws EppoClientException
@@ -441,7 +441,7 @@ class EppoClient
         string $subjectKey,
         array|AttributeSet $subjectContext,
         array $actions,
-        string $defaultVariation
+        string $defaultValue
     ): BanditResult {
         try {
             // Normalize the subject and action into AttributeSets. These functions detect the structure of the
@@ -449,11 +449,11 @@ class EppoClient
             $subject = AttributeSet::fromFlexibleInput($subjectContext);
             $actionContexts = AttributeSet::arrayFromFlexibleInput($actions);
 
-            return $this->getBanditDetail($flagKey, $subjectKey, $subject, $actionContexts, $defaultVariation);
+            return $this->getBanditDetail($flagKey, $subjectKey, $subject, $actionContexts, $defaultValue);
         } catch (EppoException $e) {
             if ($this->isGracefulMode) {
                 error_log('[Eppo SDK] Error selecting bandit action: ' . $e->getMessage());
-                return new BanditResult($defaultVariation);
+                return new BanditResult($defaultValue);
             } else {
                 throw EppoClientException::from($e);
             }
@@ -465,7 +465,7 @@ class EppoClient
      * @param string $subjectKey ,
      * @param AttributeSet $subject
      * @param array<string, AttributeSet> $actionsWithContext
-     * @param string $defaultVariation
+     * @param string $defaultValue
      * @return BanditResult
      *
      * @throws InvalidConfigurationException
@@ -480,7 +480,7 @@ class EppoClient
         string $subjectKey,
         AttributeSet $subject,
         array $actionsWithContext,
-        string $defaultVariation
+        string $defaultValue
     ): BanditResult {
         Validator::validateNotBlank($flagKey, 'Invalid argument: flagKey cannot be blank');
 
@@ -489,11 +489,11 @@ class EppoClient
                 $flagKey,
                 $subjectKey,
                 $subject->toArray(),
-                $defaultVariation
+                $defaultValue
             );
         } catch (EppoException $e) {
             syslog(LOG_WARNING, "[Eppo SDK] Error computing experiment assignment: " . $e->getMessage());
-            $variation = $defaultVariation;
+            $variation = $defaultValue;
         }
 
         $banditKey = $this->configurationLoader->getBanditByVariation($flagKey, $variation);
