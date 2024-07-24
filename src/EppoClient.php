@@ -472,8 +472,8 @@ class EppoClient
      * @throws HttpRequestException
      * @throws InvalidApiKeyException
      * @throws InvalidArgumentException
-     * @throws EppoClientException
      * @throws BanditEvaluationException
+     * @throws EppoClientException
      */
     private function getBanditDetail(
         string $flagKey,
@@ -484,62 +484,58 @@ class EppoClient
     ): BanditResult {
         Validator::validateNotBlank($flagKey, 'Invalid argument: flagKey cannot be blank');
 
-        $isBanditFlag = $this->configurationLoader->isBanditFlag($flagKey);
-
-        // TODO NOT an error; return the `defaultVariation` in this case.
-        if (empty($actionsWithContext) && $isBanditFlag) {
-            // This exception is caught in graceful mode and the default is returned (@see getBanditAction)
-            throw new BanditEvaluationException("No actions provided for bandit flag {$flagKey}");
-        }
-
-        $variation = $this->getStringAssignment(
-            $flagKey,
-            $subjectKey,
-            $subject->toArray(),
-            $defaultVariation
-        );
-
-        if (!$isBanditFlag) {
-            // It's likely that the developer made a mistake passing a non-bandit flag so let's warn them.
-            syslog(LOG_WARNING, "[Eppo SDK]: Flag \"{$flagKey}\" does not contain a Bandit");
-
-            // Return the computed variation without doing any more Bandit work.
-            return new BanditResult($variation);
+        try {
+            $variation = $this->getStringAssignment(
+                $flagKey,
+                $subjectKey,
+                $subject->toArray(),
+                $defaultVariation
+            );
+        } catch (EppoException $e) {
+            syslog(LOG_WARNING, "[Eppo SDK] Error computing experiment assignment: " . $e->getMessage());
+            $variation = $defaultVariation;
         }
 
         $banditKey = $this->configurationLoader->getBanditByVariation($flagKey, $variation);
-        if ($banditKey == null) {
-            // The assigned variation is not a bandit.
-            return new BanditResult($variation);
+        if ($banditKey !== null && !empty($actionsWithContext)) {
+            // Evaluate the bandit, log and return.
+
+            $bandit = $this->configurationLoader->getBandit($banditKey);
+            if ($bandit == null) {
+                if (!$this->isGracefulMode) {
+                    throw new EppoClientException(
+                        "Assigned bandit not found for ($flagKey, $variation)",
+                        EppoException::BANDIT_EVALUATION_FAILED_BANDIT_MODEL_NOT_PRESENT
+                    );
+                }
+            } else {
+                $result = $this->banditEvaluator->evaluateBandit(
+                    $flagKey,
+                    $subjectKey,
+                    $subject,
+                    $actionsWithContext,
+                    $bandit->modelData
+                );
+
+                $banditActionLog = BanditActionEvent::fromEvaluation(
+                    $variation,
+                    $result,
+                    $bandit,
+                    (new SDKData())->asArray()
+                );
+
+
+                if ($this->eventLogger instanceof IBanditLogger) {
+                    try {
+                        $this->eventLogger->logBanditAction($banditActionLog);
+                    } catch (Exception $exception) {
+                        syslog(LOG_WARNING, "[Eppo SDK] Error in logging bandit action: " . $exception->getMessage());
+                    }
+                }
+                return new BanditResult($variation, $result->selectedAction);
+            }
         }
-
-        $bandit = $this->configurationLoader->getBandit($banditKey);
-        if ($bandit == null) {
-            throw new BanditEvaluationException(
-                "Assigned bandit not found for ($flagKey, $variation)",
-                EppoException::BANDIT_EVALUATION_FAILED_BANDIT_MODEL_NOT_PRESENT
-            );
-        }
-
-        $result = $this->banditEvaluator->evaluateBandit(
-            $flagKey,
-            $subjectKey,
-            $subject,
-            $actionsWithContext,
-            $bandit->modelData
-        );
-
-        $banditActionLog = BanditActionEvent::fromEvaluation(
-            $variation,
-            $result,
-            $bandit,
-            (new SDKData())->asArray()
-        );
-
-        if ($this->eventLogger instanceof IBanditLogger) {
-            $this->eventLogger->logBanditAction($banditActionLog);
-        }
-        return new BanditResult($variation, $result->selectedAction);
+        return new BanditResult($variation);
     }
 
 

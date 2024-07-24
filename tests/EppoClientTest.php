@@ -41,6 +41,7 @@ class EppoClientTest extends TestCase
     public static function tearDownAfterClass(): void
     {
         MockWebServer::stop();
+        DefaultCacheFactory::clearCache();
     }
 
     public function setUp(): void
