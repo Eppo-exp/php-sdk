@@ -10,6 +10,7 @@ use Eppo\DTO\Bandit\NumericAttributeCoefficient;
 use Eppo\Exception\BanditEvaluationException;
 use Eppo\Exception\InvalidArgumentException;
 use Eppo\Sharder;
+use Eppo\Validator;
 
 class BanditEvaluator implements IBanditEvaluator
 {
@@ -35,9 +36,7 @@ class BanditEvaluator implements IBanditEvaluator
         array $actionsWithContexts,
         BanditModelData $banditModel
     ): BanditEvaluation {
-        if (empty($actionsWithContexts)) {
-            throw new InvalidArgumentException("No actions provided for bandit evaluation");
-        }
+        Validator::validateNotEmpty($actionsWithContexts, "Cannot evaluate empty action set.");
 
         // Score all potential actions.
         $actionScores = self::scoreActions($subject, $actionsWithContexts, $banditModel);
@@ -54,7 +53,7 @@ class BanditEvaluator implements IBanditEvaluator
 
         $selectedActionContext = $actionsWithContexts[$selectedAction];
         $actionScore = $actionScores[$selectedAction];
-        $actionWeight = $actionWeights[$selectedAction];
+        $selectedActionWeight = $actionWeights[$selectedAction];
 
         // Determine gap, if any between the selected action and the highest scoring one.
         $max = max($actionScores);
@@ -65,9 +64,9 @@ class BanditEvaluator implements IBanditEvaluator
             $subjectKey,
             $subject,
             $selectedAction,
-            $actionsWithContexts[$selectedAction],
+            $selectedActionContext,
             $actionScore,
-            $actionWeight,
+            $selectedActionWeight,
             $banditModel->gamma,
             $gap
         );
@@ -143,25 +142,27 @@ class BanditEvaluator implements IBanditEvaluator
         $numberOfActions = count($actionScores);
         $bestActionKey = array_keys($actionScores, max($actionScores))[0];
 
-
         $minProbability = $probabilityFloor / $numberOfActions;
 
-        $weights = array_filter(
-            $actionScores,
-            function ($key) use ($bestActionKey) {
-                return $key !== $bestActionKey;
-            },
-            ARRAY_FILTER_USE_KEY
-        );
-
         $bestScore = $actionScores[$bestActionKey];
+
+        $weighScoreClosure = function ($score) use ($minProbability, $bestScore, $gamma, $numberOfActions) {
+            return max($minProbability, 1.0 / ($numberOfActions + $gamma * ($bestScore - $score)));
+        };
+
+        // Except for the best score for each action score, compute the relative weight.
         $weights = array_map(
-            function ($score) use ($minProbability, $bestScore, $gamma, $numberOfActions) {
-                return max($minProbability, 1.0 / ($numberOfActions + $gamma * ($bestScore - $score)));
-            },
-            $weights
+            $weighScoreClosure,
+            array_filter(
+                $actionScores,
+                function ($key) use ($bestActionKey) {
+                    return $key !== $bestActionKey;
+                },
+                ARRAY_FILTER_USE_KEY
+            )
         );
 
+        // Best score gets the remaining weight.
         $remainingWeight = max(0.0, 1.0 - array_sum($weights));
         $weights[$bestActionKey] = $remainingWeight;
 
@@ -257,10 +258,7 @@ class BanditEvaluator implements IBanditEvaluator
                 $aValue = Sharder::getShard("$flagKey-$subjectKey-{$a->action}", $this->totalShards);
                 $bValue = Sharder::getShard("$flagKey-$subjectKey-{$b->action}", $this->totalShards);
 
-                if ($aValue == $bValue) {
-                    return $a->action <=> $b->action;
-                }
-                return $aValue <=> $bValue;
+                return ($aValue <=> $bValue) ?: ($a->action <=> $b->action);
             }
         );
         return $weightPairs;
