@@ -3,7 +3,7 @@
 [Eppo](https://www.geteppo.com/) is a modular flagging and experimentation analysis tool. Eppo's PHP SDK is built to make assignments in multi-user server side contexts, compatible with PHP 7.3 and above. Before proceeding you'll need an Eppo account.
 
 ## Features
-
+- Bandits
 - Feature gates
 - Kill switches
 - Progressive rollouts
@@ -21,7 +21,7 @@ composer require eppo/php-sdk
 
 Begin by initializing a singleton instance of Eppo's client. Once initialized, the client can be used to make assignments anywhere in your app.
 
-#### Initialize once
+### Initialize once
 
 ```php
 <?php
@@ -41,7 +41,7 @@ $eppoClient = EppoClient::init(
 ```
 
 
-#### Assign anywhere
+### Assign anywhere
 
 ```php
 $subjectAttributes = [ 'tier' => 2 ];
@@ -49,6 +49,44 @@ $assignment = $eppoClient->getStringAssignment('experimentalBackground', 'user12
 
 if ($assignment !== 'defaultValue') {
     // do something
+}
+```
+
+### Select a Bandit Action
+This SDK supports [Multi-armed Contextual Bandits](https://docs.geteppo.com/contextual-bandits/).
+
+```php
+$subjectContext = [
+    'age' => 30, // Gets interpreted as a Numeric Attribute
+    'country' => 'uk', // Categorical Attribute
+    'pricingTier' => '1'  // NOTE: Deliberately setting to string causes this to be treated as a Categorical Attribute
+];
+
+$actionContexts = [
+    'nike' => [
+        'brandLoyalty' => 0.4,
+        'from' => 'usa'
+    ],
+    'adidas' => [
+
+        'brandLoyalty' => 2,
+        'from' => 'germany'
+    ]
+];
+
+$result = $client->getBanditAction(
+    'flagKey',
+    'subjectKey',
+    $subjectContext,
+    $actionContexts,
+    'defaultValue'
+);
+
+if ($result->action != null) {
+    // Follow the Bandit action
+    doAction($result->action);
+} else {
+    doSomething($result->variation);
 }
 ```
 
