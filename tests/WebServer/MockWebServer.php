@@ -6,36 +6,61 @@ use Exception;
 
 class MockWebServer
 {
-    /** @var string */
-    private static $command = "php -S localhost:4000 " . __DIR__ . "/router.php";
-
-    /** @var resource */
-    private static $process;
+    public readonly string $serverAddress;
 
     /**
-     * @return void
+     * @param resource $process
+     * @param int $port
+     */
+    private function __construct(
+        public readonly mixed $process,
+        public readonly int $port
+    ) {
+        $this->serverAddress = "localhost:$port";
+    }
+
+    /**
+     * @param string $defaultUFCFile
+     * @return MockWebServer
      * @throws Exception
      */
-    public static function start()
+    public static function start(string $defaultUFCFile = __DIR__ . '/../data/ufc/flags-v1.json'): MockWebServer
     {
         $descriptorSpec = [
             0 => ["pipe", "r"], // stdin
             1 => ["pipe", "w"], // stdout
             2 => ["pipe", "w"]  // stderr
         ];
-        self::$process = proc_open(self::$command, $descriptorSpec, $pipes);
-        if (!is_resource(self::$process)) {
+
+        $port = self::getFreePort();
+
+        $server = "localhost:$port";
+
+        $cmd = "UFC=$defaultUFCFile php -S $server " . __DIR__ . '/router.php';
+        $process = proc_open($cmd, $descriptorSpec, $pipes);
+        if (!is_resource($process)) {
             throw new Exception('Unable to start PHP built-in web server.');
         }
         usleep(500000);
+        return new self($process, $port);
     }
 
-    public static function stop()
+    public function stop()
     {
-        if (!is_resource(self::$process)) {
+        if (!is_resource($this->process)) {
             return;
         }
-        proc_terminate(self::$process, SIGTERM);
-        proc_close(self::$process);
+        proc_terminate($this->process, SIGTERM);
+        proc_close($this->process);
+    }
+
+    private static function getFreePort(): ?int
+
+    {
+        $sock = socket_create_listen(0);
+        socket_getsockname($sock, $addr, $port);
+        socket_close($sock);
+
+        return $port;
     }
 }

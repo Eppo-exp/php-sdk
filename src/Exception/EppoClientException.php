@@ -2,18 +2,22 @@
 
 namespace Eppo\Exception;
 
-use Exception;
 use Throwable;
 
-class EppoClientException extends Exception
+class EppoClientException extends EppoException
 {
     public function __construct(string $message = "", int $code = 0, Throwable $previous = null)
     {
         parent::__construct($message, $code, $previous);
     }
 
-    public static function from(Throwable $previous = null, int $code = 0): self
+    /**
+     * @param Throwable|null $previous
+     * @param int|null $code
+     * @return self
+     */
+    public static function from(Throwable $previous = null, int $code = null): self
     {
-        return new self($previous->getMessage(), $code, $previous);
+        return new self($previous->getMessage(), $code ?? $previous->getCode(), $previous);
     }
 }

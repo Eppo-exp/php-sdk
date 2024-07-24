@@ -29,10 +29,12 @@ class EppoClientTest extends TestCase
     private const EXPERIMENT_NAME = 'numeric_flag';
     private const TEST_DATA_PATH = __DIR__ . '/data/ufc/tests';
 
+    private static MockWebServer $mockServer;
+
     public static function setUpBeforeClass(): void
     {
         try {
-            MockWebServer::start();
+           self::$mockServer = MockWebServer::start();
         } catch (Exception $exception) {
             self::fail('Failed to start mocked web server: ' . $exception->getMessage());
         }
@@ -40,7 +42,8 @@ class EppoClientTest extends TestCase
 
     public static function tearDownAfterClass(): void
     {
-        MockWebServer::stop();
+        self::$mockServer->stop();
+        DefaultCacheFactory::clearCache();
     }
 
     public function setUp(): void
@@ -55,7 +58,7 @@ class EppoClientTest extends TestCase
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
 
         $subjectAttributes = [['foo' => 3]];
-        $client = EppoClient::createTestClient($mockConfigRequester, $pollerMock, $mockLogger);
+        $client = EppoClient::createTestClient($mockConfigRequester, $pollerMock, $mockLogger, true);
 
         $defaultObj = json_decode('{}', true);
 
@@ -148,7 +151,8 @@ class EppoClientTest extends TestCase
         $client = EppoClient::createTestClient(
             new ConfigurationLoader($apiRequestWrapper, $configStore),
             $pollerMock,
-            $mockLogger
+            $mockLogger,
+            true
         );
     }
 
@@ -171,14 +175,13 @@ class EppoClientTest extends TestCase
     public function testRepoTestCases(): void
     {
         try {
-            EppoClient::init('dummy', 'http://localhost:4000', isGracefulMode: false);
+            $client = EppoClient::init('dummy', self::$mockServer->serverAddress, isGracefulMode: false);
         } catch (Exception $exception) {
             self::fail('Failed to initialize EppoClient: ' . $exception->getMessage());
         }
 
         // Load all the test cases.
         $testCases = $this->loadTestCases();
-        $client = EppoClient::getInstance();
 
         foreach ($testCases as $testFile => $test) {
             foreach ($test['subjects'] as $subject) {

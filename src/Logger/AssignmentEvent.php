@@ -10,7 +10,7 @@ class AssignmentEvent
         public string $allocation,
         public string $featureFlag,
         public string $subject,
-        public string $timestamp,
+        public float $timestamp,
         public array $subjectAttributes = [],
         public array $sdkMetadata = [],
         public array $extraLogging = []

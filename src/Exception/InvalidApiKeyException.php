@@ -2,6 +2,6 @@
 
 namespace Eppo\Exception;
 
-class InvalidApiKeyException extends \Exception
+class InvalidApiKeyException extends EppoException
 {
 }
