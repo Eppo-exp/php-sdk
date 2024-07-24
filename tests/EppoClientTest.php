@@ -29,10 +29,12 @@ class EppoClientTest extends TestCase
     private const EXPERIMENT_NAME = 'numeric_flag';
     private const TEST_DATA_PATH = __DIR__ . '/data/ufc/tests';
 
+    private static MockWebServer $mockServer;
+
     public static function setUpBeforeClass(): void
     {
         try {
-            MockWebServer::start();
+           self::$mockServer = MockWebServer::start();
         } catch (Exception $exception) {
             self::fail('Failed to start mocked web server: ' . $exception->getMessage());
         }
@@ -40,7 +42,7 @@ class EppoClientTest extends TestCase
 
     public static function tearDownAfterClass(): void
     {
-        MockWebServer::stop();
+        self::$mockServer->stop();
         DefaultCacheFactory::clearCache();
     }
 
@@ -173,7 +175,7 @@ class EppoClientTest extends TestCase
     public function testRepoTestCases(): void
     {
         try {
-            $client = EppoClient::init('dummy', 'http://localhost:4000', isGracefulMode: false);
+            $client = EppoClient::init('dummy', self::$mockServer->serverAddress, isGracefulMode: false);
         } catch (Exception $exception) {
             self::fail('Failed to initialize EppoClient: ' . $exception->getMessage());
         }

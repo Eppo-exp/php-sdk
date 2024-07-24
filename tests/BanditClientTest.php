@@ -30,21 +30,21 @@ use PHPUnit\Framework\TestCase;
 
 class BanditClientTest extends TestCase
 {
-    private const EXPERIMENT_NAME = 'numeric_flag';
     private const TEST_DATA_PATH = __DIR__ . '/data/ufc/bandit-tests';
 
     private static ?EppoClient $client;
+    private static MockWebServer $mockServer;
 
     public static function setUpBeforeClass(): void
     {
         try {
-            MockWebServer::start(__DIR__ . '/data/ufc/bandit-flags-v1.json');
+            self::$mockServer = MockWebServer::start(__DIR__ . '/data/ufc/bandit-flags-v1.json');
         } catch (Exception $exception) {
             self::fail('Failed to start mocked web server: ' . $exception->getMessage());
         }
 
         try {
-            self::$client = EppoClient::init('dummy', 'http://localhost:4000',);
+            self::$client = EppoClient::init('dummy',  self::$mockServer->serverAddress);
         } catch (Exception $exception) {
             self::fail('Failed to initialize EppoClient: ' . $exception->getMessage());
         }
@@ -52,7 +52,7 @@ class BanditClientTest extends TestCase
 
     public static function tearDownAfterClass(): void
     {
-        MockWebServer::stop();
+        self::$mockServer->stop();
         DefaultCacheFactory::clearCache();
     }
 
