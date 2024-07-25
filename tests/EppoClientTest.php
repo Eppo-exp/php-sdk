@@ -34,7 +34,7 @@ class EppoClientTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         try {
-           self::$mockServer = MockWebServer::start();
+            self::$mockServer = MockWebServer::start();
         } catch (Exception $exception) {
             self::fail('Failed to start mocked web server: ' . $exception->getMessage());
         }

@@ -96,6 +96,11 @@ class BanditActionEvent implements Serializable, JsonSerializable
         $this->metaData = $data['metaData'];
     }
 
+    public function toArray(): array
+    {
+        return $this->__serialize();
+    }
+
     public function jsonSerialize(): array
     {
         return $this->__serialize();
