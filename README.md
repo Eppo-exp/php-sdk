@@ -3,13 +3,13 @@
 [Eppo](https://www.geteppo.com/) is a modular flagging and experimentation analysis tool. Eppo's PHP SDK is built to make assignments in multi-user server side contexts, compatible with PHP 7.3 and above. Before proceeding you'll need an Eppo account.
 
 ## Features
-- Bandits
 - Feature gates
 - Kill switches
 - Progressive rollouts
 - A/B/n experiments
 - Mutually exclusive experiments (Layers)
 - Dynamic configuration
+- Multi-armed Contextual Bandits
 
 ## Installation
 
@@ -68,7 +68,6 @@ $actionContexts = [
         'from' => 'usa'
     ],
     'adidas' => [
-
         'brandLoyalty' => 2,
         'from' => 'germany'
     ]
@@ -121,9 +120,9 @@ The `init` function accepts the following optional configuration arguments.
 | Option                 | Type                               | Description                                                                                         | Default |
 |------------------------|------------------------------------|-----------------------------------------------------------------------------------------------------|---------| 
 | **`cache`**            | Instance of PSD-16 SimpleInterface | Cache used to store flag configuration. If not passed, FileSystem cache will be used                | `null`  |
-| **`assignmentLogger`** | AssignmentLogger                   | Logs assignment events back to data warehoouse                                                      | `null`  |
+| **`assignmentLogger`** | AssignmentLogger/IBanditLogger     | Logs assignment events back to data warehoouse                                                      | `null`  |
 | **`httpClient`**       | ClientInterface                    | For making HTTP requests. If not passed, Discovery will attempt to autoload an applicable pacakge   | `null` |
-| **`requestFactory`**   | RequestFactoryInterface           | Instance of PSR-17 Factory. If not passed, Discovery will be used to find a suitable implementation | null    |
+| **`requestFactory`**   | RequestFactoryInterface            | Instance of PSR-17 Factory. If not passed, Discovery will be used to find a suitable implementation | null    |
 
 
 ## Assignment logger 
