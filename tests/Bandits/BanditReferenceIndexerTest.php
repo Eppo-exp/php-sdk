@@ -8,7 +8,7 @@ use Eppo\DTO\BanditReference;
 use Eppo\Exception\InvalidConfigurationException;
 use PHPUnit\Framework\TestCase;
 
-final class BanditVariationIndexerTest extends TestCase
+final class BanditReferenceIndexerTest extends TestCase
 {
     /**
      * @var array<string, BanditReference>
@@ -136,13 +136,15 @@ final class BanditVariationIndexerTest extends TestCase
         // to `bandit_two`.
         self::$banditReferences['bandit_four'] = new BanditReference(
             'v123',
-            [new BanditFlagVariation(
-                'bandit_four',
-                'bandit_two_flag',
-                'bandit_four_flag_allocation',
-                'bandit_two_flag_variation',
-                'bandit_two_flag_variation'
-            )]
+            [
+                new BanditFlagVariation(
+                    'bandit_four',
+                    'bandit_two_flag',
+                    'bandit_four_flag_allocation',
+                    'bandit_two_flag_variation',
+                    'bandit_two_flag_variation'
+                )
+            ]
         );
 
         $this->expectException(InvalidConfigurationException::class);
