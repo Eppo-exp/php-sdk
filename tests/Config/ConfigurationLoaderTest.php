@@ -118,6 +118,11 @@ class ConfigurationLoaderTest extends TestCase
         $this->assertNotNull($flag);
     }
 
+    public function testOnlyLoadsBanditsWhereNeeded(): void {
+        // TODO
+
+    }
+
     public function testReloadsOnExpiredCache(): void
     {
         // Arrange: Load some flag data to be returned by the APIRequestWrapper
