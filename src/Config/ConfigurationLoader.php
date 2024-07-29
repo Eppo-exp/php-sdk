@@ -89,7 +89,7 @@ class ConfigurationLoader implements IFlags, IBandits
 
             $inflated = array_map(fn($object) => $this->parser->parseFlag($object), $responseData['flags']);
 
-            $indexer = null;
+            // Create a handy helper class from the `banditReferences` to help connect flags to bandits.
             if (isset($responseData['banditReferences'])) {
                 $banditReferences = array_map(
                     function ($json) {
@@ -100,13 +100,13 @@ class ConfigurationLoader implements IFlags, IBandits
                 $indexer = BanditReferenceIndexer::from($banditReferences);
             } else {
                 syslog(LOG_WARNING, "[EPPO SDK] No bandit-flag variations found in UFC response.");
+                $indexer = BanditReferenceIndexer::empty();
             }
 
             $this->configurationStore->setUnifiedFlagConfiguration($inflated, $indexer);
 
-
             // Only load bandits if there are any referenced by the flags.
-            if ($indexer != null && $indexer->hasBandits()) {
+            if ($indexer->hasBandits()) {
                 // TODO: Use the indexer to see what bandit models are needed and whether they've already been loaded
                 // to determine whether to make a fetch call here.
                 $this->fetchAndStoreBandits();
