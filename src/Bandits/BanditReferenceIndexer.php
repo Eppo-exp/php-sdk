@@ -12,15 +12,13 @@ class BanditReferenceIndexer implements IBanditReferenceIndexer
     public function __serialize(): array
     {
         return [
-            'flagIndex' => $this->flagIndex,
-            'banditReferences' => $this->banditReferences
+            'flagIndex' => $this->flagIndex
         ];
     }
 
     public function __unserialize(array $data): void
     {
         $this->flagIndex = $data['flagIndex'];
-        $this->banditReferences = $data['banditReferences'];
     }
 
     /**
@@ -30,11 +28,6 @@ class BanditReferenceIndexer implements IBanditReferenceIndexer
      * @var array<string, array<string, string>>
      */
     private array $flagIndex = [];
-
-    /**
-     * @var array<string, BanditReference>
-     */
-    private array $banditReferences = [];
 
 
     private function __construct()

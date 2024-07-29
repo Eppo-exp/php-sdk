@@ -30,7 +30,7 @@ help: Makefile
 testDataDir := tests/data/
 tempDir := ${testDataDir}temp/
 gitDataDir := ${tempDir}sdk-test-data/
-branchName := main
+branchName := tp/banditRefs
 githubRepoLink := https://github.com/Eppo-exp/sdk-test-data.git
 .PHONY: test-data
 test-data: 
