@@ -137,12 +137,13 @@ final class BanditVariationIndexerTest extends TestCase
         self::$banditReferences['bandit_four'] = new BanditReference(
             'v123',
             [new BanditFlagVariation(
-            'bandit_four',
-            'bandit_two_flag',
-            'bandit_four_flag_allocation',
-            'bandit_two_flag_variation',
-            'bandit_two_flag_variation'
-        )]);
+                'bandit_four',
+                'bandit_two_flag',
+                'bandit_four_flag_allocation',
+                'bandit_two_flag_variation',
+                'bandit_two_flag_variation'
+            )]
+        );
 
         $this->expectException(InvalidConfigurationException::class);
 
