@@ -91,7 +91,6 @@ final class BanditReferenceIndexerTest extends TestCase
         );
     }
 
-
     public function testEmptyIndexerWorks(): void
     {
         $indexer = BanditReferenceIndexer::empty();
