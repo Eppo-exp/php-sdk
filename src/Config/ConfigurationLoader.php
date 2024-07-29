@@ -54,7 +54,7 @@ class ConfigurationLoader implements IFlags, IBandits
     public function getBanditByVariation(string $flagKey, string $variation): ?string
     {
         $this->reloadConfigurationIfExpired();
-        return $this->configurationStore->getBanditReferenceIndex()->getBanditByVariation($flagKey, $variation);
+        return $this->configurationStore->getBanditReferenceIndexer()->getBanditByVariation($flagKey, $variation);
     }
 
     /**
@@ -127,9 +127,9 @@ class ConfigurationLoader implements IFlags, IBandits
         return -1;
     }
 
-    public function getBanditReferenceIndex(): IBanditReferenceIndexer
+    public function getBanditReferenceIndexer(): IBanditReferenceIndexer
     {
-        return $this->configurationStore->getBanditReferenceIndex();
+        return $this->configurationStore->getBanditReferenceIndexer();
     }
 
     /**

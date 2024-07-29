@@ -21,5 +21,5 @@ interface IFlags
      * Gets the `BanditVariationIndexer` for mapping from flag variations to bandits.
      * @return IBanditReferenceIndexer
      */
-    public function getBanditReferenceIndex(): IBanditReferenceIndexer;
+    public function getBanditReferenceIndexer(): IBanditReferenceIndexer;
 }
