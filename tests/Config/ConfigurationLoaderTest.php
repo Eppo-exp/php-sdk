@@ -78,8 +78,6 @@ class ConfigurationLoaderTest extends TestCase
         $this->assertEquals(self::FLAG_KEY, $flag->key);
         $this->assertEquals($flags[self::FLAG_KEY], $flag);
 
-        $this->assertTrue($loader->isBanditFlag('cold_start_bandit_flag'));
-        $this->assertFalse($loader->isBanditFlag('kill-switch'));
         $this->assertEquals(
             'cold_start_bandit',
             $loader->getBanditByVariation('cold_start_bandit_flag', 'cold_start_bandit')
@@ -157,7 +155,7 @@ class ConfigurationLoaderTest extends TestCase
         // Load mock response data
         $flagsJson = json_decode(file_get_contents(self::MOCK_RESPONSE_FILENAME), true);
 
-        unset($flagsJson['bandits']); // Remove the Bandit Variations from the response
+        unset($flagsJson['banditReferences']); // Remove the Bandit Variations from the response
         $flagResponse = json_encode($flagsJson);
 
 

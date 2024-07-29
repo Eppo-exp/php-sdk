@@ -95,28 +95,37 @@
       "totalShards": 10000
     }
   },
-  "bandits": {
-    "banner_bandit": [
-      {
-        "key": "banner_bandit",
-        "flagKey": "banner_bandit_flag",
-        "variationKey": "banner_bandit",
-        "variationValue": "banner_bandit"
-      },
-      {
-        "key": "banner_bandit",
-        "flagKey": "banner_bandit_flag_uk_only",
-        "variationKey": "banner_bandit",
-        "variationValue": "banner_bandit"
-      }
-    ],
-    "cold_start_bandit": [
-      {
-        "key": "cold_start_bandit",
-        "flagKey": "cold_start_bandit_flag",
-        "variationKey": "cold_start_bandit",
-        "variationValue": "cold_start_bandit"
-      }
-    ]
+  "banditReferences": {
+    "banner_bandit": {
+      "modelVersion": "v123",
+      "flagVariations": [
+        {
+          "key": "banner_bandit",
+          "flagKey": "banner_bandit_flag",
+          "allocationKey": "banner_bandit_allocation",
+          "variationKey": "banner_bandit",
+          "variationValue": "banner_bandit"
+        },
+        {
+          "key": "banner_bandit",
+          "flagKey": "banner_bandit_flag_uk_only",
+          "allocationKey": "banner_bandit_uk_allocation",
+          "variationKey": "banner_bandit",
+          "variationValue": "banner_bandit"
+        }
+      ]
+    },
+    "cold_start_bandit": {
+      "modelVersion": "cold start",
+      "flagVariations": [
+        {
+          "key": "cold_start_bandit",
+          "flagKey": "cold_start_bandit_flag",
+          "allocationKey": "coldstart_allocation",
+          "variationKey": "cold_start_bandit",
+          "variationValue": "cold_start_bandit"
+        }
+      ]
+    }
   }
 }

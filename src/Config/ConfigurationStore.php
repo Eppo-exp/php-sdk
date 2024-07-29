@@ -2,8 +2,8 @@
 
 namespace Eppo\Config;
 
-use Eppo\Bandits\BanditVariationIndexer;
-use Eppo\Bandits\IBanditVariationIndexer;
+use Eppo\Bandits\BanditReferenceIndexer;
+use Eppo\Bandits\IBanditReferenceIndexer;
 use Eppo\Cache\CacheType;
 use Eppo\Cache\NamespaceCache;
 use Eppo\DTO\Bandit\Bandit;
@@ -56,10 +56,10 @@ class ConfigurationStore implements IConfigurationStore
 
     /**
      * @param array $flags
-     * @param IBanditVariationIndexer|null $banditVariations
+     * @param IBanditReferenceIndexer|null $banditVariations
      * @throws EppoClientException
      */
-    public function setUnifiedFlagConfiguration(array $flags, ?IBanditVariationIndexer $banditVariations = null): void
+    public function setUnifiedFlagConfiguration(array $flags, ?IBanditReferenceIndexer $banditVariations = null): void
     {
         try {
             // Clear stored config before setting data.
@@ -106,14 +106,14 @@ class ConfigurationStore implements IConfigurationStore
         return null;
     }
 
-    public function getBanditVariations(): IBanditVariationIndexer
+    public function getBanditVariations(): IBanditReferenceIndexer
     {
         try {
             $data = $this->metadataCache->get(self::BANDIT_VARIATION_KEY);
             if ($data !== null) {
                 return $data;
             }
-            return BanditVariationIndexer::empty();
+            return BanditReferenceIndexer::empty();
         } catch (\Psr\SimpleCache\InvalidArgumentException $e) {
             // We know that the key does not contain illegal characters so we should not end up here.
             throw EppoClientException::From($e);
