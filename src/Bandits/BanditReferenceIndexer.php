@@ -8,7 +8,7 @@ use Eppo\Exception\InvalidConfigurationException;
 
 class BanditReferenceIndexer implements IBanditReferenceIndexer
 {
-    // By just serializing the indexed variations, we cut down on cache size.
+    // magic methods to store just the underlying data when serialized to cache.
     public function __serialize(): array
     {
         return [
