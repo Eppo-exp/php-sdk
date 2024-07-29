@@ -72,7 +72,7 @@ class ConfigurationStoreTest extends TestCase
         $configStore->setUnifiedFlagConfiguration([], $banditVariations);
 
         // Verify Object has been stored.
-        $recoveredBanditVariations = $configStore->getBanditVariations();
+        $recoveredBanditVariations = $configStore->getBanditReferenceIndex();
         $this->assertNotNull($recoveredBanditVariations);
         $this->assertTrue($recoveredBanditVariations->hasBandits());
 
@@ -81,7 +81,7 @@ class ConfigurationStoreTest extends TestCase
         $configStore->setUnifiedFlagConfiguration([], null);
 
         // Assert the variations have been emptied.
-        $recoveredBanditVariations = $configStore->getBanditVariations();
+        $recoveredBanditVariations = $configStore->getBanditReferenceIndex();
         $this->assertNotNull($recoveredBanditVariations);
         $this->assertFalse($recoveredBanditVariations->hasBandits());
     }
@@ -109,7 +109,7 @@ class ConfigurationStoreTest extends TestCase
 
         $configStore->setUnifiedFlagConfiguration([], $banditVariations);
 
-        $recoveredBanditVariations = $configStore->getBanditVariations();
+        $recoveredBanditVariations = $configStore->getBanditReferenceIndex();
 
         $this->assertFalse($banditVariations === $recoveredBanditVariations);
         $this->assertEquals(

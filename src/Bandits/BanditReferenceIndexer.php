@@ -112,21 +112,4 @@ class BanditReferenceIndexer implements IBanditReferenceIndexer
     {
         return count($this->flagIndex) > 0;
     }
-
-    /**
-     * @param array<string, string> $loadedBanditModels
-     * @return bool
-     */
-    public function satisfiesBanditReferences(array $loadedBanditModels): bool
-    {
-        foreach ($this->banditReferences as $banditKey => $banditReference) {
-            if (
-                !isset($loadedBanditModels[$banditKey])
-                || $this->banditReferences[$banditKey]->modelVersion !== $loadedBanditModels[$banditKey]
-            ) {
-                return false;
-            }
-        }
-        return true;
-    }
 }

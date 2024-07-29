@@ -54,7 +54,7 @@ class ConfigurationLoader implements IFlags, IBandits
     public function getBanditByVariation(string $flagKey, string $variation): ?string
     {
         $this->reloadConfigurationIfExpired();
-        return $this->configurationStore->getBanditVariations()->getBanditByVariation($flagKey, $variation);
+        return $this->configurationStore->getBanditReferenceIndex()->getBanditByVariation($flagKey, $variation);
     }
 
     /**
@@ -107,11 +107,9 @@ class ConfigurationLoader implements IFlags, IBandits
 
             // Only load bandits if there are any referenced by the flags.
             if ($indexer != null && $indexer->hasBandits()) {
-                // Get the currently loaded bandits to determine if they satisfy what's required by the flags
-                $currentlyLoadedBanditModels = $this->configurationStore->getMetadata(self::BANDIT_MODEL_VERSIONS_KEY);
-//                if (!$indexer->satisfiesBanditReferences($currentlyLoadedBanditModels)) {
-                    $this->fetchAndStoreBandits();
-//                }
+                // TODO: Use the indexer to see what bandit models are needed and whether they've already been loaded
+                // to determine whether to make a fetch call here.
+                $this->fetchAndStoreBandits();
             }
         }
 
@@ -129,9 +127,9 @@ class ConfigurationLoader implements IFlags, IBandits
         return -1;
     }
 
-    public function getBanditVariations(): IBanditReferenceIndexer
+    public function getBanditReferenceIndex(): IBanditReferenceIndexer
     {
-        return $this->configurationStore->getBanditVariations();
+        return $this->configurationStore->getBanditReferenceIndex();
     }
 
     /**
