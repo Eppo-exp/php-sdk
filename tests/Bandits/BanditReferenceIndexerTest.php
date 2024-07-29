@@ -3,7 +3,7 @@
 namespace Eppo\Tests\Bandits;
 
 use Eppo\Bandits\BanditReferenceIndexer;
-use Eppo\DTO\Bandit\BanditFlagVariation;
+use Eppo\DTO\BanditFlagVariation;
 use Eppo\DTO\BanditReference;
 use Eppo\Exception\InvalidConfigurationException;
 use PHPUnit\Framework\TestCase;

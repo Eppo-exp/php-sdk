@@ -1,6 +1,6 @@
 <?php
 
-namespace Eppo\DTO\Bandit;
+namespace Eppo\DTO;
 
 class BanditFlagVariation
 {

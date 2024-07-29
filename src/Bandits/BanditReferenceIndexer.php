@@ -2,7 +2,7 @@
 
 namespace Eppo\Bandits;
 
-use Eppo\DTO\Bandit\BanditFlagVariation;
+use Eppo\DTO\BanditFlagVariation;
 use Eppo\DTO\BanditReference;
 use Eppo\Exception\InvalidConfigurationException;
 
