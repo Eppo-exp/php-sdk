@@ -8,7 +8,7 @@ use Eppo\DTO\BanditReference;
 use Eppo\Exception\InvalidConfigurationException;
 use PHPUnit\Framework\TestCase;
 
-final class BanditVariationIndexerTest extends TestCase
+final class BanditReferenceIndexerTest extends TestCase
 {
     /**
      * @var array<string, BanditReference>
@@ -41,7 +41,7 @@ final class BanditVariationIndexerTest extends TestCase
         );
 
         self::$banditReferences['bandit_two'] = new BanditReference(
-            'v123',
+            'v456',
             [
                 new BanditFlagVariation(
                     'bandit_two',
@@ -55,7 +55,7 @@ final class BanditVariationIndexerTest extends TestCase
 
         // `multi_bandit_flag` references two bandits.
         self::$banditReferences['bandit_three'] = new BanditReference(
-            'v123',
+            'v789',
             [
                 new BanditFlagVariation(
                     'bandit_three',
@@ -68,7 +68,7 @@ final class BanditVariationIndexerTest extends TestCase
         );
 
         self::$banditReferences['bandit_four'] = new BanditReference(
-            'v123',
+            'not defined',
             []
         );
     }
@@ -106,13 +106,13 @@ final class BanditVariationIndexerTest extends TestCase
         $this->assertFalse($indexer->hasBandits());
     }
 
-    public function testFlagWithNoBanditVariations(): void
+    public function testBanditReferenceWithNoFlagVariations(): void
     {
-        // `bandit_one_flag` is passed but it points to an empty array, so Indexer should still be empty
-        $indexer = BanditReferenceIndexer::from(['bandit_one_flag' => new BanditReference('v123', [])]);
+        $indexer = BanditReferenceIndexer::from(['bandit_one' => new BanditReference('v123', [])]);
 
-        $this->assertNull($indexer->getBanditByVariation('bandit_one_flag', 'bandit_one_flag_variation'));
+        $this->assertNull($indexer->getBanditByVariation('bandit_one', 'bandit_one_flag_variation'));
         $this->assertFalse($indexer->hasBandits());
+        $this->assertEquals([], $indexer->getBanditModelVersionReferences());
     }
 
     public function testGetBanditByVariation(): void
@@ -128,25 +128,59 @@ final class BanditVariationIndexerTest extends TestCase
         $this->expectBandit($indexer, 'bandit_two', 'bandit_two_flag', 'bandit_two_flag_variation');
         $this->expectBandit($indexer, 'bandit_one', 'multi_bandit_flag', 'bandit_one_multi_flag_variation');
         $this->expectBandit($indexer, 'bandit_three', 'multi_bandit_flag', 'bandit_three_multi_flag_variation');
+
     }
 
     public function testBadBanditVariation(): void
     {
         // Add an illegal variation to the list for the indexer; bandit_two_flag.bandit_two_flag_variation already maps
         // to `bandit_two`.
-        self::$banditReferences['bandit_four'] = new BanditReference(
+        $refsToLoad = self::$banditReferences;
+        $refsToLoad['bandit_four'] = new BanditReference(
             'v123',
-            [new BanditFlagVariation(
-            'bandit_four',
-            'bandit_two_flag',
-            'bandit_four_flag_allocation',
-            'bandit_two_flag_variation',
-            'bandit_two_flag_variation'
-        )]);
+            [
+                new BanditFlagVariation(
+                    'bandit_four',
+                    'bandit_two_flag',
+                    'bandit_four_flag_allocation',
+                    'bandit_two_flag_variation',
+                    'bandit_two_flag_variation'
+                )
+            ]
+        );
 
         $this->expectException(InvalidConfigurationException::class);
 
-        BanditReferenceIndexer::from(self::$banditReferences);
+        BanditReferenceIndexer::from($refsToLoad);
+    }
+
+    public function testGetBanditModelsEmptyReferences()
+    {
+        $indexer = BanditReferenceIndexer::empty();
+        $this->assertEquals([], $indexer->getBanditModelVersionReferences());
+    }
+
+    public function testGetBanditModelsNoVariations()
+    {
+        $banditReferences = [
+            'bandit1' => new BanditReference('model1', []),
+            'bandit2' => new BanditReference('model2', []),
+        ];
+        $indexer = BanditReferenceIndexer::from($banditReferences);
+        $this->assertEquals(
+            [],
+            $indexer->getBanditModelVersionReferences()
+        );
+    }
+
+    public function testGetBanditModelVersions()
+    {
+        $indexer = BanditReferenceIndexer::from(self::$banditReferences);
+
+        $this->assertEquals(
+            ['bandit_one' => 'v123', 'bandit_two' => 'v456', 'bandit_three' => 'v789'],
+            $indexer->getBanditModelVersionReferences()
+        );
     }
 
     private function expectBandit(

@@ -23,9 +23,7 @@ interface IBanditReferenceIndexer
     public function hasBandits(): bool;
 
     /**
-     * Whether the current loaded bandit models satisfy the models references by bandit flags.
-     * @param array<string, string> $loadedBanditModels
-     * @return bool
+     * @return array<string, string> Array of Bandit Key => Model Version
      */
-    public function satisfiesBanditReferences(array $loadedBanditModels): bool;
+    public function getBanditModelVersionReferences(): array;
 }

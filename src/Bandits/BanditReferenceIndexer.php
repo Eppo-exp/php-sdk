@@ -8,20 +8,10 @@ use Eppo\Exception\InvalidConfigurationException;
 
 class BanditReferenceIndexer implements IBanditReferenceIndexer
 {
-    // By just serializing the indexed variations, we cut down on cache size.
-    public function __serialize(): array
-    {
-        return [
-            'flagIndex' => $this->flagIndex,
-            'banditReferences' => $this->banditReferences
-        ];
-    }
-
-    public function __unserialize(array $data): void
-    {
-        $this->flagIndex = $data['flagIndex'];
-        $this->banditReferences = $data['banditReferences'];
-    }
+    /**
+     * @var array Keys of bandits with non-empty FlagVariations
+     */
+    private array $banditKeys = [];
 
     /**
      * Map of flag key+variation value => bandit
@@ -36,6 +26,21 @@ class BanditReferenceIndexer implements IBanditReferenceIndexer
      */
     private array $banditReferences = [];
 
+    public function __serialize(): array
+    {
+        return [
+            'flagIndex' => $this->flagIndex,
+            'banditReferences' => $this->banditReferences,
+            'banditKeys' => $this->banditKeys,
+        ];
+    }
+
+    public function __unserialize(array $data): void
+    {
+        $this->flagIndex = $data['flagIndex'];
+        $this->banditReferences = $data['banditReferences'];
+        $this->banditKeys = $data['banditKeys'];
+    }
 
     private function __construct()
     {
@@ -45,8 +50,10 @@ class BanditReferenceIndexer implements IBanditReferenceIndexer
      * @param array<string, array<BanditFlagVariation>> $banditVariations
      * @throws InvalidConfigurationException
      */
-    private function setVariations(array $banditVariations): void
+    private function setFlagVariationIndex(array $banditVariations): void
     {
+        $banditKeys = [];
+        $this->flagIndex = [];
         foreach ($banditVariations as $listOfVariations) {
             foreach ($listOfVariations as $banditVariation) {
                 // If this flag key has not already been indexed, index it now
@@ -69,8 +76,11 @@ class BanditReferenceIndexer implements IBanditReferenceIndexer
 
                 // Update the index for this triple (flagKey, variationValue) => banditKey
                 $this->flagIndex[$flagKey][$variationValue] = $banditVariation->key;
+                $banditKeys[] = $banditVariation->key;
             }
         }
+
+        $this->banditKeys = array_unique($banditKeys);
     }
 
     /**
@@ -104,7 +114,8 @@ class BanditReferenceIndexer implements IBanditReferenceIndexer
             $banditReferences
         );
 
-        $bvi->setVariations($variations);
+        $bvi->setFlagVariationIndex($variations);
+        $bvi->banditReferences = $banditReferences;
         return $bvi;
     }
 
@@ -113,20 +124,16 @@ class BanditReferenceIndexer implements IBanditReferenceIndexer
         return count($this->flagIndex) > 0;
     }
 
-    /**
-     * @param array<string, string> $loadedBanditModels
-     * @return bool
-     */
-    public function satisfiesBanditReferences(array $loadedBanditModels): bool
+    public function getBanditModelVersionReferences(): array
     {
-        foreach ($this->banditReferences as $banditKey => $banditReference) {
-            if (
-                !isset($loadedBanditModels[$banditKey])
-                || $this->banditReferences[$banditKey]->modelVersion !== $loadedBanditModels[$banditKey]
-            ) {
-                return false;
-            }
-        }
-        return true;
+        // banditKey => modelVersion strictly for bandits with references.
+        return array_map(
+            fn($banditReference) => $banditReference->modelVersion,
+            array_filter(
+                $this->banditReferences,
+                fn($banditKey) => in_array($banditKey, $this->banditKeys),
+                ARRAY_FILTER_USE_KEY
+            )
+        );
     }
 }
