@@ -3,12 +3,13 @@
 namespace Eppo\Tests\Config;
 
 use DateTime;
-use Eppo\Bandits\BanditVariationIndexer;
+use Eppo\Bandits\BanditReferenceIndexer;
 use Eppo\Cache\DefaultCacheFactory;
 use Eppo\Config\ConfigurationStore;
 use Eppo\DTO\Bandit\Bandit;
 use Eppo\DTO\Bandit\BanditModelData;
-use Eppo\DTO\Bandit\BanditVariation;
+use Eppo\DTO\BanditFlagVariation;
+use Eppo\DTO\BanditReference;
 use Eppo\DTO\Flag;
 use Eppo\DTO\VariationType;
 use Eppo\Exception\InvalidArgumentException;
@@ -51,23 +52,27 @@ class ConfigurationStoreTest extends TestCase
     {
         $configStore = new ConfigurationStore(DefaultCacheFactory::create());
 
-        $variations = [
-            'bandit' => [
-                new BanditVariation(
-                    'bandit',
-                    'bandit_flag',
-                    'bandit_flag_variation',
-                    'bandit_flag_variation'
-                )
-            ]
+        $banditReferences = [
+            'bandit' => new BanditReference(
+                'v123',
+                [
+                    new BanditFlagVariation(
+                        'bandit',
+                        'bandit_flag',
+                        'bandit_flag_allocation',
+                        'bandit_flag_variation',
+                        'bandit_flag_variation'
+                    )
+                ]
+            )
         ];
 
-        $banditVariations = BanditVariationIndexer::from($variations);
+        $banditVariations = BanditReferenceIndexer::from($banditReferences);
 
         $configStore->setUnifiedFlagConfiguration([], $banditVariations);
 
-        // Verify Object stored.
-        $recoveredBanditVariations = $configStore->getBanditVariations();
+        // Verify Object has been stored.
+        $recoveredBanditVariations = $configStore->getBanditReferenceIndexer();
         $this->assertNotNull($recoveredBanditVariations);
         $this->assertTrue($recoveredBanditVariations->hasBandits());
 
@@ -76,7 +81,7 @@ class ConfigurationStoreTest extends TestCase
         $configStore->setUnifiedFlagConfiguration([], null);
 
         // Assert the variations have been emptied.
-        $recoveredBanditVariations = $configStore->getBanditVariations();
+        $recoveredBanditVariations = $configStore->getBanditReferenceIndexer();
         $this->assertNotNull($recoveredBanditVariations);
         $this->assertFalse($recoveredBanditVariations->hasBandits());
     }
@@ -85,28 +90,28 @@ class ConfigurationStoreTest extends TestCase
     {
         $configStore = new ConfigurationStore(DefaultCacheFactory::create());
 
-        $variations = [
-            'bandit' => [
-                new BanditVariation(
-                    'bandit',
-                    'bandit_flag',
-                    'bandit_flag_variation',
-                    'bandit_flag_variation'
-                )
-            ]
+        $banditReferences = [
+            'bandit' => new BanditReference(
+                'v123',
+                [
+                    new BanditFlagVariation(
+                        'bandit',
+                        'bandit_flag',
+                        'bandit_flag_allocation',
+                        'bandit_flag_variation',
+                        'bandit_flag_variation'
+                    )
+                ]
+            )
         ];
 
-        $banditVariations = BanditVariationIndexer::from($variations);
+        $banditVariations = BanditReferenceIndexer::from($banditReferences);
 
         $configStore->setUnifiedFlagConfiguration([], $banditVariations);
 
-        $recoveredBanditVariations = $configStore->getBanditVariations();
+        $recoveredBanditVariations = $configStore->getBanditReferenceIndexer();
 
         $this->assertFalse($banditVariations === $recoveredBanditVariations);
-        $this->assertEquals(
-            $banditVariations->isBanditFlag('bandit_flag'),
-            $recoveredBanditVariations->isBanditFlag('bandit_flag')
-        );
         $this->assertEquals(
             $banditVariations->getBanditByVariation('bandit_flag', 'bandit_flag_variation'),
             $recoveredBanditVariations->getBanditByVariation('bandit_flag', 'bandit_flag_variation')

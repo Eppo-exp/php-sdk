@@ -2,7 +2,7 @@
 
 namespace Eppo\Flags;
 
-use Eppo\Bandits\IBanditVariationIndexer;
+use Eppo\Bandits\IBanditReferenceIndexer;
 use Eppo\DTO\Flag;
 
 /**
@@ -19,7 +19,7 @@ interface IFlags
 
     /**
      * Gets the `BanditVariationIndexer` for mapping from flag variations to bandits.
-     * @return IBanditVariationIndexer
+     * @return IBanditReferenceIndexer
      */
-    public function getBanditVariations(): IBanditVariationIndexer;
+    public function getBanditReferenceIndexer(): IBanditReferenceIndexer;
 }

@@ -2,20 +2,23 @@
 
 namespace Eppo\Bandits;
 
-use Eppo\DTO\Bandit\BanditVariation;
+use Eppo\DTO\BanditFlagVariation;
+use Eppo\DTO\BanditReference;
 use Eppo\Exception\InvalidConfigurationException;
 
-class BanditVariationIndexer implements IBanditVariationIndexer
+class BanditReferenceIndexer implements IBanditReferenceIndexer
 {
-    // By just serializing the indexed variations, we cut down on cache size.
+    // magic methods to store just the underlying data when serialized to cache.
     public function __serialize(): array
     {
-        return $this->banditFlags;
+        return [
+            'flagIndex' => $this->flagIndex
+        ];
     }
 
     public function __unserialize(array $data): void
     {
-        $this->banditFlags = $data;
+        $this->flagIndex = $data['flagIndex'];
     }
 
     /**
@@ -24,7 +27,7 @@ class BanditVariationIndexer implements IBanditVariationIndexer
      *
      * @var array<string, array<string, string>>
      */
-    private array $banditFlags = [];
+    private array $flagIndex = [];
 
 
     private function __construct()
@@ -32,7 +35,7 @@ class BanditVariationIndexer implements IBanditVariationIndexer
     }
 
     /**
-     * @param array<string, array<BanditVariation>> $banditVariations
+     * @param array<string, array<BanditFlagVariation>> $banditVariations
      * @throws InvalidConfigurationException
      */
     private function setVariations(array $banditVariations): void
@@ -41,7 +44,7 @@ class BanditVariationIndexer implements IBanditVariationIndexer
             foreach ($listOfVariations as $banditVariation) {
                 // If this flag key has not already been indexed, index it now
                 $flagKey = $banditVariation->flagKey;
-                $this->banditFlags[$flagKey] ??= [];
+                $this->flagIndex[$flagKey] ??= [];
 
                 // If there is already an entry for this flag/variation, and it is not the current bandit key,
                 // throw exception.
@@ -49,8 +52,8 @@ class BanditVariationIndexer implements IBanditVariationIndexer
                 if (
                     array_key_exists(
                         $variationValue,
-                        $this->banditFlags[$flagKey]
-                    ) && $this->banditFlags[$flagKey][$variationValue] !== $banditVariation->banditKey
+                        $this->flagIndex[$flagKey]
+                    ) && $this->flagIndex[$flagKey][$variationValue] !== $banditVariation->key
                 ) {
                     throw new InvalidConfigurationException(
                         "Ambiguous mapping for flag: '{$flagKey}', variation: '{$variationValue}'."
@@ -58,7 +61,7 @@ class BanditVariationIndexer implements IBanditVariationIndexer
                 }
 
                 // Update the index for this triple (flagKey, variationValue) => banditKey
-                $this->banditFlags[$flagKey][$variationValue] = $banditVariation->banditKey;
+                $this->flagIndex[$flagKey][$variationValue] = $banditVariation->key;
             }
         }
     }
@@ -70,31 +73,36 @@ class BanditVariationIndexer implements IBanditVariationIndexer
      */
     public function getBanditByVariation(string $flagKey, string $variation): ?string
     {
-        return $this->banditFlags[$flagKey][$variation] ?? null;
+        return $this->flagIndex[$flagKey][$variation] ?? null;
     }
 
-    public function isBanditFlag(string $flagKey): bool
+    public static function empty(): IBanditReferenceIndexer
     {
-        return isset($this->banditFlags[$flagKey]);
-    }
-
-    public static function empty(): IBanditVariationIndexer
-    {
-        return new BanditVariationIndexer();
+        return new BanditReferenceIndexer();
     }
 
     /**
+     * @param array<string, BanditReference> $banditReferences
+     * @return IBanditReferenceIndexer
      * @throws InvalidConfigurationException
      */
-    public static function from(array $banditVariations): IBanditVariationIndexer
+    public static function from(array $banditReferences): IBanditReferenceIndexer
     {
-        $bvi = new BanditVariationIndexer();
-        $bvi->setVariations($banditVariations);
+        $bvi = new BanditReferenceIndexer();
+
+        $variations = array_map(
+            function ($banditVariation) {
+                return $banditVariation->flagVariations;
+            },
+            $banditReferences
+        );
+
+        $bvi->setVariations($variations);
         return $bvi;
     }
 
     public function hasBandits(): bool
     {
-        return count($this->banditFlags) > 0;
+        return count($this->flagIndex) > 0;
     }
 }
