@@ -169,23 +169,25 @@ class ConfigurationLoader implements IFlags, IBandits
      * @throws InvalidApiKeyException
      * @throws InvalidConfigurationException
      */
-    public function fetchBanditsAsRequired(IBanditReferenceIndexer $indexer): void
+    private function fetchBanditsAsRequired(IBanditReferenceIndexer $indexer): void
     {
-        $needToFetch = false;
         if ($this->optimizedBanditLoading) {
             // Get the currently loaded bandits to determine if they satisfy what's required by the flags
             $currentlyLoadedBanditModels = $this->configurationStore->getMetadata(
                 self::KEY_LOADED_BANDIT_VERSIONS
-            );
+            ) ?? [];
             $references = $indexer->getBanditModelVersionReferences();
 
             $needToFetch = !self::satisfiesRequiredModels($currentlyLoadedBanditModels, $references);
         } else {
+            // Not optimized loading.
             $needToFetch = true;
         }
 
         if ($needToFetch) {
             $this->fetchAndStoreBandits();
+
+            // What happens if the newly loaded models don't match ??!!?
         }
     }
 

@@ -2,8 +2,8 @@
 
 namespace Eppo\Tests\Config;
 
-use Eppo\API\APIResource;
 use Eppo\API\APIRequestWrapper;
+use Eppo\API\APIResource;
 use Eppo\Cache\DefaultCacheFactory;
 use Eppo\Config\ConfigurationLoader;
 use Eppo\Config\ConfigurationStore;
@@ -19,7 +19,7 @@ class ConfigurationLoaderTest extends TestCase
     private const FLAG_KEY = 'kill-switch';
 
     private const MOCK_RESPONSE_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'mockdata' .
-        DIRECTORY_SEPARATOR . 'ufc-v1.json';
+    DIRECTORY_SEPARATOR . 'ufc-v1.json';
 
 
     public function tearDown(): void
@@ -94,8 +94,6 @@ class ConfigurationLoaderTest extends TestCase
         // Arrange: Load some flag data to be returned by the APIRequestWrapper
         // Load mock response data
         $flagsRaw = file_get_contents(self::MOCK_RESPONSE_FILENAME);
-        $flagsJson = json_decode($flagsRaw, true);
-        $flags = array_map(fn($flag) => (new UFCParser())->parseFlag($flag), $flagsJson['flags']);
         $banditsRaw = '{"bandits": {}}';
 
         $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->disableOriginalConstructor()->getMock();
@@ -118,9 +116,130 @@ class ConfigurationLoaderTest extends TestCase
         $this->assertNotNull($flag);
     }
 
-    public function testOnlyLoadsBanditsWhereNeeded(): void {
-        // TODO
+    public function testOnlyLoadsBanditsWhereNeeded(): void
+    {
+        // Set up mock response data.
+        $initialFlagsRaw = '{
+            "flags": {
+            },
+            "banditReferences": {
+                "cold_starting_bandit": {
+                    "modelVersion": "cold start",
+                    "flagVariations": [
+                        {
+                            "key": "cold_starting_bandit",
+                            "flagKey": "cold_start_flag",
+                            "allocationKey": "cold_start_allocation",
+                            "variationKey": "cold_starting_bandit",
+                            "variationValue": "cold_starting_bandit"
+                        }
+                    ]
+                }
+            }
+        }';
 
+        $warmFlagsRaw = '{
+            "flags": {
+            },
+            "banditReferences": {
+                "cold_starting_bandit": {
+                    "modelVersion": "v1",
+                    "flagVariations": [
+                        {
+                            "key": "cold_starting_bandit",
+                            "flagKey": "cold_start_flag",
+                            "allocationKey": "cold_start_allocation",
+                            "variationKey": "cold_starting_bandit",
+                            "variationValue": "cold_starting_bandit"
+                        }
+                    ]
+                }
+            }
+        }';
+
+        $coldBanditsRaw = '{
+            "bandits": {
+                "cold_starting_bandit" : {
+                    "banditKey": "cold_starting_bandit",
+                    "modelName": "falcon",
+                    "updatedAt": "2023-09-13T04:52:06.462Z",
+                    "modelVersion": "cold start",
+                    "modelData": {
+                        "gamma": 1.0,
+                        "defaultActionScore": 0.0,
+                        "actionProbabilityFloor": 0.0,
+                        "coefficients": {}
+                    }
+                }
+            }
+        }';
+
+        $warmBanditsRaw = '{
+            "bandits": {
+                "cold_starting_bandit" : {
+                    "banditKey": "cold_starting_bandit",
+                    "modelName": "falcon",
+                    "updatedAt": "2023-09-13T04:52:06.462Z",
+                    "modelVersion": "v1",
+                    "modelData": {
+                        "gamma": 1.0,
+                        "defaultActionScore": 0.0,
+                        "actionProbabilityFloor": 0.0,
+                        "coefficients": {}
+                    }
+                }
+            }
+        }';
+
+
+        $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->disableOriginalConstructor()->getMock();
+
+        $apiWrapper->expects($this->exactly(3))
+            ->method('getUFC')
+            ->willReturnOnConsecutiveCalls(
+                new APIResource($initialFlagsRaw, true, "initial"),
+                new APIResource($initialFlagsRaw, true, "initialButForced"),
+                new APIResource($warmFlagsRaw, true, "warm"),
+            );
+
+        $apiWrapper->expects($this->exactly(2))
+            ->method('getBandits')
+            ->willReturnOnConsecutiveCalls(
+                new APIResource($coldBanditsRaw, true, null),
+                new APIResource($warmBanditsRaw, true, null),
+            );
+
+        $configStore = new ConfigurationStore(DefaultCacheFactory::create());
+        $loader = new ConfigurationLoader($apiWrapper, $configStore, optimizedBanditLoading: true);
+
+
+        // First fetch has the bandit cold
+        $loader->fetchAndStoreConfigurations(null);
+
+        $bandit = $loader->getBandit('cold_starting_bandit');
+        $this->assertNotNull($bandit);
+        $this->assertInstanceOf(Bandit::class, $bandit);
+        $this->assertEquals('cold_starting_bandit', $bandit->banditKey);
+        $this->assertEquals('cold start', $bandit->modelVersion);
+
+
+        // Trigger a reload, second fetch shows the bandit as still cold
+        $loader->fetchAndStoreConfigurations('initial');
+
+        $bandit = $loader->getBandit('cold_starting_bandit');
+        $this->assertNotNull($bandit);
+        $this->assertInstanceOf(Bandit::class, $bandit);
+        $this->assertEquals('cold_starting_bandit', $bandit->banditKey);
+        $this->assertEquals('cold start', $bandit->modelVersion);
+
+        // Trigger a reload, third fetch has the bandit warm with v1
+        $loader->fetchAndStoreConfigurations('initialButForced');
+
+        $bandit = $loader->getBandit('cold_starting_bandit');
+        $this->assertNotNull($bandit);
+        $this->assertInstanceOf(Bandit::class, $bandit);
+        $this->assertEquals('cold_starting_bandit', $bandit->banditKey);
+        $this->assertEquals('v1', $bandit->modelVersion);
     }
 
     public function testReloadsOnExpiredCache(): void

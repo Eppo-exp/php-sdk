@@ -14,7 +14,7 @@ class BanditReferenceIndexer implements IBanditReferenceIndexer
         return [
             'flagIndex' => $this->flagIndex,
             'banditReferences' => $this->banditReferences,
-            'banditKeys' => $this->banditKeys,
+            'activeBanditKeys' => $this->activeBanditKeys,
         ];
     }
 
@@ -22,13 +22,13 @@ class BanditReferenceIndexer implements IBanditReferenceIndexer
     {
         $this->flagIndex = $data['flagIndex'];
         $this->banditReferences = $data['banditReferences'];
-        $this->banditKeys = $data['banditKeys'];
+        $this->activeBanditKeys = $data['activeBanditKeys'];
     }
 
     /**
      * @var array Keys of bandits with non-empty FlagVariations
      */
-    private array $banditKeys = [];
+    private array $activeBanditKeys = [];
 
     /**
      * Map of flag key+variation value => bandit
@@ -48,10 +48,11 @@ class BanditReferenceIndexer implements IBanditReferenceIndexer
     }
 
     /**
+     * Indexes the bandit flag variations by Flag,Variation => Bandit and sets `activeBanditKeys`.
      * @param array<string, array<BanditFlagVariation>> $banditVariations
      * @throws InvalidConfigurationException
      */
-    private function setFlagVariationIndex(array $banditVariations): void
+    private function indexBanditFlags(array $banditVariations): void
     {
         $banditKeys = [];
         $this->flagIndex = [];
@@ -77,11 +78,13 @@ class BanditReferenceIndexer implements IBanditReferenceIndexer
 
                 // Update the index for this triple (flagKey, variationValue) => banditKey
                 $this->flagIndex[$flagKey][$variationValue] = $banditVariation->key;
+
+                // Gather every bandit key referenced, dedupe later.
                 $banditKeys[] = $banditVariation->key;
             }
         }
 
-        $this->banditKeys = array_unique($banditKeys);
+        $this->activeBanditKeys = array_unique($banditKeys);
     }
 
     /**
@@ -115,7 +118,7 @@ class BanditReferenceIndexer implements IBanditReferenceIndexer
             $banditReferences
         );
 
-        $bvi->setFlagVariationIndex($variations);
+        $bvi->indexBanditFlags($variations);
         $bvi->banditReferences = $banditReferences;
         return $bvi;
     }
@@ -132,7 +135,7 @@ class BanditReferenceIndexer implements IBanditReferenceIndexer
             fn($banditReference) => $banditReference->modelVersion,
             array_filter(
                 $this->banditReferences,
-                fn($banditKey) => in_array($banditKey, $this->banditKeys),
+                fn($banditKey) => in_array($banditKey, $this->activeBanditKeys),
                 ARRAY_FILTER_USE_KEY
             )
         );
