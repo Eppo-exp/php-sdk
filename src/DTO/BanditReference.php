@@ -2,8 +2,6 @@
 
 namespace Eppo\DTO;
 
-use Eppo\DTO\Bandit\BanditFlagVariation;
-
 class BanditReference
 {
     /**

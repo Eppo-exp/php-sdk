@@ -7,8 +7,8 @@ use Eppo\Bandits\BanditReferenceIndexer;
 use Eppo\Cache\DefaultCacheFactory;
 use Eppo\Config\ConfigurationStore;
 use Eppo\DTO\Bandit\Bandit;
-use Eppo\DTO\Bandit\BanditFlagVariation;
 use Eppo\DTO\Bandit\BanditModelData;
+use Eppo\DTO\BanditFlagVariation;
 use Eppo\DTO\BanditReference;
 use Eppo\DTO\Flag;
 use Eppo\DTO\VariationType;
@@ -72,7 +72,7 @@ class ConfigurationStoreTest extends TestCase
         $configStore->setUnifiedFlagConfiguration([], $banditVariations);
 
         // Verify Object has been stored.
-        $recoveredBanditVariations = $configStore->getBanditVariations();
+        $recoveredBanditVariations = $configStore->getBanditReferenceIndexer();
         $this->assertNotNull($recoveredBanditVariations);
         $this->assertTrue($recoveredBanditVariations->hasBandits());
 
@@ -81,7 +81,7 @@ class ConfigurationStoreTest extends TestCase
         $configStore->setUnifiedFlagConfiguration([], null);
 
         // Assert the variations have been emptied.
-        $recoveredBanditVariations = $configStore->getBanditVariations();
+        $recoveredBanditVariations = $configStore->getBanditReferenceIndexer();
         $this->assertNotNull($recoveredBanditVariations);
         $this->assertFalse($recoveredBanditVariations->hasBandits());
     }
@@ -109,7 +109,7 @@ class ConfigurationStoreTest extends TestCase
 
         $configStore->setUnifiedFlagConfiguration([], $banditVariations);
 
-        $recoveredBanditVariations = $configStore->getBanditVariations();
+        $recoveredBanditVariations = $configStore->getBanditReferenceIndexer();
 
         $this->assertFalse($banditVariations === $recoveredBanditVariations);
         $this->assertEquals(

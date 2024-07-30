@@ -2,12 +2,29 @@
 
 namespace Eppo\Bandits;
 
-use Eppo\DTO\Bandit\BanditFlagVariation;
+use Eppo\DTO\BanditFlagVariation;
 use Eppo\DTO\BanditReference;
 use Eppo\Exception\InvalidConfigurationException;
 
 class BanditReferenceIndexer implements IBanditReferenceIndexer
 {
+    // magic methods to store just the underlying data when serialized to cache.
+    public function __serialize(): array
+    {
+        return [
+            'flagIndex' => $this->flagIndex,
+            'banditReferences' => $this->banditReferences,
+            'banditKeys' => $this->banditKeys,
+        ];
+    }
+
+    public function __unserialize(array $data): void
+    {
+        $this->flagIndex = $data['flagIndex'];
+        $this->banditReferences = $data['banditReferences'];
+        $this->banditKeys = $data['banditKeys'];
+    }
+
     /**
      * @var array Keys of bandits with non-empty FlagVariations
      */
@@ -25,22 +42,6 @@ class BanditReferenceIndexer implements IBanditReferenceIndexer
      * @var array<string, BanditReference>
      */
     private array $banditReferences = [];
-
-    public function __serialize(): array
-    {
-        return [
-            'flagIndex' => $this->flagIndex,
-            'banditReferences' => $this->banditReferences,
-            'banditKeys' => $this->banditKeys,
-        ];
-    }
-
-    public function __unserialize(array $data): void
-    {
-        $this->flagIndex = $data['flagIndex'];
-        $this->banditReferences = $data['banditReferences'];
-        $this->banditKeys = $data['banditKeys'];
-    }
 
     private function __construct()
     {

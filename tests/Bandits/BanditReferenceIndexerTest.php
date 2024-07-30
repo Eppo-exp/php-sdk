@@ -3,7 +3,7 @@
 namespace Eppo\Tests\Bandits;
 
 use Eppo\Bandits\BanditReferenceIndexer;
-use Eppo\DTO\Bandit\BanditFlagVariation;
+use Eppo\DTO\BanditFlagVariation;
 use Eppo\DTO\BanditReference;
 use Eppo\Exception\InvalidConfigurationException;
 use PHPUnit\Framework\TestCase;
@@ -90,7 +90,6 @@ final class BanditReferenceIndexerTest extends TestCase
             $unserialized->getBanditByVariation('multi_bandit_flag', 'bandit_three_multi_flag_variation')
         );
     }
-
 
     public function testEmptyIndexerWorks(): void
     {

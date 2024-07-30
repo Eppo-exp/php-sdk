@@ -55,7 +55,7 @@ class ConfigurationLoader implements IFlags, IBandits
     public function getBanditByVariation(string $flagKey, string $variation): ?string
     {
         $this->reloadConfigurationIfExpired();
-        return $this->configurationStore->getBanditVariations()->getBanditByVariation($flagKey, $variation);
+        return $this->configurationStore->getBanditReferenceIndexer()->getBanditByVariation($flagKey, $variation);
     }
 
     /**
@@ -90,7 +90,7 @@ class ConfigurationLoader implements IFlags, IBandits
 
             $inflated = array_map(fn($object) => $this->parser->parseFlag($object), $responseData['flags']);
 
-            $indexer = null;
+            // Create a handy helper class from the `banditReferences` to help connect flags to bandits.
             if (isset($responseData['banditReferences'])) {
                 $banditReferences = array_map(
                     function ($json) {
@@ -108,6 +108,8 @@ class ConfigurationLoader implements IFlags, IBandits
 
             // Only load bandits if there are any referenced by the flags.
             if ($indexer->hasBandits()) {
+                // TODO: Use the indexer to see what bandit models are needed and whether they've already been loaded
+                // to determine whether to make a fetch call here.
                 $this->fetchBanditsAsRequired($indexer);
             }
         }
@@ -126,9 +128,9 @@ class ConfigurationLoader implements IFlags, IBandits
         return -1;
     }
 
-    public function getBanditVariations(): IBanditReferenceIndexer
+    public function getBanditReferenceIndexer(): IBanditReferenceIndexer
     {
-        return $this->configurationStore->getBanditVariations();
+        return $this->configurationStore->getBanditReferenceIndexer();
     }
 
     /**
@@ -145,10 +147,10 @@ class ConfigurationLoader implements IFlags, IBandits
         } else {
             $bandits = array_map(fn($json) => Bandit::fromJson($json), $banditModelResponse['bandits']);
         }
-        $loadedBanditModels = array_map(fn($bandit) => $bandit->modelVersion, $bandits);
+        $banditModelVersions = array_map(fn($bandit)=> $bandit->modelVersion, $bandits);
 
         $this->configurationStore->setBandits($bandits);
-        $this->configurationStore->setMetadata(self::KEY_LOADED_BANDIT_VERSIONS, $loadedBanditModels);
+        $this->configurationStore->setMetadata(self::KEY_LOADED_BANDIT_VERSIONS, $banditModelVersions);
         $this->configurationStore->setMetadata(self::KEY_BANDIT_TIMESTAMP, time());
     }
 

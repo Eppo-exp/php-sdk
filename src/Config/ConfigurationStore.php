@@ -106,7 +106,7 @@ class ConfigurationStore implements IConfigurationStore
         return null;
     }
 
-    public function getBanditVariations(): IBanditReferenceIndexer
+    public function getBanditReferenceIndexer(): IBanditReferenceIndexer
     {
         try {
             $data = $this->metadataCache->get(self::BANDIT_VARIATION_KEY);
