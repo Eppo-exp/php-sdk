@@ -108,8 +108,6 @@ class ConfigurationLoader implements IFlags, IBandits
 
             // Only load bandits if there are any referenced by the flags.
             if ($indexer->hasBandits()) {
-                // TODO: Use the indexer to see what bandit models are needed and whether they've already been loaded
-                // to determine whether to make a fetch call here.
                 $this->fetchBanditsAsRequired($indexer);
             }
         }
