@@ -127,7 +127,6 @@ final class BanditReferenceIndexerTest extends TestCase
         $this->expectBandit($indexer, 'bandit_two', 'bandit_two_flag', 'bandit_two_flag_variation');
         $this->expectBandit($indexer, 'bandit_one', 'multi_bandit_flag', 'bandit_one_multi_flag_variation');
         $this->expectBandit($indexer, 'bandit_three', 'multi_bandit_flag', 'bandit_three_multi_flag_variation');
-
     }
 
     public function testBadBanditVariation(): void
