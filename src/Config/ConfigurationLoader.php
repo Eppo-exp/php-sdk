@@ -145,7 +145,7 @@ class ConfigurationLoader implements IFlags, IBandits
         } else {
             $bandits = array_map(fn($json) => Bandit::fromJson($json), $banditModelResponse['bandits']);
         }
-        $banditModelVersions = array_map(fn($bandit)=> $bandit->modelVersion, $bandits);
+        $banditModelVersions = array_map(fn($bandit) => $bandit->modelVersion, $bandits);
 
         $this->configurationStore->setBandits($bandits);
         $this->configurationStore->setMetadata(self::KEY_LOADED_BANDIT_VERSIONS, $banditModelVersions);
@@ -169,22 +169,14 @@ class ConfigurationLoader implements IFlags, IBandits
      */
     private function fetchBanditsAsRequired(IBanditReferenceIndexer $indexer): void
     {
-        if ($this->optimizedBanditLoading) {
-            // Get the currently loaded bandits to determine if they satisfy what's required by the flags
-            $currentlyLoadedBanditModels = $this->configurationStore->getMetadata(
-                self::KEY_LOADED_BANDIT_VERSIONS
-            ) ?? [];
-            $references = $indexer->getBanditModelVersionReferences();
+        // Get the currently loaded bandits to determine if they satisfy what's required by the flags
+        $currentlyLoadedBanditModels = $this->configurationStore->getMetadata(
+            self::KEY_LOADED_BANDIT_VERSIONS
+        ) ?? [];
+        $references = $indexer->getBanditModelVersionReferences();
 
-            $needToFetch = !self::satisfiesRequiredModels($currentlyLoadedBanditModels, $references);
-        } else {
-            // Not optimized loading.
-            $needToFetch = true;
-        }
-
-        if ($needToFetch) {
+        if (!self::satisfiesRequiredModels($currentlyLoadedBanditModels, $references)) {
             $this->fetchAndStoreBandits();
-
             // What happens if the newly loaded models don't match ??!!?
         }
     }
