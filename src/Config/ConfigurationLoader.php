@@ -17,17 +17,18 @@ use Eppo\UFCParser;
 
 class ConfigurationLoader implements IFlags, IBandits
 {
-    private const BANDIT_TIMESTAMP = "banditTimestamp";
-    private const BANDIT_MODEL_VERSIONS_KEY = 'banditModelVersions';
+    private const KEY_BANDIT_TIMESTAMP = "banditTimestamp";
+    private const KEY_LOADED_BANDIT_VERSIONS = 'banditModelVersions';
     private UFCParser $parser;
 
-    private const FLAG_TIMESTAMP = "flagTimestamp";
-    private const FLAG_ETAG = "flagETag";
+    private const KEY_FLAG_TIMESTAMP = "flagTimestamp";
+    private const KEY_FLAG_ETAG = "flagETag";
 
     public function __construct(
         private readonly APIRequestWrapper $apiRequestWrapper,
         private readonly IConfigurationStore $configurationStore,
-        private readonly int $cacheAgeLimit = 30
+        private readonly int $cacheAgeLimit = 30,
+        private readonly bool $optimizedBanditLoading = false
     ) {
         $this->parser = new UFCParser();
     }
@@ -66,7 +67,7 @@ class ConfigurationLoader implements IFlags, IBandits
     {
         $flagCacheAge = $this->getCacheAgeSeconds();
         if ($flagCacheAge === -1 || $flagCacheAge >= $this->cacheAgeLimit) {
-            $flagETag = $this->configurationStore->getMetadata(self::FLAG_ETAG);
+            $flagETag = $this->configurationStore->getMetadata(self::KEY_FLAG_ETAG);
             $this->fetchAndStoreConfigurations($flagETag);
         }
     }
@@ -107,20 +108,18 @@ class ConfigurationLoader implements IFlags, IBandits
 
             // Only load bandits if there are any referenced by the flags.
             if ($indexer->hasBandits()) {
-                // TODO: Use the indexer to see what bandit models are needed and whether they've already been loaded
-                // to determine whether to make a fetch call here.
-                $this->fetchAndStoreBandits();
+                $this->fetchBanditsAsRequired($indexer);
             }
         }
 
         // Store metadata for next time.
-        $this->configurationStore->setMetadata(self::FLAG_TIMESTAMP, time());
-        $this->configurationStore->setMetadata(self::FLAG_ETAG, $response->ETag);
+        $this->configurationStore->setMetadata(self::KEY_FLAG_TIMESTAMP, time());
+        $this->configurationStore->setMetadata(self::KEY_FLAG_ETAG, $response->ETag);
     }
 
     private function getCacheAgeSeconds(): int
     {
-        $timestamp = $this->configurationStore->getMetadata(self::FLAG_TIMESTAMP);
+        $timestamp = $this->configurationStore->getMetadata(self::KEY_FLAG_TIMESTAMP);
         if ($timestamp != null) {
             return time() - $timestamp;
         }
@@ -146,15 +145,38 @@ class ConfigurationLoader implements IFlags, IBandits
         } else {
             $bandits = array_map(fn($json) => Bandit::fromJson($json), $banditModelResponse['bandits']);
         }
-        $banditModelVersions = array_map(fn($bandit)=> $bandit->modelVersion, $bandits);
+        $banditModelVersions = array_map(fn($bandit) => $bandit->modelVersion, $bandits);
 
         $this->configurationStore->setBandits($bandits);
-        $this->configurationStore->setMetadata(self::BANDIT_MODEL_VERSIONS_KEY, $banditModelVersions);
-        $this->configurationStore->setMetadata(self::BANDIT_TIMESTAMP, time());
+        $this->configurationStore->setMetadata(self::KEY_LOADED_BANDIT_VERSIONS, $banditModelVersions);
+        $this->configurationStore->setMetadata(self::KEY_BANDIT_TIMESTAMP, time());
     }
 
     public function getBandit(string $banditKey): ?Bandit
     {
         return $this->configurationStore->getBandit($banditKey);
+    }
+
+    /**
+     * Loads bandits unless `optimizedBanditLoading` is `true` in which case, currently loaded bandit models are
+     * compared to those required by flags to determine whether to (re)load bandit models.
+     *
+     * @param IBanditReferenceIndexer $indexer
+     * @return void
+     * @throws HttpRequestException
+     * @throws InvalidApiKeyException
+     * @throws InvalidConfigurationException
+     */
+    private function fetchBanditsAsRequired(IBanditReferenceIndexer $indexer): void
+    {
+        // Get the currently loaded bandits to determine if they satisfy what's required by the flags
+        $currentlyLoadedBanditModels = $this->configurationStore->getMetadata(
+            self::KEY_LOADED_BANDIT_VERSIONS
+        ) ?? [];
+        $references = $indexer->getBanditModelKeys();
+
+        if (array_diff($references, $currentlyLoadedBanditModels)) {
+            $this->fetchAndStoreBandits();
+        }
     }
 }
