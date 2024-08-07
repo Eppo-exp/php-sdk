@@ -23,7 +23,7 @@ interface IBanditReferenceIndexer
     public function hasBandits(): bool;
 
     /**
-     * @return array<string, string> Array of Bandit Key => Model Version
+     * @return string[] Bandit model version keys; these are universally unique across all Bandits.
      */
-    public function getBanditModelVersionReferences(): array;
+    public function getBanditModelKeys(): array;
 }

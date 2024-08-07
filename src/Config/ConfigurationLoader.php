@@ -173,26 +173,10 @@ class ConfigurationLoader implements IFlags, IBandits
         $currentlyLoadedBanditModels = $this->configurationStore->getMetadata(
             self::KEY_LOADED_BANDIT_VERSIONS
         ) ?? [];
-        $references = $indexer->getBanditModelVersionReferences();
+        $references = $indexer->getBanditModelKeys();
 
-        if (!self::satisfiesRequiredModels($currentlyLoadedBanditModels, $references)) {
+        if (array_diff($references, $currentlyLoadedBanditModels)) {
             $this->fetchAndStoreBandits();
-            // What happens if the newly loaded models don't match ??!!?
         }
-    }
-
-    /**
-     * @param array<string, string> $loaded
-     * @param array<string, string> $required
-     * @return bool
-     */
-    private static function satisfiesRequiredModels(array $loaded, array $required): bool
-    {
-        foreach ($required as $banditKey => $modelVersion) {
-            if (!isset($loaded[$banditKey]) || $modelVersion != $loaded[$banditKey]) {
-                return false;
-            }
-        }
-        return true;
     }
 }

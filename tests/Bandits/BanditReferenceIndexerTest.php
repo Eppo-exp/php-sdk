@@ -111,7 +111,7 @@ final class BanditReferenceIndexerTest extends TestCase
 
         $this->assertNull($indexer->getBanditByVariation('bandit_one', 'bandit_one_flag_variation'));
         $this->assertFalse($indexer->hasBandits());
-        $this->assertEquals([], $indexer->getBanditModelVersionReferences());
+        $this->assertEquals([], $indexer->getBanditModelKeys());
     }
 
     public function testGetBanditByVariation(): void
@@ -155,7 +155,7 @@ final class BanditReferenceIndexerTest extends TestCase
     public function testGetBanditModelsEmptyReferences()
     {
         $indexer = BanditReferenceIndexer::empty();
-        $this->assertEquals([], $indexer->getBanditModelVersionReferences());
+        $this->assertEquals([], $indexer->getBanditModelKeys());
     }
 
     public function testGetBanditModelsNoVariations()
@@ -167,7 +167,7 @@ final class BanditReferenceIndexerTest extends TestCase
         $indexer = BanditReferenceIndexer::from($banditReferences);
         $this->assertEquals(
             [],
-            $indexer->getBanditModelVersionReferences()
+            $indexer->getBanditModelKeys()
         );
     }
 
@@ -175,9 +175,10 @@ final class BanditReferenceIndexerTest extends TestCase
     {
         $indexer = BanditReferenceIndexer::from(self::$banditReferences);
 
-        $this->assertEquals(
-            ['bandit_one' => 'v123', 'bandit_two' => 'v456', 'bandit_three' => 'v789'],
-            $indexer->getBanditModelVersionReferences()
+        // Bandit model version strings are universally unique, so we don't need to pair the model version with a bandit key.
+        $this->assertEqualsCanonicalizing(
+            ['v123', 'v456', 'v789'],
+            $indexer->getBanditModelKeys()
         );
     }
 

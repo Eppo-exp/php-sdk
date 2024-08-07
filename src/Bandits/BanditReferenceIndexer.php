@@ -48,7 +48,7 @@ class BanditReferenceIndexer implements IBanditReferenceIndexer
     }
 
     /**
-     * Indexes the bandit flag variations by Flag,Variation => Bandit and sets `activeBanditKeys`.
+     * Indexes the bandit flag variations by Flag,Variation => Bandit and sets `banditModels`.
      * @param array<string, array<BanditFlagVariation>> $banditVariations
      * @throws InvalidConfigurationException
      */
@@ -84,7 +84,9 @@ class BanditReferenceIndexer implements IBanditReferenceIndexer
             }
         }
 
-        $this->activeBanditKeys = array_unique($banditKeys);
+        // array_unique preserves array keys so duplicate entries that are dropped leave holes in the list of numeric keys
+        // `array_values` builds a new array from the values with reset numeric keys.
+        $this->activeBanditKeys = array_values(array_unique($banditKeys));
     }
 
     /**
@@ -128,16 +130,12 @@ class BanditReferenceIndexer implements IBanditReferenceIndexer
         return count($this->flagIndex) > 0;
     }
 
-    public function getBanditModelVersionReferences(): array
+    public function getBanditModelKeys(): array
     {
         // banditKey => modelVersion strictly for bandits with references.
         return array_map(
-            fn($banditReference) => $banditReference->modelVersion,
-            array_filter(
-                $this->banditReferences,
-                fn($banditKey) => in_array($banditKey, $this->activeBanditKeys),
-                ARRAY_FILTER_USE_KEY
-            )
+            fn($banditKey) => $this->banditReferences[$banditKey]->modelVersion,
+            $this->activeBanditKeys
         );
     }
 }
