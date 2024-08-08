@@ -344,6 +344,38 @@ class BanditEvaluatorTest extends TestCase
         $this->assertAssociativeArraysEqual($expectedWeights, $actualWeights);
     }
 
+    public function testWeighEvenBestScores(): void
+    {
+        $scores = array(
+            'action1' => 1,
+            'action2' => 1,
+            'action3' => 1,
+            'action4' => 0.1,
+            'action5' => 0.3,
+            'action6' => 0.04,
+            'action7' => 0.005,
+        );
+
+        $scoresInAnotherOrder = array(
+            'action2' => 1,
+            'action3' => 1,
+            'action4' => 0.1,
+            'action1' => 1,
+            'action5' => 0.3,
+            'action6' => 0.04,
+            'action7' => 0.005,
+        );
+
+        $gamma = 0.1;
+        $minProbability = 0.1;
+
+        $actualWeights = BanditEvaluator::weighActions($scores, $gamma, $minProbability);
+        $actualWeightsForADifferentOrder = BanditEvaluator::weighActions($scoresInAnotherOrder, $gamma, $minProbability);
+
+        // Weights should not depend on ordering.
+        $this->assertAssociativeArraysEqual($actualWeights, $actualWeightsForADifferentOrder);
+    }
+
     /**
      * Compare two associative arrays without order mattering.
      * @param array $expectedArray
@@ -354,8 +386,17 @@ class BanditEvaluatorTest extends TestCase
     {
         // Keys must be the same, but not necessarily in the same order; also asserts the arrays are the same length.
         $this->assertEqualsCanonicalizing(array_keys($expectedArray), array_keys($actualArray));
+
+        // Canonicalize the values by key.
+        // Create for the expected and actual arrays, an array of values sorted by key. We already know the keys match.
+        $keys = array_keys($expectedArray);
+        sort($keys);
+        $expectedValues = array_map(function ($key) use ($expectedArray) {return $expectedArray[$key];}, $keys);
+        $actualValues = array_map(function ($key) use ($actualArray) {return $actualArray[$key];}, $keys);
+        $this->assertEqualsWithDelta($expectedValues, $actualValues, 0.001);
+
         foreach ($expectedArray as $key => $value) {
-            $this->assertEquals($value, $actualArray[$key]);
+            $this->assertEquals($value, $actualArray[$key], "mismatching values for $key");
         }
     }
 
