@@ -140,6 +140,11 @@ class BanditEvaluator implements IBanditEvaluator
     public static function weighActions(array $actionScores, float $gamma, float $probabilityFloor): array
     {
         $numberOfActions = count($actionScores);
+
+        // Alpha-order the scores by action key. This ensures consistency in selecting the highest score.
+        ksort($actionScores);
+
+        // Select the best action key.
         $bestActionKey = array_keys($actionScores, max($actionScores))[0];
 
         $minProbability = $probabilityFloor / $numberOfActions;
