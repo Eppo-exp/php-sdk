@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [ "*" ]
   workflow_dispatch:
+    inputs:
+      test_data_branch:
+        type: string
+        description: The branch in sdk-test-data to target for testcase files
+        required: false
+        default: main
   workflow_call:
     inputs:
       test_data_branch:
