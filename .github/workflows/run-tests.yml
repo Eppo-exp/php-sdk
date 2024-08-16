@@ -6,7 +6,19 @@ on:
   pull_request:
     branches: [ "*" ]
   workflow_dispatch:
+    inputs:
+      test_branch:
+        type: string
+        description: The branch in sdk-test-data to target for testcase files
+        required: false
+        default: main
   workflow_call:
+    inputs:
+      test_branch:
+        type: string
+        description: The branch in sdk-test-data to target for testcase files
+        required: false
+        default: main
 
 permissions:
   contents: read
@@ -18,7 +30,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-
+    
+    - name: Echo input
+      run: echo "Branch ${{ github.event.inputs.branch }}"
+      
     - name: Validate composer.json and composer.lock
       run: composer validate --strict
 
@@ -35,4 +50,4 @@ jobs:
       run: composer install --prefer-dist --no-progress
 
     - name: Run tests
-      run: make test
+      run: make test BRANCH=${{ github.event.inputs.branch }}
