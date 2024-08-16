@@ -30,13 +30,13 @@ help: Makefile
 testDataDir := tests/data/
 tempDir := ${testDataDir}temp/
 gitDataDir := ${tempDir}sdk-test-data/
-BRANCH = main
+branchName := main
 githubRepoLink := https://github.com/Eppo-exp/sdk-test-data.git
 .PHONY: test-data
 test-data: 
 	rm -rf $(testDataDir)
 	mkdir -p $(tempDir)
-	git clone -b ${BRANCH} --depth 1 --single-branch ${githubRepoLink} ${gitDataDir}
+	git clone -b ${branchName} --depth 1 --single-branch ${githubRepoLink} ${gitDataDir}
 	cp -r ${gitDataDir}ufc ${testDataDir}
 	rm -rf ${tempDir}
 
