@@ -50,4 +50,4 @@ jobs:
       run: composer install --prefer-dist --no-progress
 
     - name: Run tests
-      run: make test BRANCH=${{ github.event.inputs.test_data_branch || 'main' }}
+      run: make test branchName=${{ github.event.inputs.test_data_branch || 'main' }}
