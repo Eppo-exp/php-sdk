@@ -7,14 +7,14 @@ on:
     branches: [ "*" ]
   workflow_dispatch:
     inputs:
-      test_branch:
+      test_data_branch:
         type: string
         description: The branch in sdk-test-data to target for testcase files
         required: false
         default: main
   workflow_call:
     inputs:
-      test_branch:
+      test_data_branch:
         type: string
         description: The branch in sdk-test-data to target for testcase files
         required: false
@@ -32,7 +32,7 @@ jobs:
     - uses: actions/checkout@v3
     
     - name: Echo input
-      run: echo "Branch ${{ github.event.inputs.branch }}"
+      run: echo "Branch ${{ github.event.inputs.test_data_branch }}"
       
     - name: Validate composer.json and composer.lock
       run: composer validate --strict
@@ -50,4 +50,4 @@ jobs:
       run: composer install --prefer-dist --no-progress
 
     - name: Run tests
-      run: make test BRANCH=${{ github.event.inputs.branch }}
+      run: make test BRANCH=${{ github.event.inputs.test_data_branch }}
