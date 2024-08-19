@@ -35,7 +35,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
       with:
-        repository: eppo-exp/pho-sdk
+        repository: Eppo-exp/php-sdk
         ref: ${SDK_BRANCH_NAME}
 
     - name: Echo input
