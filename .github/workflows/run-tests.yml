@@ -31,15 +31,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Echo input
+      run: |
+        echo "Branch ${TEST_DATA_BRANCH_NAME}"
+        echo "SDK Branch ${SDK_BRANCH_NAME}"
+
     - uses: actions/checkout@v3
       with:
         repository: Eppo-exp/php-sdk
         ref: ${{ github.event.inputs.sdk_branch || github.head_ref || github.ref_name || 'main' }}
 
-    - name: Echo input
-      run: |
-          echo "Branch ${TEST_DATA_BRANCH_NAME}"
-          echo "SDK Branch ${SDK_BRANCH_NAME}"
     - name: Validate composer.json and composer.lock
       run: composer validate --strict
 
