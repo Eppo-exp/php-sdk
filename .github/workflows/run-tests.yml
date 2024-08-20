@@ -50,7 +50,7 @@ jobs:
     - uses: actions/checkout@v3
       with:
         repository: Eppo-exp/php-sdk
-        ref: ${SDK_BRANCH_NAME}
+        ref: ${{ env.SDK_BRANCH_NAME}}
 
     - name: Validate composer.json and composer.lock
       run: composer validate --strict
@@ -68,4 +68,4 @@ jobs:
       run: composer install --prefer-dist --no-progress
 
     - name: Run tests
-      run: make test branchName=${TEST_DATA_BRANCH_NAME}
+      run: make test branchName=${{TEST_DATA_BRANCH_NAME}}
