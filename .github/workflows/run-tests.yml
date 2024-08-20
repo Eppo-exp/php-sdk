@@ -1,8 +1,8 @@
 name: Run Tests
 
 env:
-  SDK_BRANCH_NAME: ${{ github.event.inputs.sdk_branch  || github.head_ref || github.ref_name || 'main' }}
-  TEST_DATA_BRANCH_NAME: ${{ github.event.inputs.test_data_branch || 'main' }}
+  SDK_BRANCH_NAME: ${{ inputs.sdk_branch  || github.head_ref || github.ref_name || 'main' }}
+  TEST_DATA_BRANCH_NAME: ${{ inputs.test_data_branch || 'main' }}
 
 on:
   push:
@@ -39,7 +39,7 @@ jobs:
     - uses: actions/checkout@v3
       with:
         repository: Eppo-exp/php-sdk
-        ref: ${{ github.event.inputs.sdk_branch || github.head_ref || github.ref_name || 'main' }}
+        ref: ${{ inputs.sdk_branch || github.head_ref || github.ref_name || 'main' }}
 
     - name: Validate composer.json and composer.lock
       run: composer validate --strict
@@ -57,4 +57,4 @@ jobs:
       run: composer install --prefer-dist --no-progress
 
     - name: Run tests
-      run: make test branchName=${{ github.event.inputs.test_data_branch || 'main' }}
+      run: make test branchName=${{ inputs.test_data_branch || 'main' }}
