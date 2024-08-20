@@ -7,19 +7,11 @@ env:
 on:
   push:
     branches: [ "main" ]
+
   pull_request:
-    branches: [ "*" ]
+
   workflow_dispatch:
-    inputs:
-      test_data_branch:
-        type: string
-        description: The branch in sdk-test-data to target for testcase files
-        required: false
-        default: main
-      sdk_branch:
-        type: string
-        description: The branch of the SDK to test
-        required: false
+
   workflow_call:
     inputs:
       test_data_branch:
@@ -36,12 +28,12 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  build-and-test:
 
     runs-on: ubuntu-latest
 
     steps:
-    - name: Echo
+    - name: Display Testing Details
       run: |
         echo "Running SDK Test using"
         echo "Test Data: sdk-test-data@${TEST_DATA_BRANCH_NAME}"
