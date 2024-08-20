@@ -1,7 +1,7 @@
 name: Run Tests
 
 env:
-  SDK_BRANCH_NAME: ${{ github.head_ref || github.ref_name || 'main' }}
+  SDK_BRANCH_NAME: ${{ github.event.inputs.sdk_branch  || github.head_ref || github.ref_name || 'main' }}
   TEST_DATA_BRANCH_NAME: ${{ github.event.inputs.test_data_branch || 'main' }}
 
 on:
@@ -37,8 +37,9 @@ jobs:
         ref: ${{ github.event.inputs.sdk_branch || github.head_ref || github.ref_name || 'main' }}
 
     - name: Echo input
-      run: echo "Branch ${TEST_DATA_BRANCH_NAME}"
-
+      run: |
+          echo "Branch ${TEST_DATA_BRANCH_NAME}"
+          echo "SDK Branch ${SDK_BRANCH_NAME}"
     - name: Validate composer.json and composer.lock
       run: composer validate --strict
 
