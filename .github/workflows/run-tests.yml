@@ -31,6 +31,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Output Inputs
+      run: |
+          echo "${{ toJSON(github.event.inputs) }}"
+          echo "${{ toJSON(github.event) }}"
+          echo "${{ toJSON(inputs) }}"
     - name: Echo input
       run: |
         echo "Branch ${TEST_DATA_BRANCH_NAME}"
