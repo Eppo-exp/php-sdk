@@ -68,4 +68,4 @@ jobs:
       run: composer install --prefer-dist --no-progress
 
     - name: Run tests
-      run: make test branchName=${{TEST_DATA_BRANCH_NAME}}
+      run: make test branchName=${{env.TEST_DATA_BRANCH_NAME}}
