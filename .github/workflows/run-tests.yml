@@ -1,23 +1,48 @@
 name: Run Tests
 
+env:
+  SDK_BRANCH_NAME: ${{ inputs.sdk_branch  || github.head_ref || github.ref_name || 'main' }}
+  TEST_DATA_BRANCH_NAME: ${{ inputs.test_data_branch || 'main' }}
+
 on:
   push:
     branches: [ "main" ]
+
   pull_request:
-    branches: [ "*" ]
+
   workflow_dispatch:
+
   workflow_call:
+    inputs:
+      test_data_branch:
+        type: string
+        description: The branch in sdk-test-data to target for testcase files
+        required: false
+        default: main
+      sdk_branch:
+        type: string
+        description: The branch of the SDK to test
+        required: false
 
 permissions:
   contents: read
 
 jobs:
-  build:
+  build-and-test:
 
     runs-on: ubuntu-latest
 
     steps:
+    - name: Display Testing Details
+      run: |
+        echo "Running SDK Test using"
+        echo "Test Data: sdk-test-data@${TEST_DATA_BRANCH_NAME}"
+        echo "SDK Branch: php-sdk@${SDK_BRANCH_NAME}"
+
     - uses: actions/checkout@v3
+      with:
+        repository: Eppo-exp/php-sdk
+        ref: ${{ env.SDK_BRANCH_NAME}}
 
     - name: Validate composer.json and composer.lock
       run: composer validate --strict
@@ -35,4 +60,4 @@ jobs:
       run: composer install --prefer-dist --no-progress
 
     - name: Run tests
-      run: make test
+      run: make test branchName=${{env.TEST_DATA_BRANCH_NAME}}
