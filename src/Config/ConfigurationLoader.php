@@ -67,8 +67,7 @@ class ConfigurationLoader implements IFlags, IBandits
     {
         $flagCacheAge = $this->getCacheAgeSeconds();
         if ($flagCacheAge === -1 || $flagCacheAge >= $this->cacheAgeLimit) {
-            $flagETag = $this->configurationStore->getMetadata(self::KEY_FLAG_ETAG);
-            $this->fetchAndStoreConfigurations($flagETag);
+            $this->reloadConfiguration();
         }
     }
 
@@ -178,5 +177,17 @@ class ConfigurationLoader implements IFlags, IBandits
         if (array_diff($references, $currentlyLoadedBanditModels)) {
             $this->fetchAndStoreBandits();
         }
+    }
+
+    /**
+     * @return void
+     * @throws HttpRequestException
+     * @throws InvalidApiKeyException
+     * @throws InvalidConfigurationException
+     */
+    public function reloadConfiguration(): void
+    {
+        $flagETag = $this->configurationStore->getMetadata(self::KEY_FLAG_ETAG);
+        $this->fetchAndStoreConfigurations($flagETag);
     }
 }

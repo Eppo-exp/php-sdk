@@ -119,7 +119,7 @@ class EppoClient
             self::POLL_INTERVAL_MILLIS,
             self::JITTER_MILLIS,
             function () use ($configLoader) {
-                $configLoader->fetchAndStoreConfigurations();
+                $configLoader->reloadConfiguration();
             }
         );
 
