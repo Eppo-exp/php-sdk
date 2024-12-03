@@ -174,8 +174,8 @@ class ConfigurationLoader implements IFlags, IBandits
         ) ?? [];
         $references = $indexer->getBanditModelKeys();
 
-        print_r(LOG_ERR, var_export($currentlyLoadedBanditModels, true));
-        print_r(LOG_ERR, var_export($references, true));
+        print_r(var_export($currentlyLoadedBanditModels, true));
+        print_r(var_export($references, true));
 
         if (array_diff($references, $currentlyLoadedBanditModels)) {
             $this->fetchAndStoreBandits();
