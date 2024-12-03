@@ -1,5 +1,7 @@
 # Eppo PHP SDK
 
+[![Run Tests](https://github.com/Eppo-exp/php-sdk/actions/workflows/run-tests.yml/badge.svg)](https://github.com/Eppo-exp/php-sdk/actions/workflows/run-tests.yml)
+
 [Eppo](https://www.geteppo.com/) is a modular flagging and experimentation analysis tool. Eppo's PHP SDK is built to make assignments in multi-user server side contexts, compatible with PHP 7.3 and above. Before proceeding you'll need an Eppo account.
 
 ## Features
