@@ -302,11 +302,11 @@ class EppoClientTest extends TestCase
     {
         $apiKey = 'dummy-api-key';
 
-        $pollingOptions = new class extends PollingOptions {
-            public ?int $pollingIntervalMillis = 10000;
-            public ?int $pollingJitterMillis = 2000;
-            public ?int $cacheAgeLimitMillis = 5;
-        };
+        $pollingOptions = new PollingOptions(
+            pollingIntervalMillis: 10000,
+            pollingJitterMillis: 2000,
+            cacheAgeLimitMillis: 5
+        );
 
         $client = EppoClient::init(
             $apiKey,
