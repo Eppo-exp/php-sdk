@@ -27,7 +27,7 @@ class ConfigurationLoader implements IFlags, IBandits
     public function __construct(
         private readonly APIRequestWrapper $apiRequestWrapper,
         private readonly IConfigurationStore $configurationStore,
-        private readonly int $cacheAgeLimit = 30,
+        private readonly int $cacheAgeLimitMillis = 30 * 1000,
         private readonly bool $optimizedBanditLoading = false
     ) {
         $this->parser = new UFCParser();
@@ -65,8 +65,8 @@ class ConfigurationLoader implements IFlags, IBandits
      */
     public function reloadConfigurationIfExpired(): void
     {
-        $flagCacheAge = $this->getCacheAgeSeconds();
-        if ($flagCacheAge === -1 || $flagCacheAge >= $this->cacheAgeLimit) {
+        $flagCacheAge = $this->getCacheAgeInMillis();
+        if ($flagCacheAge < 0 || $flagCacheAge >= ($this->cacheAgeLimitMillis)) {
             $this->reloadConfiguration();
         }
     }
@@ -112,15 +112,15 @@ class ConfigurationLoader implements IFlags, IBandits
         }
 
         // Store metadata for next time.
-        $this->configurationStore->setMetadata(self::KEY_FLAG_TIMESTAMP, time());
+        $this->configurationStore->setMetadata(self::KEY_FLAG_TIMESTAMP, $this->millitime());
         $this->configurationStore->setMetadata(self::KEY_FLAG_ETAG, $response->ETag);
     }
 
-    private function getCacheAgeSeconds(): int
+    private function getCacheAgeInMillis(): int
     {
         $timestamp = $this->configurationStore->getMetadata(self::KEY_FLAG_TIMESTAMP);
         if ($timestamp != null) {
-            return time() - $timestamp;
+            return $this->millitime() - $timestamp;
         }
         return -1;
     }
@@ -189,5 +189,10 @@ class ConfigurationLoader implements IFlags, IBandits
     {
         $flagETag = $this->configurationStore->getMetadata(self::KEY_FLAG_ETAG);
         $this->fetchAndStoreConfigurations($flagETag);
+    }
+
+    private function millitime(): int
+    {
+        return intval(microtime(true) * 1000);
     }
 }
