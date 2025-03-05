@@ -68,7 +68,6 @@ class MockWebServer
      */
     private function serveFile(string $ufcFile): void
     {
-        print("serving file\n");
         $descriptorSpec = [
             0 => ["pipe", "r"], // stdin
             1 => ["pipe", "w"], // stdout
@@ -76,8 +75,6 @@ class MockWebServer
         ];
 
         $cmd = "UFC=$ufcFile php -S $this->serverAddress " . __DIR__ . '/router.php';
-        print($cmd . "\n");
-
         $this->process = proc_open($cmd, $descriptorSpec, $pipes);
         if (!is_resource($this->process)) {
             throw new Exception('Unable to start PHP built-in web server.');
