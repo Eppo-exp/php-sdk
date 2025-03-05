@@ -44,8 +44,6 @@ class EppoClient
     private RuleEvaluator $evaluator;
     private IBanditEvaluator $banditEvaluator;
 
-    private ?PollingOptions $pollingOptions = null;
-
     /**
      * @param ConfigurationLoader $configurationLoader
      * @param PollerInterface $poller
@@ -117,10 +115,12 @@ class EppoClient
             $baseUrl
         );
 
+        // Polling option defaults
         $cacheAgeLimit = self::DEFAULT_CACHE_AGE_LIMIT;
         $interval = self::DEFAULT_POLL_INTERVAL_MILLIS;
         $jitter = self::DEFAULT_JITTER_MILLIS;
 
+        // If polling options were passed, use them.
         if ($pollingOptions !== null) {
             if ($pollingOptions->cacheAgeLimitMillis !== null) {
                 $cacheAgeLimit = $pollingOptions->cacheAgeLimitMillis;
@@ -144,7 +144,6 @@ class EppoClient
         );
 
         self::$instance = self::createAndInitClient($configLoader, $poller, $assignmentLogger, $isGracefulMode);
-
 
         return self::$instance;
     }
