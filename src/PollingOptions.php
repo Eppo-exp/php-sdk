@@ -25,7 +25,7 @@ final class PollingOptions
      */
     public readonly ?int $pollingJitterMillis;
 
-    public function __constructor(?int $cacheAgeLimitMillis, ?int $pollingIntervalMillis, ?int $pollingJitterMillis)
+    public function __construct(?int $cacheAgeLimitMillis, ?int $pollingIntervalMillis, ?int $pollingJitterMillis)
     {
         $this->cacheAgeLimitMillis = $cacheAgeLimitMillis;
         $this->pollingIntervalMillis = $pollingIntervalMillis;

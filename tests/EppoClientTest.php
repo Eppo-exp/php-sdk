@@ -298,14 +298,18 @@ class EppoClientTest extends TestCase
         return $tests;
     }
 
+    /**
+     * @throws EppoClientInitializationException
+     * @throws EppoClientException
+     */
     public function testInitWithPollingOptions(): void
     {
         $apiKey = 'dummy-api-key';
 
         $pollingOptions = new PollingOptions(
+            cacheAgeLimitMillis: 5,
             pollingIntervalMillis: 10000,
-            pollingJitterMillis: 2000,
-            cacheAgeLimitMillis: 5
+            pollingJitterMillis: 2000
         );
 
         $client = EppoClient::init(
