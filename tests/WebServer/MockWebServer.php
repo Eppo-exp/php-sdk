@@ -7,16 +7,20 @@ use Exception;
 class MockWebServer
 {
     public readonly string $serverAddress;
+    public mixed $process;
 
     /**
-     * @param resource $process
      * @param int $port
+     * @param string $ufcFile
+     * @throws Exception
      */
     private function __construct(
-        public readonly mixed $process,
-        public readonly int $port
+        public readonly int $port,
+        string $ufcFile
     ) {
         $this->serverAddress = "localhost:$port";
+        $this->serveFile($ufcFile);
+        usleep(500000);
     }
 
     /**
@@ -26,26 +30,22 @@ class MockWebServer
      */
     public static function start(string $defaultUFCFile = __DIR__ . '/../data/ufc/flags-v1.json'): MockWebServer
     {
-        $descriptorSpec = [
-            0 => ["pipe", "r"], // stdin
-            1 => ["pipe", "w"], // stdout
-            2 => ["pipe", "w"]  // stderr
-        ];
-
         $port = self::getFreePort();
-
-        $server = "localhost:$port";
-
-        $cmd = "UFC=$defaultUFCFile php -S $server " . __DIR__ . '/router.php';
-        $process = proc_open($cmd, $descriptorSpec, $pipes);
-        if (!is_resource($process)) {
-            throw new Exception('Unable to start PHP built-in web server.');
-        }
-        usleep(500000);
-        return new self($process, $port);
+        return new self($port, $defaultUFCFile);
     }
 
-    public function stop()
+    /**
+     * @throws Exception
+     */
+    public function setUfcFile(string $ufcFile): MockWebServer
+    {
+        $this->stop();
+        $this->serveFile($ufcFile);
+        usleep(500000);
+        return $this;
+    }
+
+    public function stop(): void
     {
         if (!is_resource($this->process)) {
             return;
@@ -61,5 +61,26 @@ class MockWebServer
         socket_close($sock);
 
         return $port;
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function serveFile(string $ufcFile): void
+    {
+        print("serving file\n");
+        $descriptorSpec = [
+            0 => ["pipe", "r"], // stdin
+            1 => ["pipe", "w"], // stdout
+            2 => ["pipe", "w"]  // stderr
+        ];
+
+        $cmd = "UFC=$ufcFile php -S $this->serverAddress " . __DIR__ . '/router.php';
+        print($cmd . "\n");
+
+        $this->process = proc_open($cmd, $descriptorSpec, $pipes);
+        if (!is_resource($this->process)) {
+            throw new Exception('Unable to start PHP built-in web server.');
+        }
     }
 }
