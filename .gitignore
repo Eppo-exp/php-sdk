@@ -2,3 +2,4 @@
 vendor
 tests/data
 .phpunit.result.cache
+.vscode

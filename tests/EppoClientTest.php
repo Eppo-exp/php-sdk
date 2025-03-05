@@ -18,11 +18,15 @@ use Eppo\Logger\LoggerInterface;
 use Eppo\PollerInterface;
 use Eppo\Tests\WebServer\MockWebServer;
 use Exception;
+use GuzzleHttp\Psr7\Utils;
 use Http\Discovery\Psr17Factory;
 use Http\Discovery\Psr18Client;
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Client\ClientInterface;
 use PsrMock\Psr17\RequestFactory;
+use PsrMock\Psr7\Response;
 use Throwable;
+use Eppo\PollingOptions;
 
 class EppoClientTest extends TestCase
 {
@@ -294,5 +298,51 @@ class EppoClientTest extends TestCase
             $tests[$file] = json_decode(file_get_contents(self::TEST_DATA_PATH . '/' . $file), true);
         }
         return $tests;
+    }
+
+    /**
+     * @throws EppoClientInitializationException
+     * @throws EppoClientException
+     */
+    public function testInitWithPollingOptions(): void
+    {
+        $apiKey = 'dummy-api-key';
+
+        $pollingOptions = new PollingOptions(
+            cacheAgeLimitMillis: 50,
+            pollingIntervalMillis: 10000,
+            pollingJitterMillis: 2000
+        );
+
+        $response = new Response(stream: Utils::streamFor(file_get_contents(__DIR__ . '/data/ufc/flags-v1.json')));
+        $secondResponse = new Response(stream: Utils::streamFor(file_get_contents(__DIR__ . '/data/ufc/bandit-flags-v1.json')));
+
+        $httpClient = $this->createMock(ClientInterface::class);
+        $httpClient->expects($this->atLeast(2))
+            ->method('sendRequest')
+            ->willReturnOnConsecutiveCalls($response, $secondResponse, $secondResponse);
+
+        $client = EppoClient::init(
+            $apiKey,
+            "fake address",
+            null,
+            null,
+            $httpClient,
+            null,
+            false,
+            $pollingOptions
+        );
+
+        $this->assertEquals(
+            3.1415926,
+            $client->getNumericAssignment(self::EXPERIMENT_NAME, 'subject-10', [], 0)
+        );
+        // Wait a little bit for the cache to age out and the mock server to spin up.
+        usleep(75*1000);
+
+        $this->assertEquals(
+            0,
+            $client->getNumericAssignment(self::EXPERIMENT_NAME, 'subject-10', [], 0)
+        );
     }
 }
