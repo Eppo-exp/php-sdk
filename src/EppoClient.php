@@ -36,13 +36,15 @@ class EppoClient
 {
     public const SECOND_MILLIS = 1000;
     public const MINUTE_MILLIS = 60 * self::SECOND_MILLIS;
-    public const POLL_INTERVAL_MILLIS = 5 * self::MINUTE_MILLIS;
-    public const JITTER_MILLIS = 30 * self::SECOND_MILLIS;
+    public const DEFAULT_POLL_INTERVAL_MILLIS = 5 * self::MINUTE_MILLIS; // 5 minutes.
+    public const DEFAULT_JITTER_MILLIS = 30 * self::SECOND_MILLIS;
+    public const DEFAULT_CACHE_AGE_LIMIT = 30 * self::SECOND_MILLIS; // 30 seconds.
 
     private static ?EppoClient $instance = null;
     private RuleEvaluator $evaluator;
     private IBanditEvaluator $banditEvaluator;
 
+    private ?PollingOptions $pollingOptions = null;
 
     /**
      * @param ConfigurationLoader $configurationLoader
@@ -82,7 +84,8 @@ class EppoClient
         CacheInterface $cache = null,
         ClientInterface $httpClient = null,
         RequestFactoryInterface $requestFactory = null,
-        ?bool $isGracefulMode = true
+        ?bool $isGracefulMode = true,
+        ?PollingOptions $pollingOptions = null,
     ): EppoClient {
         // Get SDK metadata to pass as params in the http client.
         $sdkData = new SDKData();
@@ -114,10 +117,27 @@ class EppoClient
             $baseUrl
         );
 
-        $configLoader = new ConfigurationLoader($apiWrapper, $configStore);
+        $cacheAgeLimit = self::DEFAULT_CACHE_AGE_LIMIT;
+        $interval = self::DEFAULT_POLL_INTERVAL_MILLIS;
+        $jitter = self::DEFAULT_JITTER_MILLIS;
+
+        if ($pollingOptions !== null) {
+            if ($pollingOptions->cacheAgeLimitMillis !== null) {
+                $cacheAgeLimit = $pollingOptions->cacheAgeLimitMillis;
+            }
+            if ($pollingOptions->pollingIntervalMillis !== null) {
+                $interval = $pollingOptions->pollingIntervalMillis;
+            }
+            if ($pollingOptions->pollingJitterMillis !== null) {
+                $jitter = $pollingOptions->pollingJitterMillis;
+            }
+        }
+
+        $configLoader = new ConfigurationLoader($apiWrapper, $configStore, $cacheAgeLimit);
+
         $poller = new Poller(
-            self::POLL_INTERVAL_MILLIS,
-            self::JITTER_MILLIS,
+            $interval,
+            $jitter,
             function () use ($configLoader) {
                 $configLoader->reloadConfiguration();
             }

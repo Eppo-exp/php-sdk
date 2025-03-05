@@ -23,6 +23,8 @@ use Http\Discovery\Psr18Client;
 use PHPUnit\Framework\TestCase;
 use PsrMock\Psr17\RequestFactory;
 use Throwable;
+use ReflectionClass;
+use Eppo\PollingOptions;
 
 class EppoClientTest extends TestCase
 {
@@ -294,5 +296,42 @@ class EppoClientTest extends TestCase
             $tests[$file] = json_decode(file_get_contents(self::TEST_DATA_PATH . '/' . $file), true);
         }
         return $tests;
+    }
+
+    public function testInitWithPollingOptions(): void
+    {
+        $apiKey = 'dummy-api-key';
+
+        $pollingOptions = new class extends PollingOptions {
+            public ?int $pollingIntervalMillis = 10000;
+            public ?int $pollingJitterMillis = 2000;
+            public ?int $cacheAgeLimitMillis = 5;
+        };
+
+        $client = EppoClient::init(
+            $apiKey,
+            self::$mockServer->serverAddress,
+            null,
+            null,
+            null,
+            null,
+            false,
+            $pollingOptions
+        );
+
+        $this->assertEquals(
+            3.1415926,
+            $client->getNumericAssignment(self::EXPERIMENT_NAME, 'subject-10', [], 0)
+        );
+
+        self::$mockServer->setUfcFile(__DIR__ . '/data/ufc/bandit-flags-v1.json');
+
+        // Wait a little bit for the cache to age out.
+        usleep(10000);
+
+        $this->assertEquals(
+            0,
+            $client->getNumericAssignment(self::EXPERIMENT_NAME, 'subject-10', [], 0)
+        );
     }
 }
