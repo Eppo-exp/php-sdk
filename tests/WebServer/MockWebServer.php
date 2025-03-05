@@ -20,7 +20,6 @@ class MockWebServer
     ) {
         $this->serverAddress = "localhost:$port";
         $this->serveFile($ufcFile);
-        usleep(500000);
     }
 
     /**
@@ -41,7 +40,6 @@ class MockWebServer
     {
         $this->stop();
         $this->serveFile($ufcFile);
-        usleep(500000);
         return $this;
     }
 
@@ -79,5 +77,7 @@ class MockWebServer
         if (!is_resource($this->process)) {
             throw new Exception('Unable to start PHP built-in web server.');
         }
+
+        usleep(500000);
     }
 }
