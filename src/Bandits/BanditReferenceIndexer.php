@@ -84,8 +84,8 @@ class BanditReferenceIndexer implements IBanditReferenceIndexer
             }
         }
 
-        // array_unique preserves array keys so duplicate entries that are dropped leave holes in the list of numeric keys
-        // `array_values` builds a new array from the values with reset numeric keys.
+        // array_unique preserves array keys so duplicate entries that are dropped leave holes in the list of numeric
+        // keys, then `array_values` builds a new array from the values with reset numeric keys.
         $this->activeBanditKeys = array_values(array_unique($banditKeys));
     }
 
