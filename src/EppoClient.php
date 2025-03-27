@@ -573,6 +573,20 @@ class EppoClient
             ($expectedVariationType == VariationType::JSON)); // JSON type check un-necessary here.
     }
 
+    /**
+     * @throws EppoClientException
+     */
+    public function fetchAndActivateConfiguration(): void
+    {
+        try {
+            $this->configurationLoader->reloadConfiguration();
+        } catch (HttpRequestException|InvalidApiKeyException|InvalidConfigurationException $e) {
+            if ($this->isGracefulMode) {
+                error_log('[Eppo SDK] Error getting assignment: ' . $e->getMessage());
+            }
+            throw EppoClientException::from($e);
+        }
+    }
 
     public function startPolling(): void
     {
