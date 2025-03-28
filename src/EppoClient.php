@@ -580,11 +580,12 @@ class EppoClient
     {
         try {
             $this->configurationLoader->reloadConfiguration();
-        } catch (HttpRequestException|InvalidApiKeyException|InvalidConfigurationException $e) {
+        } catch (HttpRequestException | InvalidApiKeyException | InvalidConfigurationException $e) {
             if ($this->isGracefulMode) {
                 error_log('[Eppo SDK] Error fetching configuration ' . $e->getMessage());
+            } else {
+                throw EppoClientException::from($e);
             }
-            throw EppoClientException::from($e);
         }
     }
 
