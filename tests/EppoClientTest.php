@@ -325,12 +325,9 @@ class EppoClientTest extends TestCase
         $client = EppoClient::init(
             $apiKey,
             "fake address",
-            null,
-            null,
-            $httpClient,
-            null,
-            false,
-            $pollingOptions
+            httpClient: $httpClient,
+            isGracefulMode: false,
+            pollingOptions: $pollingOptions
         );
 
         $this->assertEquals(
