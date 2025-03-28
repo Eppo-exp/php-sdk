@@ -133,7 +133,7 @@ class APIRequestWrapperTest extends TestCase
         } catch (HttpRequestException $e) {
             $this->assertEquals($recoverable, $e->isRecoverable);
         } catch (InvalidApiKeyException $e) {
-            $this->assertEquals('', $e->getMessage());
+            $this->assertEquals('Invalid API Key', $e->getMessage());
         }
     }
 
