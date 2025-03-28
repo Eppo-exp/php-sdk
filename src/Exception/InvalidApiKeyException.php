@@ -7,7 +7,7 @@ use Throwable;
 class InvalidApiKeyException extends EppoException
 {
     public function __construct(
-        string $message = "[Eppo SDK]: Invalid API Key",
+        string $message = "Invalid API Key",
         int $code = 0,
         ?Throwable $previous = null
     ) {
