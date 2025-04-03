@@ -576,10 +576,14 @@ class EppoClient
     /**
      * @throws EppoClientException
      */
-    public function fetchAndActivateConfiguration(): void
+    public function fetchAndActivateConfiguration(bool $skipModifiedCheck = false): void
     {
         try {
-            $this->configurationLoader->reloadConfiguration();
+            if ($skipModifiedCheck) {
+                $this->configurationLoader->fetchAndStoreConfigurations(null);
+            } else {
+                $this->configurationLoader->reloadConfiguration();
+            }
         } catch (HttpRequestException | InvalidApiKeyException | InvalidConfigurationException $e) {
             if ($this->isGracefulMode) {
                 error_log('[Eppo SDK] Error fetching configuration ' . $e->getMessage());
