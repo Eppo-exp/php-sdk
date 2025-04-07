@@ -644,7 +644,8 @@ class EppoClient
         PollerInterface $poller,
         ?LoggerInterface $logger = null,
         ?bool $isGracefulMode = false,
-        ?IBanditEvaluator $banditEvaluator = null
+        ?IBanditEvaluator $banditEvaluator = null,
+        ?bool $throwOnFailedInit = true,
     ): EppoClient {
         return self::createAndInitClient(
             $configurationLoader,
@@ -652,7 +653,7 @@ class EppoClient
             $logger,
             $isGracefulMode,
             $banditEvaluator,
-            throwOnFailedInit: true
+            throwOnFailedInit: $throwOnFailedInit
         );
     }
 }

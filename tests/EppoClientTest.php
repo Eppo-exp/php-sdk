@@ -160,6 +160,38 @@ class EppoClientTest extends TestCase
         );
     }
 
+    public function testSuppressInitExceptionThrow()
+    {
+        $pollerMock = $this->getPollerMock();
+
+        $apiRequestWrapper = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs(
+            ['', [], new Psr18Client(), new Psr17Factory()]
+        )->getMock();
+
+        $apiRequestWrapper->expects($this->any())
+            ->method('getUFC')
+            ->willThrowException(new HttpRequestException());
+
+        $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
+        $configStore->expects($this->any())->method('getMetadata')->willReturn(null);
+        $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
+
+        $client = EppoClient::createTestClient(
+            new ConfigurationLoader($apiRequestWrapper, $configStore),
+            $pollerMock,
+            $mockLogger,
+            true,
+            throwOnFailedInit: false
+        );
+
+        $this->assertEquals(
+            'default',
+            $client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', [], 'default')
+        );
+
+        // No exceptions thrown, default assignments.
+    }
+
     public function testReturnsDefaultWhenExperimentConfigIsAbsent()
     {
         $configLoaderMock = $this->getFlagConfigurationLoaderMock([]);
