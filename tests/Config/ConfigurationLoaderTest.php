@@ -120,8 +120,6 @@ class ConfigurationLoaderTest extends TestCase
             ['', [], new Psr18Client(), new Psr17Factory()]
         )->getMock();
 
-        // Mocks verify interaction of loader <--> API requests and loader <--> config store
-
         $apiWrapper->expects($this->exactly(2))
             ->method('getUFC')
             ->willReturnCallback(
