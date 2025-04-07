@@ -109,11 +109,11 @@ class ConfigurationLoader implements IFlags, IBandits
             if ($indexer->hasBandits()) {
                 $this->fetchBanditsAsRequired($indexer);
             }
-        }
 
-        // Store metadata for next time.
-        $this->configurationStore->setMetadata(self::KEY_FLAG_TIMESTAMP, $this->millitime());
-        $this->configurationStore->setMetadata(self::KEY_FLAG_ETAG, $response->ETag);
+            // Store metadata for next time.
+            $this->configurationStore->setMetadata(self::KEY_FLAG_TIMESTAMP, $this->millitime());
+            $this->configurationStore->setMetadata(self::KEY_FLAG_ETAG, $response->ETag);
+        }
     }
 
     private function getCacheAgeInMillis(): int

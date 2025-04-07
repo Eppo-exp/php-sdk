@@ -69,7 +69,7 @@ class ConfigurationLoaderTest extends TestCase
 
         $configStore = new ConfigurationStore(DefaultCacheFactory::create());
 
-        $loader = new ConfigurationLoader($apiWrapper, $configStore);
+        $loader = new ConfigurationLoader($apiWrapper, $configStore, 25);
         $loader->fetchAndStoreConfigurations(null);
 
 
@@ -87,6 +87,74 @@ class ConfigurationLoaderTest extends TestCase
         $this->assertNotNull($bandit);
         $this->assertInstanceOf(Bandit::class, $bandit);
         $this->assertEquals('cold_start_bandit', $bandit->banditKey);
+    }
+
+
+    public function testSetsConfigurationTimestamp(): void
+    {
+        // Load mock response data
+        $flagsRaw = file_get_contents(self::MOCK_RESPONSE_FILENAME);
+        $flagsResourceResponse = new APIResource(
+            $flagsRaw,
+            true,
+            "ETAG"
+        );
+        $flagsJson = json_decode($flagsRaw, true);
+        $flags = array_map(fn($flag) => (new UFCParser())->parseFlag($flag), $flagsJson['flags']);
+        $banditsRaw = '{
+            "bandits": {
+                "cold_start_bandit": {
+                    "banditKey": "cold_start_bandit",
+                    "modelName": "falcon",
+                    "updatedAt": "2023-09-13T04:52:06.462Z",
+                    "modelVersion": "cold start",
+                    "modelData": {
+                        "gamma": 1.0,
+                        "defaultActionScore": 0.0,
+                        "actionProbabilityFloor": 0.0,
+                        "coefficients": {}
+                    }
+                }
+            }
+        }';
+
+        $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs(
+            ['', [], new Psr18Client(), new Psr17Factory()]
+        )->getMock();
+
+        // Mocks verify interaction of loader <--> API requests and loader <--> config store
+
+        $apiWrapper->expects($this->exactly(2))
+            ->method('getUFC')
+            ->willReturnCallback(
+                function (?string $eTag) use ($flagsResourceResponse, $flagsRaw) {
+                    return $eTag == null ? $flagsResourceResponse : new APIResource(
+                        $flagsRaw,
+                        false,
+                        "ETAG"
+                    );
+                }
+            );
+
+        $apiWrapper->expects($this->once())
+            ->method('getBandits')
+            ->willReturn(new APIResource($banditsRaw, true, null));
+
+        $configStore = new ConfigurationStore(DefaultCacheFactory::create());
+
+        $loader = new ConfigurationLoader($apiWrapper, $configStore, 25);
+        $loader->fetchAndStoreConfigurations(null);
+
+        $timestamp1 = $configStore->getMetadata("flagTimestamp");
+        $storedEtag = $configStore->getMetadata("flagETag");
+        $this->assertEquals("ETAG", $storedEtag);
+
+        usleep(50 * 1000); // Sleep long enough for cache to expire.
+
+        $loader->fetchAndStoreConfigurations("ETAG");
+
+        $this->assertEquals("ETAG", $configStore->getMetadata("flagETag"));
+        $this->assertEquals($timestamp1, $configStore->getMetadata("flagTimestamp"));
     }
 
     public function testLoadsOnGet(): void
