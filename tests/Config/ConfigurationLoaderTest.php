@@ -99,22 +99,7 @@ class ConfigurationLoaderTest extends TestCase
             true,
             "ETAG"
         );
-        $banditsRaw = '{
-            "bandits": {
-                "cold_start_bandit": {
-                    "banditKey": "cold_start_bandit",
-                    "modelName": "falcon",
-                    "updatedAt": "2023-09-13T04:52:06.462Z",
-                    "modelVersion": "cold start",
-                    "modelData": {
-                        "gamma": 1.0,
-                        "defaultActionScore": 0.0,
-                        "actionProbabilityFloor": 0.0,
-                        "coefficients": {}
-                    }
-                }
-            }
-        }';
+        $banditsRaw = '{"bandits": {}}';
 
         $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs(
             ['', [], new Psr18Client(), new Psr17Factory()]
@@ -124,6 +109,7 @@ class ConfigurationLoaderTest extends TestCase
             ->method('getUFC')
             ->willReturnCallback(
                 function (?string $eTag) use ($flagsResourceResponse, $flagsRaw) {
+                    // Return not modified if the etag sent is not null.
                     return $eTag == null ? $flagsResourceResponse : new APIResource(
                         $flagsRaw,
                         false,
@@ -150,6 +136,8 @@ class ConfigurationLoaderTest extends TestCase
         $loader->fetchAndStoreConfigurations("ETAG");
 
         $this->assertEquals("ETAG", $configStore->getMetadata("flagETag"));
+
+        // The timestamp should not have changed; the config did not change, so the timestamp should not be updated.
         $this->assertEquals($timestamp1, $configStore->getMetadata("flagTimestamp"));
     }
 
