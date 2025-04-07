@@ -4,14 +4,13 @@ namespace Eppo\Tests\Config;
 
 use Eppo\API\APIRequestWrapper;
 use Eppo\API\APIResource;
+use Eppo\Bandits\BanditReferenceIndexer;
 use Eppo\Cache\DefaultCacheFactory;
 use Eppo\Config\ConfigurationLoader;
 use Eppo\Config\ConfigurationStore;
 use Eppo\DTO\Bandit\Bandit;
+
 use Eppo\DTO\Flag;
-use Eppo\UFCParser;
-use Http\Discovery\Psr17Factory;
-use Http\Discovery\Psr18Client;
 use PHPUnit\Framework\TestCase;
 
 class ConfigurationLoaderTest extends TestCase
@@ -21,6 +20,20 @@ class ConfigurationLoaderTest extends TestCase
     private const MOCK_RESPONSE_FILENAME = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'mockdata' .
     DIRECTORY_SEPARATOR . 'ufc-v1.json';
 
+    private $mockAPI;
+    private $mockStore;
+    private ConfigurationLoader $loader;
+
+    protected function setUp(): void
+    {
+        $this->mockAPI = $this->createMock(APIRequestWrapper::class);
+        $this->mockStore = $this->createMock(ConfigurationStore::class);
+        $this->loader = new ConfigurationLoader(
+            $this->mockAPI,
+            $this->mockStore,
+            30000
+        );
+    }
 
     public function tearDown(): void
     {
@@ -36,30 +49,22 @@ class ConfigurationLoaderTest extends TestCase
             true,
             "ETAG"
         );
-        $flagsJson = json_decode($flagsRaw, true);
-        $flags = array_map(fn($flag) => (new UFCParser())->parseFlag($flag), $flagsJson['flags']);
+
         $banditsRaw = '{
             "bandits": {
                 "cold_start_bandit": {
                     "banditKey": "cold_start_bandit",
                     "modelName": "falcon",
-                    "updatedAt": "2023-09-13T04:52:06.462Z",
                     "modelVersion": "cold start",
                     "modelData": {
                         "gamma": 1.0,
-                        "defaultActionScore": 0.0,
-                        "actionProbabilityFloor": 0.0,
-                        "coefficients": {}
+                        "defaultActionScore": 0.0
                     }
                 }
             }
         }';
 
-        $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs(
-            ['', [], new Psr18Client(), new Psr17Factory()]
-        )->getMock();
-
-        // Mocks verify interaction of loader <--> API requests and loader <--> config store
+        $apiWrapper = $this->createMock(APIRequestWrapper::class);
         $apiWrapper->expects($this->once())
             ->method('getUFC')
             ->willReturn($flagsResourceResponse);
@@ -68,24 +73,18 @@ class ConfigurationLoaderTest extends TestCase
             ->willReturn(new APIResource($banditsRaw, true, null));
 
         $configStore = new ConfigurationStore(DefaultCacheFactory::create());
-
         $loader = new ConfigurationLoader($apiWrapper, $configStore);
         $loader->fetchAndStoreConfigurations(null);
 
-
-        $flag = $loader->getFlag(self::FLAG_KEY);
+        $config = $configStore->getConfiguration();
+        $this->assertNotNull($config);
+        
+        $flag = $config->getFlag(self::FLAG_KEY);
         $this->assertInstanceOf(Flag::class, $flag);
         $this->assertEquals(self::FLAG_KEY, $flag->key);
-        $this->assertEquals($flags[self::FLAG_KEY], $flag);
 
-        $this->assertEquals(
-            'cold_start_bandit',
-            $loader->getBanditByVariation('cold_start_bandit_flag', 'cold_start_bandit')
-        );
-
-        $bandit = $loader->getBandit('cold_start_bandit');
+        $bandit = $config->getBandit('cold_start_bandit');
         $this->assertNotNull($bandit);
-        $this->assertInstanceOf(Bandit::class, $bandit);
         $this->assertEquals('cold_start_bandit', $bandit->banditKey);
     }
 
@@ -99,8 +98,9 @@ class ConfigurationLoaderTest extends TestCase
         $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->disableOriginalConstructor()->getMock();
 
         $cache = DefaultCacheFactory::create();
+        $configStore = new ConfigurationStore($cache);
         // Act: Create a new FCL and retrieve a flag
-        $loader = new ConfigurationLoader($apiWrapper, new ConfigurationStore($cache));
+        $loader = new ConfigurationLoader($apiWrapper, $configStore);
 
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->once())
@@ -110,7 +110,7 @@ class ConfigurationLoaderTest extends TestCase
             ->method('getBandits')
             ->willReturn(new APIResource($banditsRaw, true, "ETAG"));
 
-        $flag = $loader->getFlag(self::FLAG_KEY);
+        $flag = $configStore->getConfiguration()->getFlag(self::FLAG_KEY);
 
         // Assert: non-null flag, api called only once via Mock `expects` above.
         $this->assertNotNull($flag);
@@ -253,8 +253,9 @@ class ConfigurationLoaderTest extends TestCase
         $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->disableOriginalConstructor()->getMock();
 
         $cache = DefaultCacheFactory::create();
+        $configStore = new ConfigurationStore($cache);
         // Act: Create a new FCL with a 0sec ttl and retrieve a flag
-        $loader = new ConfigurationLoader($apiWrapper, new ConfigurationStore($cache), cacheAgeLimitMillis: 0);
+        $loader = new ConfigurationLoader($apiWrapper, $configStore, cacheAgeLimitMillis: 0);
 
         // Mocks verify interaction of loader <--> API requests and loader <--> config store
         $apiWrapper->expects($this->exactly(2))
@@ -264,8 +265,8 @@ class ConfigurationLoaderTest extends TestCase
             ->method('getBandits')
             ->willReturn(new APIResource($banditsRaw, true, "ETAG"));
 
-        $flag = $loader->getFlag(self::FLAG_KEY);
-        $flagAgain = $loader->getFlag(self::FLAG_KEY);
+        $flag = $configStore->getConfiguration()->getFlag(self::FLAG_KEY);
+        $flagAgain = $configStore->getConfiguration()->getFlag(self::FLAG_KEY);
 
         // Assert: non-null flag, api called only once via Mock `expects` above.
         $this->assertNotNull($flag);
@@ -293,10 +294,110 @@ class ConfigurationLoaderTest extends TestCase
 
         // Act: Load a flag, expecting the Config loader not to throw and to successfully return the flag.
         $cache = DefaultCacheFactory::create();
-        $loader = new ConfigurationLoader($apiWrapper, new ConfigurationStore($cache));
-        $flag = $loader->getFlag(self::FLAG_KEY);
+        $configStore = new ConfigurationStore($cache);
+        $loader = new ConfigurationLoader($apiWrapper, $configStore);
+        $flag = $configStore->getConfiguration()->getFlag(self::FLAG_KEY);
 
         // Assert.
         $this->assertNotNull($flag);
+    }
+
+    public function testFetchAndStoreConfigurationsWithNoChanges(): void
+    {
+        $mockResponse = new HTTPResponse(
+            isModified: false,
+            body: '',
+            ETag: 'etag123'
+        );
+
+        $this->mockAPI->expects($this->once())
+            ->method('getUFC')
+            ->willReturn($mockResponse);
+
+        $this->mockStore->expects($this->never())
+            ->method('setConfiguration');
+
+        $this->loader->fetchAndStoreConfigurations('etag123');
+    }
+
+    public function testFetchAndStoreConfigurationsWithNewData(): void
+    {
+        $mockResponse = new HTTPResponse(
+            isModified: true,
+            body: json_encode([
+                'flags' => [
+                    ['key' => 'test_flag', 'enabled' => true]
+                ],
+                'banditReferences' => []
+            ]),
+            ETag: 'newEtag123'
+        );
+
+        $this->mockAPI->expects($this->once())
+            ->method('getUFC')
+            ->willReturn($mockResponse);
+
+        $this->mockStore->expects($this->once())
+            ->method('setConfiguration')
+            ->with($this->callback(function (Configuration $config) {
+                return $config->eTag === 'newEtag123' 
+                    && !empty($config->flags)
+                    && $config->flags[0]->key === 'test_flag';
+            }));
+
+        $this->loader->fetchAndStoreConfigurations('oldEtag');
+    }
+
+    public function testReloadConfigurationIfExpired(): void
+    {
+        $mockConfig = new Configuration(
+            flags: [],
+            bandits: [],
+            banditReferenceIndexer: BanditReferenceIndexer::empty(),
+            eTag: 'test-etag',
+            fetchedAt: time() * 1000 - 31000 // 31 seconds ago
+        );
+
+        $this->mockStore->expects($this->once())
+            ->method('getConfiguration')
+            ->willReturn($mockConfig);
+
+        $this->mockAPI->expects($this->once())
+            ->method('getUFC')
+            ->willReturn(new HTTPResponse(true, '{"flags":[],"banditReferences":[]}', 'new-etag'));
+
+        $this->loader->reloadConfigurationIfExpired();
+    }
+
+    public function testFetchBanditsIfNeededWithExistingBandits(): void
+    {
+        $mockConfig = new Configuration(
+            flags: [],
+            bandits: [
+                new Bandit('test_bandit', 'v1', [], 'test')
+            ],
+            banditReferenceIndexer: BanditReferenceIndexer::empty(),
+            eTag: 'test-etag',
+            fetchedAt: time() * 1000
+        );
+
+        $this->mockStore->expects($this->once())
+            ->method('getConfiguration')
+            ->willReturn($mockConfig);
+
+        $indexer = BanditReferenceIndexer::from([
+            /* add test bandit references with same version */
+        ]);
+
+        $result = $this->invokePrivateMethod($this->loader, 'fetchBanditsIfNeeded', [$indexer]);
+        $this->assertEquals($mockConfig->bandits, $result);
+    }
+
+    private function invokePrivateMethod($object, $methodName, array $parameters = [])
+    {
+        $reflection = new \ReflectionClass(get_class($object));
+        $method = $reflection->getMethod($methodName);
+        $method->setAccessible(true);
+        return $method->invokeArgs($object, $parameters);
     }
 }

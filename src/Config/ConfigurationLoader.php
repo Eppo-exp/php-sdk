@@ -5,28 +5,21 @@ namespace Eppo\Config;
 use Eppo\API\APIRequestWrapper;
 use Eppo\Bandits\BanditReferenceIndexer;
 use Eppo\Bandits\IBanditReferenceIndexer;
-use Eppo\Bandits\IBandits;
 use Eppo\DTO\Bandit\Bandit;
 use Eppo\DTO\BanditReference;
 use Eppo\DTO\Flag;
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
 use Eppo\Exception\InvalidConfigurationException;
-use Eppo\Flags\IFlags;
 use Eppo\UFCParser;
 
-class ConfigurationLoader implements IFlags, IBandits
+class ConfigurationLoader
 {
-    private const KEY_BANDIT_TIMESTAMP = "banditTimestamp";
-    private const KEY_LOADED_BANDIT_VERSIONS = 'banditModelVersions';
     private UFCParser $parser;
-
-    private const KEY_FLAG_TIMESTAMP = "flagTimestamp";
-    private const KEY_FLAG_ETAG = "flagETag";
 
     public function __construct(
         private readonly APIRequestWrapper $apiRequestWrapper,
-        private readonly IConfigurationStore $configurationStore,
+        public readonly ConfigurationStore $configurationStore,
         private readonly int $cacheAgeLimitMillis = 30 * 1000,
         private readonly bool $optimizedBanditLoading = false
     ) {
@@ -80,104 +73,42 @@ class ConfigurationLoader implements IFlags, IBandits
     {
         $response = $this->apiRequestWrapper->getUFC($flagETag);
         if ($response->isModified) {
-            // Decode and set the data.
             $responseData = json_decode($response->body, true);
             if (!$responseData) {
                 syslog(LOG_WARNING, "[Eppo SDK] Empty or invalid response from the configuration server.");
                 return;
             }
 
-            $inflated = array_map(fn($object) => $this->parser->parseFlag($object), $responseData['flags']);
+            $flags = array_map(fn($object) => $this->parser->parseFlag($object), $responseData['flags']);
+            $indexer = $this->createBanditReferenceIndexer($responseData);
+            $bandits = $this->fetchBanditsIfNeeded($indexer);
 
-            // Create a handy helper class from the `banditReferences` to help connect flags to bandits.
-            if (isset($responseData['banditReferences'])) {
-                $banditReferences = array_map(
-                    function ($json) {
-                        return BanditReference::fromJson($json);
-                    },
-                    $responseData['banditReferences']
-                );
-                $indexer = BanditReferenceIndexer::from($banditReferences);
-            } else {
-                syslog(LOG_WARNING, "[EPPO SDK] No bandit-flag variations found in UFC response.");
-                $indexer = BanditReferenceIndexer::empty();
-            }
+            $configuration = new Configuration(
+                flags: $flags,
+                bandits: $bandits,
+                banditReferenceIndexer: $indexer,
+                eTag: $response->ETag,
+                fetchedAt: $this->millitime()
+            );
 
-            $this->configurationStore->setUnifiedFlagConfiguration($inflated, $indexer);
-
-            // Only load bandits if there are any referenced by the flags.
-            if ($indexer->hasBandits()) {
-                $this->fetchBanditsAsRequired($indexer);
-            }
-        }
-
-        // Store metadata for next time.
-        $this->configurationStore->setMetadata(self::KEY_FLAG_TIMESTAMP, $this->millitime());
-        $this->configurationStore->setMetadata(self::KEY_FLAG_ETAG, $response->ETag);
-    }
-
-    private function getCacheAgeInMillis(): int
-    {
-        $timestamp = $this->configurationStore->getMetadata(self::KEY_FLAG_TIMESTAMP);
-        if ($timestamp != null) {
-            return $this->millitime() - $timestamp;
-        }
-        return -1;
-    }
-
-    public function getBanditReferenceIndexer(): IBanditReferenceIndexer
-    {
-        return $this->configurationStore->getBanditReferenceIndexer();
-    }
-
-    /**
-     * @throws HttpRequestException
-     * @throws InvalidApiKeyException
-     * @throws InvalidConfigurationException
-     */
-    private function fetchAndStoreBandits(): void
-    {
-        $banditModelResponse = json_decode($this->apiRequestWrapper->getBandits()->body, true);
-        if (!$banditModelResponse || !isset($banditModelResponse['bandits'])) {
-            syslog(LOG_WARNING, "[Eppo SDK] Empty or invalid response from the configuration server.");
-            $bandits = [];
-        } else {
-            $bandits = array_map(fn($json) => Bandit::fromJson($json), $banditModelResponse['bandits']);
-        }
-        $banditModelVersions = array_map(fn($bandit) => $bandit->modelVersion, $bandits);
-
-        $this->configurationStore->setBandits($bandits);
-        $this->configurationStore->setMetadata(self::KEY_LOADED_BANDIT_VERSIONS, $banditModelVersions);
-        $this->configurationStore->setMetadata(self::KEY_BANDIT_TIMESTAMP, time());
-    }
-
-    public function getBandit(string $banditKey): ?Bandit
-    {
-        return $this->configurationStore->getBandit($banditKey);
-    }
-
-    /**
-     * Loads bandits unless `optimizedBanditLoading` is `true` in which case, currently loaded bandit models are
-     * compared to those required by flags to determine whether to (re)load bandit models.
-     *
-     * @param IBanditReferenceIndexer $indexer
-     * @return void
-     * @throws HttpRequestException
-     * @throws InvalidApiKeyException
-     * @throws InvalidConfigurationException
-     */
-    private function fetchBanditsAsRequired(IBanditReferenceIndexer $indexer): void
-    {
-        // Get the currently loaded bandits to determine if they satisfy what's required by the flags
-        $currentlyLoadedBanditModels = $this->configurationStore->getMetadata(
-            self::KEY_LOADED_BANDIT_VERSIONS
-        ) ?? [];
-        $references = $indexer->getBanditModelKeys();
-
-        if (array_diff($references, $currentlyLoadedBanditModels)) {
-            $this->fetchAndStoreBandits();
+            $this->configurationStore->setConfiguration($configuration);
         }
     }
+
+    public function getCacheAgeInMillis(): int
+    {
+        $config = $this->configurationStore->getConfiguration();
+        if ($config === null) {
+            return -1;
+        }
+        return $this->millitime() - $config->fetchedAt;
+    }
+
+    public function getBandit(string $banditBanditKey): ?Bandit
+    {
+        return $this->configurationStore->getBandit($banditBanditKey);
+    }
+
 
     /**
      * @return void
@@ -187,12 +118,69 @@ class ConfigurationLoader implements IFlags, IBandits
      */
     public function reloadConfiguration(): void
     {
-        $flagETag = $this->configurationStore->getMetadata(self::KEY_FLAG_ETAG);
+        $flagETag = $this->configurationStore->getConfiguration()->eTag;
         $this->fetchAndStoreConfigurations($flagETag);
     }
 
     private function millitime(): int
     {
         return intval(microtime(true) * 1000);
+    }
+
+    private function createBanditReferenceIndexer(array $responseData): IBanditReferenceIndexer
+    {
+        if (isset($responseData['banditReferences'])) {
+            $banditReferences = array_map(
+                function ($json) {
+                    return BanditReference::fromJson($json);
+                },
+                $responseData['banditReferences']
+            );
+            return BanditReferenceIndexer::from($banditReferences);
+        } else {
+            syslog(LOG_WARNING, "[EPPO SDK] No bandit-flag variations found in UFC response.");
+            return BanditReferenceIndexer::empty();
+        }
+    }
+
+    private function fetchBanditsIfNeeded(IBanditReferenceIndexer $indexer): array
+    {
+        if (!$indexer->hasBandits()) {
+            return [];
+        }
+
+        $shouldFetchBandts = ~$this->optimizedBanditLoading;
+
+
+        if (!$shouldFetchBandts) {
+            $requiredModelKeys = $indexer->getBanditModelKeys();
+
+            // Get currently loaded models from the existing configuration
+            $currentConfig = $this->configurationStore->getConfiguration();
+            $currentlyLoadedBanditModels = [];
+            if ($currentConfig && !empty($currentConfig->bandits)) {
+                $currentlyLoadedBanditModels = array_map(
+                    fn($bandit) => $bandit->modelVersion,
+                    $currentConfig->bandits
+                );
+            }
+
+            // Check if we need to fetch new bandits
+            if (array_diff($requiredModelKeys, $currentlyLoadedBanditModels)) {
+                $shouldFetchBandts = true;
+            }
+        }
+        if ($shouldFetchBandts) {
+            $banditModelResponse = json_decode($this->apiRequestWrapper->getBandits()->body, true);
+            if (!$banditModelResponse || !isset($banditModelResponse['bandits'])) {
+                syslog(LOG_WARNING, "[Eppo SDK] Empty or invalid response from the configuration server.");
+                return [];
+            }
+
+            return array_map(fn($json) => Bandit::fromJson($json), $banditModelResponse['bandits']);
+        }
+
+        // If we didn't fetch new bandits, return the current bandits
+        return $currentConfig?->bandits ?? [];
     }
 }

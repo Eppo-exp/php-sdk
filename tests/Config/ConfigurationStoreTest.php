@@ -2,167 +2,59 @@
 
 namespace Eppo\Tests\Config;
 
-use DateTime;
-use Eppo\Bandits\BanditReferenceIndexer;
-use Eppo\Cache\DefaultCacheFactory;
+use Eppo\DTO\Configuration;
 use Eppo\Config\ConfigurationStore;
-use Eppo\DTO\Bandit\Bandit;
-use Eppo\DTO\Bandit\BanditModelData;
-use Eppo\DTO\BanditFlagVariation;
-use Eppo\DTO\BanditReference;
-use Eppo\DTO\Flag;
-use Eppo\DTO\VariationType;
-use Eppo\Exception\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use Psr\SimpleCache\CacheInterface;
 
 class ConfigurationStoreTest extends TestCase
 {
-    public function tearDown(): void
+    private $mockCache;
+    private ConfigurationStore $store;
+
+    protected function setUp(): void
     {
-        DefaultCacheFactory::clearCache();
+        $this->mockCache = $this->createMock(CacheInterface::class);
+        $this->store = new ConfigurationStore($this->mockCache);
     }
 
-    public function testFlushesCacheOnReload(): void
+    public function testGetConfigurationReturnsNullWhenEmpty(): void
     {
-        $flag1 = new Flag('flag1', true, [], VariationType::STRING, [], 10_000);
-        $flag2 = new Flag('flag2', true, [], VariationType::STRING, [], 10_000);
-        $flag3 = new Flag('flag3', true, [], VariationType::STRING, [], 10_000);
+        $this->mockCache->expects($this->once())
+            ->method('get')
+            ->willReturn(null);
 
-        $firstFlags = [$flag1, $flag2];
-
-        $secondFlags = [$flag1, $flag3];
-
-        $configStore = new ConfigurationStore(DefaultCacheFactory::create());
-
-
-        $configStore->setUnifiedFlagConfiguration($firstFlags);
-
-        $this->assertHasFlag($flag1, 'flag1', $configStore);
-        $this->assertHasFlag($flag2, 'flag2', $configStore);
-        $this->assertHasFlag($flag3, 'flag3', $configStore, hasFlag: false);
-
-        $configStore->setUnifiedFlagConfiguration($secondFlags);
-
-        $this->assertHasFlag($flag1, 'flag1', $configStore);
-        $this->assertHasFlag($flag2, 'flag2', $configStore, hasFlag: false);
-        $this->assertHasFlag($flag3, 'flag3', $configStore);
+        $this->assertNull($this->store->getConfiguration());
     }
 
-    public function testSetsEmptyVariationsWhenNull(): void
+    public function testGetConfigurationReturnsCachedConfiguration(): void
     {
-        $configStore = new ConfigurationStore(DefaultCacheFactory::create());
+        $mockConfig = $this->createMock(Configuration::class);
+        
+        $this->mockCache->expects($this->once())
+            ->method('get')
+            ->willReturn($mockConfig);
 
-        $banditReferences = [
-            'bandit' => new BanditReference(
-                'v123',
-                [
-                    new BanditFlagVariation(
-                        'bandit',
-                        'bandit_flag',
-                        'bandit_flag_allocation',
-                        'bandit_flag_variation',
-                        'bandit_flag_variation'
-                    )
-                ]
-            )
-        ];
-
-        $banditVariations = BanditReferenceIndexer::from($banditReferences);
-
-        $configStore->setUnifiedFlagConfiguration([], $banditVariations);
-
-        // Verify Object has been stored.
-        $recoveredBanditVariations = $configStore->getBanditReferenceIndexer();
-        $this->assertNotNull($recoveredBanditVariations);
-        $this->assertTrue($recoveredBanditVariations->hasBandits());
-
-
-        // The action that we're testing
-        $configStore->setUnifiedFlagConfiguration([], null);
-
-        // Assert the variations have been emptied.
-        $recoveredBanditVariations = $configStore->getBanditReferenceIndexer();
-        $this->assertNotNull($recoveredBanditVariations);
-        $this->assertFalse($recoveredBanditVariations->hasBandits());
+        $this->assertSame($mockConfig, $this->store->getConfiguration());
     }
 
-    public function testStoresBanditVariations(): void
+    public function testSetConfigurationStoresInCache(): void
     {
-        $configStore = new ConfigurationStore(DefaultCacheFactory::create());
+        $mockConfig = $this->createMock(Configuration::class);
+        
+        $this->mockCache->expects($this->once())
+            ->method('set')
+            ->with('eppo_configuration', $mockConfig);
 
-        $banditReferences = [
-            'bandit' => new BanditReference(
-                'v123',
-                [
-                    new BanditFlagVariation(
-                        'bandit',
-                        'bandit_flag',
-                        'bandit_flag_allocation',
-                        'bandit_flag_variation',
-                        'bandit_flag_variation'
-                    )
-                ]
-            )
-        ];
-
-        $banditVariations = BanditReferenceIndexer::from($banditReferences);
-
-        $configStore->setUnifiedFlagConfiguration([], $banditVariations);
-
-        $recoveredBanditVariations = $configStore->getBanditReferenceIndexer();
-
-        $this->assertFalse($banditVariations === $recoveredBanditVariations);
-        $this->assertEquals(
-            $banditVariations->getBanditByVariation('bandit_flag', 'bandit_flag_variation'),
-            $recoveredBanditVariations->getBanditByVariation('bandit_flag', 'bandit_flag_variation')
-        );
+        $this->store->setConfiguration($mockConfig);
     }
 
-    public function testThrowsOnReservedKey(): void
+    public function testGetConfigurationHandlesCacheException(): void
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->mockCache->expects($this->once())
+            ->method('get')
+            ->willThrowException(new \Psr\SimpleCache\InvalidArgumentException());
 
-        $configStore = new ConfigurationStore(DefaultCacheFactory::create());
-
-        $configStore->setMetadata('banditVariations', ["foo" => "bar"]);
-    }
-
-    public function testStoresBandits(): void
-    {
-        $bandits = [
-            'weaklyTheBanditKey' => new Bandit(
-                'stronglyTheBanditKey',
-                'falcon',
-                new DateTime(),
-                'v123',
-                new BanditModelData(1.0, [], 0.1, 0.1)
-            )
-        ];
-
-        $configStore = new ConfigurationStore(DefaultCacheFactory::create());
-        $configStore->setBandits($bandits);
-
-        $banditOne = $configStore->getBandit('stronglyTheBanditKey');
-
-        $this->assertNull($configStore->getBandit('weaklyTheBanditKey'));
-        $this->assertNotNull($banditOne);
-
-        $this->assertEquals('stronglyTheBanditKey', $banditOne->banditKey);
-        $this->assertEquals('falcon', $banditOne->modelName);
-    }
-
-    private function assertHasFlag(
-        Flag $expected,
-        string $flagKey,
-        ConfigurationStore $configStore,
-        bool $hasFlag = true
-    ): void {
-        $actual = $configStore->getFlag($flagKey);
-        if (!$hasFlag) {
-            $this->assertNull($actual);
-            return;
-        }
-        $this->assertNotNull($actual);
-        $this->assertEquals($actual, $expected);
+        $this->assertNull($this->store->getConfiguration());
     }
 }

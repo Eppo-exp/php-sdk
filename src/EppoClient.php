@@ -6,6 +6,7 @@ use Eppo\API\APIRequestWrapper;
 use Eppo\Bandits\BanditEvaluator;
 use Eppo\Bandits\IBanditEvaluator;
 use Eppo\Cache\DefaultCacheFactory;
+use Eppo\Config\Configuration;
 use Eppo\Config\ConfigurationLoader;
 use Eppo\Config\ConfigurationStore;
 use Eppo\Config\SDKData;
@@ -44,14 +45,8 @@ class EppoClient
     private RuleEvaluator $evaluator;
     private IBanditEvaluator $banditEvaluator;
 
-    /**
-     * @param ConfigurationLoader $configurationLoader
-     * @param PollerInterface $poller
-     * @param LoggerInterface|null $eventLogger optional logger. Please @see LoggerInterface
-     * @param bool|null $isGracefulMode
-     * @param IBanditEvaluator|null $banditEvaluator
-     */
     protected function __construct(
+        private readonly ConfigurationStore $configurationStore,
         private readonly ConfigurationLoader $configurationLoader,
         private readonly PollerInterface $poller,
         private readonly ?LoggerInterface $eventLogger = null,
@@ -143,7 +138,12 @@ class EppoClient
             }
         );
 
-        self::$instance = self::createAndInitClient($configLoader, $poller, $assignmentLogger, $isGracefulMode);
+        self::$instance = self::createAndInitClient(
+            $configLoader,
+            $poller,
+            $assignmentLogger,
+            $isGracefulMode
+        );
 
         return self::$instance;
     }
@@ -165,7 +165,7 @@ class EppoClient
                 'Unable to initialize Eppo Client: ' . $e->getMessage()
             );
         }
-        return new self($configLoader, $poller, $assignmentLogger, $isGracefulMode, $banditEvaluator);
+        return new self($configLoader->configurationStore, $configLoader, $poller, $assignmentLogger, $isGracefulMode, $banditEvaluator);
     }
 
     /**
@@ -335,12 +335,18 @@ class EppoClient
         string $flagKey,
         string $subjectKey,
         array $subjectAttributes = [],
-        VariationType $expectedVariationType = null
+        VariationType $expectedVariationType = null,
+        ?Configuration $config = null
     ): ?Variation {
         Validator::validateNotBlank($subjectKey, 'Invalid argument: subjectKey cannot be blank');
         Validator::validateNotBlank($flagKey, 'Invalid argument: flagKey cannot be blank');
 
-        $flag = $this->configurationLoader->getFlag($flagKey);
+        if (!$config) {
+            $this->configurationLoader->reloadConfigurationIfExpired();
+            $config = $this->configurationStore->getConfiguration();
+        }
+
+        $flag = $config->getFlag($flagKey);
 
         if (!$flag) {
             syslog(LOG_WARNING, "[EPPO SDK] No assigned variation; flag not found ${flagKey}");
@@ -503,23 +509,27 @@ class EppoClient
     ): BanditResult {
         Validator::validateNotBlank($flagKey, 'Invalid argument: flagKey cannot be blank');
 
+        $this->configurationLoader->reloadConfigurationIfExpired();
+        $config = $this->configurationStore->getConfiguration();
+
         try {
-            $variation = $this->getStringAssignment(
+            $variation = $this->getAssignmentDetail(
                 $flagKey,
                 $subjectKey,
                 $subject->toArray(),
-                $defaultValue
+                VariationType::STRING,
+                $config
             );
         } catch (EppoException $e) {
             syslog(LOG_WARNING, "[Eppo SDK] Error computing experiment assignment: " . $e->getMessage());
             $variation = $defaultValue;
         }
 
-        $banditKey = $this->configurationLoader->getBanditByVariation($flagKey, $variation);
+        $banditKey = $config->getBanditByVariation($flagKey, $variation);
         if ($banditKey !== null && !empty($actionsWithContext)) {
             // Evaluate the bandit, log and return.
 
-            $bandit = $this->configurationLoader->getBandit($banditKey);
+            $bandit = $config->getBandit($banditKey);
             if ($bandit == null) {
                 if (!$this->isGracefulMode) {
                     throw new EppoClientException(
