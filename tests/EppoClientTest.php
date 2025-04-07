@@ -160,6 +160,38 @@ class EppoClientTest extends TestCase
         );
     }
 
+    public function testSuppressInitExceptionThrow()
+    {
+        $pollerMock = $this->getPollerMock();
+
+        $apiRequestWrapper = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs(
+            ['', [], new Psr18Client(), new Psr17Factory()]
+        )->getMock();
+
+        $apiRequestWrapper->expects($this->any())
+            ->method('getUFC')
+            ->willThrowException(new HttpRequestException());
+
+        $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
+        $configStore->expects($this->any())->method('getMetadata')->willReturn(null);
+        $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
+
+        $client = EppoClient::createTestClient(
+            new ConfigurationLoader($apiRequestWrapper, $configStore),
+            $pollerMock,
+            $mockLogger,
+            true,
+            throwOnFailedInit: false
+        );
+
+        $this->assertEquals(
+            'default',
+            $client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', [], 'default')
+        );
+
+        // No exceptions thrown, default assignments.
+    }
+
     public function testReturnsDefaultWhenExperimentConfigIsAbsent()
     {
         $configLoaderMock = $this->getFlagConfigurationLoaderMock([]);
@@ -179,7 +211,12 @@ class EppoClientTest extends TestCase
     public function testRepoTestCases(): void
     {
         try {
-            $client = EppoClient::init('dummy', self::$mockServer->serverAddress, isGracefulMode: false);
+            $client = EppoClient::init(
+                'dummy',
+                self::$mockServer->serverAddress,
+                isGracefulMode: false,
+                throwOnFailedInit: true
+            );
         } catch (Exception $exception) {
             self::fail('Failed to initialize EppoClient: ' . $exception->getMessage());
         }
@@ -315,7 +352,9 @@ class EppoClientTest extends TestCase
         );
 
         $response = new Response(stream: Utils::streamFor(file_get_contents(__DIR__ . '/data/ufc/flags-v1.json')));
-        $secondResponse = new Response(stream: Utils::streamFor(file_get_contents(__DIR__ . '/data/ufc/bandit-flags-v1.json')));
+        $secondResponse = new Response(stream: Utils::streamFor(
+            file_get_contents(__DIR__ . '/data/ufc/bandit-flags-v1.json')
+        ));
 
         $httpClient = $this->createMock(ClientInterface::class);
         $httpClient->expects($this->atLeast(2))
@@ -327,7 +366,8 @@ class EppoClientTest extends TestCase
             "fake address",
             httpClient: $httpClient,
             isGracefulMode: false,
-            pollingOptions: $pollingOptions
+            pollingOptions: $pollingOptions,
+            throwOnFailedInit: true
         );
 
         $this->assertEquals(
@@ -335,7 +375,7 @@ class EppoClientTest extends TestCase
             $client->getNumericAssignment(self::EXPERIMENT_NAME, 'subject-10', [], 0)
         );
         // Wait a little bit for the cache to age out and the mock server to spin up.
-        usleep(75*1000);
+        usleep(75 * 1000);
 
         $this->assertEquals(
             0,

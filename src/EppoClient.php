@@ -84,6 +84,7 @@ class EppoClient
         RequestFactoryInterface $requestFactory = null,
         ?bool $isGracefulMode = true,
         ?PollingOptions $pollingOptions = null,
+        ?bool $throwOnFailedInit = false,
     ): EppoClient {
         // Get SDK metadata to pass as params in the http client.
         $sdkData = new SDKData();
@@ -93,11 +94,7 @@ class EppoClient
         ];
 
         if (!$cache) {
-            try {
-                $cache = (new DefaultCacheFactory())->create();
-            } catch (Exception $e) {
-                throw EppoClientInitializationException::from($e);
-            }
+            $cache = (new DefaultCacheFactory())->create();
         }
 
         $configStore = new ConfigurationStore($cache);
@@ -143,27 +140,33 @@ class EppoClient
             }
         );
 
-        self::$instance = self::createAndInitClient($configLoader, $poller, $assignmentLogger, $isGracefulMode);
+        self::$instance = self::createAndInitClient($configLoader, $poller, $assignmentLogger, $isGracefulMode, throwOnFailedInit: $throwOnFailedInit);
 
         return self::$instance;
     }
 
     /**
-     * @throws EppoClientInitializationException
+     * @throws EppoClientInitializationException|InvalidConfigurationException
      */
     private static function createAndInitClient(
         ConfigurationLoader $configLoader,
         PollerInterface $poller,
         ?LoggerInterface $assignmentLogger,
         ?bool $isGracefulMode,
-        ?IBanditEvaluator $banditEvaluator = null
+        ?IBanditEvaluator $banditEvaluator = null,
+        ?bool $throwOnFailedInit = false,
     ): EppoClient {
         try {
             $configLoader->reloadConfigurationIfExpired();
         } catch (HttpRequestException | InvalidApiKeyException $e) {
-            throw new EppoClientInitializationException(
-                'Unable to initialize Eppo Client: ' . $e->getMessage()
-            );
+            $message = 'Unable to initialize Eppo Client: ' . $e->getMessage();
+            if ($throwOnFailedInit) {
+                throw new EppoClientInitializationException(
+                    $message
+                );
+            } else {
+                syslog(LOG_INFO, "[Eppo SDK] " . $message);
+            }
         }
         return new self($configLoader, $poller, $assignmentLogger, $isGracefulMode, $banditEvaluator);
     }
@@ -641,8 +644,16 @@ class EppoClient
         PollerInterface $poller,
         ?LoggerInterface $logger = null,
         ?bool $isGracefulMode = false,
-        ?IBanditEvaluator $banditEvaluator = null
+        ?IBanditEvaluator $banditEvaluator = null,
+        ?bool $throwOnFailedInit = true,
     ): EppoClient {
-        return self::createAndInitClient($configurationLoader, $poller, $logger, $isGracefulMode, $banditEvaluator);
+        return self::createAndInitClient(
+            $configurationLoader,
+            $poller,
+            $logger,
+            $isGracefulMode,
+            $banditEvaluator,
+            throwOnFailedInit: $throwOnFailedInit
+        );
     }
 }

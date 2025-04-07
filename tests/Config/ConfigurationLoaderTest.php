@@ -89,6 +89,58 @@ class ConfigurationLoaderTest extends TestCase
         $this->assertEquals('cold_start_bandit', $bandit->banditKey);
     }
 
+
+    public function testSetsConfigurationTimestamp(): void
+    {
+        // Load mock response data
+        $flagsRaw = file_get_contents(self::MOCK_RESPONSE_FILENAME);
+        $flagsResourceResponse = new APIResource(
+            $flagsRaw,
+            true,
+            "ETAG"
+        );
+        $banditsRaw = '{"bandits": {}}';
+
+        $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs(
+            ['', [], new Psr18Client(), new Psr17Factory()]
+        )->getMock();
+
+        $apiWrapper->expects($this->exactly(2))
+            ->method('getUFC')
+            ->willReturnCallback(
+                function (?string $eTag) use ($flagsResourceResponse, $flagsRaw) {
+                    // Return not modified if the etag sent is not null.
+                    return $eTag == null ? $flagsResourceResponse : new APIResource(
+                        $flagsRaw,
+                        false,
+                        "ETAG"
+                    );
+                }
+            );
+
+        $apiWrapper->expects($this->once())
+            ->method('getBandits')
+            ->willReturn(new APIResource($banditsRaw, true, null));
+
+        $configStore = new ConfigurationStore(DefaultCacheFactory::create());
+
+        $loader = new ConfigurationLoader($apiWrapper, $configStore);
+        $loader->fetchAndStoreConfigurations(null);
+
+        $timestamp1 = $configStore->getMetadata("flagTimestamp");
+        $storedEtag = $configStore->getMetadata("flagETag");
+        $this->assertEquals("ETAG", $storedEtag);
+
+        usleep(50 * 1000); // Sleep long enough for cache to expire.
+
+        $loader->fetchAndStoreConfigurations("ETAG");
+
+        $this->assertEquals("ETAG", $configStore->getMetadata("flagETag"));
+
+        // The timestamp should not have changed; the config did not change, so the timestamp should not be updated.
+        $this->assertEquals($timestamp1, $configStore->getMetadata("flagTimestamp"));
+    }
+
     public function testLoadsOnGet(): void
     {
         // Arrange: Load some flag data to be returned by the APIRequestWrapper
