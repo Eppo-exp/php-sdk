@@ -9,9 +9,6 @@ use Symfony\Component\Cache\Psr16Cache;
 
 class DefaultCacheFactory
 {
-    /**
-     * @throws Exception
-     */
     public static function create(): CacheInterface
     {
         $psr6Cache = new FilesystemAdapter(
