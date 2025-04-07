@@ -69,7 +69,7 @@ class ConfigurationLoaderTest extends TestCase
 
         $configStore = new ConfigurationStore(DefaultCacheFactory::create());
 
-        $loader = new ConfigurationLoader($apiWrapper, $configStore, 25);
+        $loader = new ConfigurationLoader($apiWrapper, $configStore);
         $loader->fetchAndStoreConfigurations(null);
 
 
@@ -99,8 +99,6 @@ class ConfigurationLoaderTest extends TestCase
             true,
             "ETAG"
         );
-        $flagsJson = json_decode($flagsRaw, true);
-        $flags = array_map(fn($flag) => (new UFCParser())->parseFlag($flag), $flagsJson['flags']);
         $banditsRaw = '{
             "bandits": {
                 "cold_start_bandit": {
@@ -142,7 +140,7 @@ class ConfigurationLoaderTest extends TestCase
 
         $configStore = new ConfigurationStore(DefaultCacheFactory::create());
 
-        $loader = new ConfigurationLoader($apiWrapper, $configStore, 25);
+        $loader = new ConfigurationLoader($apiWrapper, $configStore);
         $loader->fetchAndStoreConfigurations(null);
 
         $timestamp1 = $configStore->getMetadata("flagTimestamp");
