@@ -13,13 +13,11 @@ use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
 use Eppo\Exception\InvalidConfigurationException;
 use Eppo\Flags\IFlags;
-use Eppo\UFCParser;
 
 class ConfigurationLoader implements IFlags, IBandits
 {
     private const KEY_BANDIT_TIMESTAMP = "banditTimestamp";
     private const KEY_LOADED_BANDIT_VERSIONS = 'banditModelVersions';
-    private UFCParser $parser;
 
     private const KEY_FLAG_TIMESTAMP = "flagTimestamp";
     private const KEY_FLAG_ETAG = "flagETag";
@@ -30,7 +28,6 @@ class ConfigurationLoader implements IFlags, IBandits
         private readonly int $cacheAgeLimitMillis = 30 * 1000,
         private readonly bool $optimizedBanditLoading = false
     ) {
-        $this->parser = new UFCParser();
     }
 
     /**
@@ -87,7 +84,7 @@ class ConfigurationLoader implements IFlags, IBandits
                 return;
             }
 
-            $inflated = array_map(fn($object) => $this->parser->parseFlag($object), $responseData['flags']);
+            $inflated = array_map(fn($object) => Flag::fromJson($object), $responseData['flags']);
 
             // Create a handy helper class from the `banditReferences` to help connect flags to bandits.
             if (isset($responseData['banditReferences'])) {

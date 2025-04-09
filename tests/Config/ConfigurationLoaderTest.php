@@ -9,7 +9,6 @@ use Eppo\Config\ConfigurationLoader;
 use Eppo\Config\ConfigurationStore;
 use Eppo\DTO\Bandit\Bandit;
 use Eppo\DTO\Flag;
-use Eppo\UFCParser;
 use Http\Discovery\Psr17Factory;
 use Http\Discovery\Psr18Client;
 use PHPUnit\Framework\TestCase;
@@ -37,7 +36,7 @@ class ConfigurationLoaderTest extends TestCase
             "ETAG"
         );
         $flagsJson = json_decode($flagsRaw, true);
-        $flags = array_map(fn($flag) => (new UFCParser())->parseFlag($flag), $flagsJson['flags']);
+        $flags = array_map(fn($flag) => (Flag::fromJson($flag)), $flagsJson['flags']);
         $banditsRaw = '{
             "bandits": {
                 "cold_start_bandit": {

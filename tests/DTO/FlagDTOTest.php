@@ -1,25 +1,23 @@
 <?php
 
-namespace Eppo\Tests;
+namespace DTO;
 
 use Eppo\DTO\Flag;
 use Eppo\DTO\Operator;
 use Eppo\DTO\VariationType;
-use Eppo\UFCParser;
 use PHPUnit\Framework\TestCase;
 
-class UFCParserTest extends TestCase
+class FlagDTOTest extends TestCase
 {
     private const FLAG_KEY = 'kill-switch';
 
-    private const MOCK_DATA_FILENAME = __DIR__ . '/mockdata/ufc-v1.json';
+    private const MOCK_DATA_FILENAME = __DIR__ . '/../mockdata/ufc-v1.json';
 
     public function testParsesComplexFlagPayload(): void
     {
-        $parser = new UFCParser();
         $ufcPayload = json_decode(file_get_contents(self::MOCK_DATA_FILENAME), true);
         $flags = $ufcPayload['flags'];
-        $flag = $parser->parseFlag($flags[self::FLAG_KEY]);
+        $flag = Flag::fromJson($flags[self::FLAG_KEY]);
 
         $this->assertInstanceOf(Flag::class, $flag);
 
