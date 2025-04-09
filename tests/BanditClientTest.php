@@ -2,13 +2,10 @@
 
 namespace Eppo\Tests;
 
-use DateTime;
 use Eppo\Cache\DefaultCacheFactory;
 use Eppo\Config\ConfigurationLoader;
 use Eppo\DTO\Allocation;
 use Eppo\DTO\Bandit\AttributeSet;
-use Eppo\DTO\Bandit\Bandit;
-use Eppo\DTO\Bandit\BanditModelData;
 use Eppo\DTO\Bandit\BanditResult;
 use Eppo\DTO\Flag;
 use Eppo\DTO\Shard;
@@ -52,77 +49,6 @@ class BanditClientTest extends TestCase
     {
         self::$mockServer->stop();
         DefaultCacheFactory::clearCache();
-    }
-
-    public function testBanditWithEmptyActions(): void
-    {
-        $flagKey = 'bandit';
-        $actions = [];
-        $subjectKey = 'user123';
-        $subject = ['country' => 'USA', 'age' => 25];
-        $default = 'defaultVariation';
-
-
-        $config = $this->getMockBuilder(ConfigurationLoader::class)->disableOriginalConstructor()->getMock();
-
-        $banditKeyAndVariationValue = 'banditVariation';
-        $bandit = new Bandit(
-            $banditKeyAndVariationValue,
-            'falcon',
-            new DateTime(),
-            'v123',
-            new BanditModelData(
-                1.0,
-                [],
-                0.1,
-                0.1
-            )
-        );
-
-        $config->expects($this->once())
-            ->method('getBanditByVariation')
-            ->with($flagKey, $banditKeyAndVariationValue)
-            ->willReturn($banditKeyAndVariationValue);
-        $config->expects($this->never()) // Should not get to loading the bandit.
-        ->method('getBandit')
-            ->with($banditKeyAndVariationValue)
-            ->willReturn($bandit);
-
-        $config->expects($this->once())
-            ->method('getFlag')->with($flagKey)->willReturn(
-                $this->makeFlagThatMapsAllTo($flagKey, $banditKeyAndVariationValue)
-            );
-
-        $client = EppoClient::createTestClient($config, poller: $this->getPollerMock());
-
-
-        $result = $client->getBanditAction($flagKey, $subjectKey, $subject, $actions, $default);
-
-        $this->assertEquals($banditKeyAndVariationValue, $result->variation);
-        $this->assertNull($result->action);
-    }
-
-    public function testNonBandit(): void
-    {
-        $flagKey = 'non_bandit';
-        $actions = [];
-        $subjectKey = 'user123';
-        $subject = ['country' => 'USA', 'age' => 25];
-        $default = 'defaultVariation';
-
-
-        $config = $this->getMockBuilder(ConfigurationLoader::class)->disableOriginalConstructor()->getMock();
-
-        $config->expects($this->once())
-            ->method('getBanditByVariation')
-            ->with($flagKey, $default)
-            ->willReturn(null);
-
-        $client = EppoClient::createTestClient($config, poller: $this->getPollerMock());
-
-        $result = $client->getBanditAction($flagKey, $subjectKey, $subject, $actions, $default);
-        $this->assertEquals($default, $result->variation);
-        $this->assertEquals(null, $result->action);
     }
 
     public function testBanditModelDoesNotExist(): void

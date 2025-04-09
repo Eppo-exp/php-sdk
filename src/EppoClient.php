@@ -525,17 +525,15 @@ class EppoClient
                 $subject->toArray(),
                 VariationType::STRING,
                 $config
-            );
-            if ($variation === null) {
-                return new BanditResult($defaultValue);
-            }
-            $variationKey = $variation->key;
+            )?->key ?? $defaultValue;
+            // TODO return a BanditResult with the default value here instead of going with the default.
         } catch (EppoException $e) {
             syslog(LOG_WARNING, "[Eppo SDK] Error computing experiment assignment: " . $e->getMessage());
-            $variationKey = $defaultValue; // TODO return a BanditResult with the default value here instead of looking up a bandit.
+            $variation = $defaultValue;
+            // TODO return a BanditResult with the default value here instead of going with the default.
         }
 
-        $banditKey = $config->getBanditByVariation($flagKey, $variationKey);
+        $banditKey = $config->getBanditByVariation($flagKey, $variation);
         if ($banditKey !== null && !empty($actionsWithContext)) {
             // Evaluate the bandit, log and return.
 
@@ -543,7 +541,7 @@ class EppoClient
             if ($bandit == null) {
                 if (!$this->isGracefulMode) {
                     throw new EppoClientException(
-                        "Assigned bandit not found for ($flagKey, $variationKey)",
+                        "Assigned bandit not found for ($flagKey, $variation)",
                         EppoException::BANDIT_EVALUATION_FAILED_BANDIT_MODEL_NOT_PRESENT
                     );
                 }
@@ -557,7 +555,7 @@ class EppoClient
                 );
 
                 $banditActionLog = BanditActionEvent::fromEvaluation(
-                    $variationKey,
+                    $variation,
                     $result,
                     $bandit,
                     (new SDKData())->asArray()
@@ -574,7 +572,7 @@ class EppoClient
                 return new BanditResult($variationKey, $result->selectedAction);
             }
         }
-        return new BanditResult($variationKey);
+        return new BanditResult($variation);
     }
 
 
@@ -644,6 +642,7 @@ class EppoClient
      * Only used for unit-tests.
      * Do not use for production.
      *
+     * @param ConfigStore $configStore
      * @param ConfigurationLoader $configurationLoader
      * @param PollerInterface $poller
      * @param LoggerInterface|null $logger
