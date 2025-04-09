@@ -12,6 +12,11 @@ class ConfigurationWire
     public ?ConfigResponse $config;
     public ?ConfigResponse $bandits;
 
+    public function __construct()
+    {
+        $this->version = 1;
+    }
+
     public static function create(array $json): self
     {
         $dto = new self();

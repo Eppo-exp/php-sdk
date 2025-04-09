@@ -92,4 +92,14 @@ class Configuration
             bandits: $this->banditsConfig
         );
     }
+
+    public function getFetchedAt(): ?string
+    {
+        return $this?->flagsConfig?->fetchedAt ?? null;
+    }
+
+    public function getFlagETag(): ?string
+    {
+        return $this->flagsConfig?->eTag ?? null;
+    }
 }

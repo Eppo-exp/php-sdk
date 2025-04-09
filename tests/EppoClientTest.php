@@ -5,9 +5,9 @@ namespace Eppo\Tests;
 use Eppo\API\APIRequestWrapper;
 use Eppo\API\APIResource;
 use Eppo\Cache\DefaultCacheFactory;
+use Eppo\Config\ConfigStore;
+use Eppo\Config\Configuration;
 use Eppo\Config\ConfigurationLoader;
-use Eppo\Config\ConfigurationStore;
-use Eppo\Config\IConfigurationStore;
 use Eppo\Config\SDKData;
 use Eppo\DTO\VariationType;
 use Eppo\EppoClient;
@@ -58,11 +58,30 @@ class EppoClientTest extends TestCase
     public function testGracefulModeDoesNotThrow()
     {
         $pollerMock = $this->getPollerMock();
-        $mockConfigRequester = $this->getFlagConfigurationLoaderMock([], new Exception('config loader error'));
+
+        $apiRequestWrapper = $this->getMockBuilder(APIRequestWrapper::class)->setConstructorArgs(
+            ['', [], new Psr18Client(), new Psr17Factory()]
+        )->getMock();
+
+        $configStore = $this->getMockBuilder(ConfigStore::class)->disableOriginalConstructor()->getMock();
+        $config = $this->getMockBuilder(Configuration::class)->disableOriginalConstructor()->getMock();
+
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
 
+        $configStore->expects($this->atLeastOnce())
+            ->method('getConfiguration')
+            ->willReturn($config);
+        $config->expects($this->once())
+            ->method('getFetchedAt')
+            ->willReturn(date('c'));
+        $config->expects($this->atLeastOnce())
+            ->method('getFlag')
+            ->willThrowException(new Exception());
+
+        $loader = new ConfigurationLoader($apiRequestWrapper, $configStore);
+
         $subjectAttributes = [['foo' => 3]];
-        $client = EppoClient::createTestClient($mockConfigRequester, $pollerMock, $mockLogger, true);
+        $client = EppoClient::createTestClient($configStore, $loader, $pollerMock, $mockLogger, true);
 
         $defaultObj = json_decode('{}', true);
 
@@ -91,22 +110,26 @@ class EppoClientTest extends TestCase
             ['', [], new Psr18Client(), new Psr17Factory()]
         )->getMock();
 
-        $apiRequestWrapper->expects($this->any())
-            ->method('getUFC')
-            ->willThrowException(new HttpRequestException());
+        $configStore = $this->getMockBuilder(ConfigStore::class)->disableOriginalConstructor()->getMock();
+        $config = $this->getMockBuilder(Configuration::class)->disableOriginalConstructor()->getMock();
 
-        $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
 
-        $this->expectException(EppoClientException::class);
-
-        $flags = $this->getMockBuilder(ConfigurationLoader::class)->disableOriginalConstructor()->getMock();
-
-        $flags->expects($this->once())
+        $configStore->expects($this->atLeastOnce())
+            ->method('getConfiguration')
+            ->willReturn($config);
+        $config->expects($this->once())
+            ->method('getFetchedAt')
+            ->willReturn(date('c'));
+        $config->expects($this->once())
             ->method('getFlag')
-            ->with(self::EXPERIMENT_NAME)
             ->willThrowException(new Exception());
-        $client = EppoClient::createTestClient($flags, $pollerMock, $mockLogger, false);
+
+        $loader = new ConfigurationLoader($apiRequestWrapper, $configStore);
+
+        $client = EppoClient::createTestClient($configStore, $loader, $pollerMock, $mockLogger, false);
+
+        $this->expectException(EppoClientException::class);
         $result = $client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', [], "default");
     }
 
@@ -122,16 +145,21 @@ class EppoClientTest extends TestCase
             ->method('getUFC')
             ->willThrowException(new HttpRequestException());
 
-        $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
-        $configStore->expects($this->any())->method('getMetadata')->willReturn(null);
+        $configStore = $this->getMockBuilder(ConfigStore::class)->disableOriginalConstructor()->getMock();
+        $configStore->expects($this->atLeastOnce())
+            ->method('getConfiguration')
+            ->willThrowException(new Exception("Expected Exception"));
+
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
 
         $this->expectException(EppoClientInitializationException::class);
         $client = EppoClient::createTestClient(
+            $configStore,
             new ConfigurationLoader($apiRequestWrapper, $configStore),
             $pollerMock,
             $mockLogger,
-            false
+            isGracefulMode: false,
+            throwOnFailedInit: true
         );
     }
 
@@ -147,16 +175,21 @@ class EppoClientTest extends TestCase
             ->method('getUFC')
             ->willThrowException(new HttpRequestException());
 
-        $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
-        $configStore->expects($this->any())->method('getMetadata')->willReturn(null);
+        $configStore = $this->getMockBuilder(ConfigStore::class)->disableOriginalConstructor()->getMock();
+        $configStore->expects($this->atLeastOnce())
+            ->method('getConfiguration')
+            ->willThrowException(new Exception("Expected Exception"));
+
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
 
         $this->expectException(EppoClientInitializationException::class);
         $client = EppoClient::createTestClient(
+            $configStore,
             new ConfigurationLoader($apiRequestWrapper, $configStore),
             $pollerMock,
             $mockLogger,
-            true
+            isGracefulMode: true,
+            throwOnFailedInit: true
         );
     }
 
@@ -172,11 +205,16 @@ class EppoClientTest extends TestCase
             ->method('getUFC')
             ->willThrowException(new HttpRequestException());
 
-        $configStore = $this->getMockBuilder(IConfigurationStore::class)->getMock();
-        $configStore->expects($this->any())->method('getMetadata')->willReturn(null);
+        $configStore = $this->getMockBuilder(ConfigStore::class)->disableOriginalConstructor()->getMock();
+        $configStore->expects($this->atLeastOnce())
+            ->method('getConfiguration')
+            ->willThrowException(new Exception("Expected Exception"));
+
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
 
+
         $client = EppoClient::createTestClient(
+            $configStore,
             new ConfigurationLoader($apiRequestWrapper, $configStore),
             $pollerMock,
             $mockLogger,
@@ -196,7 +234,7 @@ class EppoClientTest extends TestCase
         $configLoaderMock = $this->getFlagConfigurationLoaderMock([]);
         $pollerMock = $this->getPollerMock();
 
-        $client = EppoClient::createTestClient($configLoaderMock, $pollerMock);
+        $client = EppoClient::createTestClient($configLoaderMock->configurationStore, $configLoaderMock, $pollerMock);
         $this->assertEquals(
             'DEFAULT',
             $client->getStringAssignment(self::EXPERIMENT_NAME, 'subject-10', [], 'DEFAULT')
@@ -282,7 +320,7 @@ class EppoClientTest extends TestCase
             ->method('getUFC')
             ->willReturn(new APIResource('', true, null));
 
-        $configStoreMock = $this->getMockBuilder(ConfigurationStore::class)->setConstructorArgs([$cache])->getMock();
+        $configStoreMock = $this->getMockBuilder(ConfigStore::class)->setConstructorArgs([$cache])->getMock();
 
         if ($mockedResponse) {
             $configStoreMock->expects($this->any())
@@ -304,22 +342,6 @@ class EppoClientTest extends TestCase
     private function getPollerMock()
     {
         return $this->getMockBuilder(PollerInterface::class)->getMock();
-    }
-
-    private function getLoggerMock()
-    {
-        $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
-        $mockLogger->expects($this->once())->method('logAssignment')->with(
-            'mock-experiment-allocation1',
-            'control',
-            'subject-10',
-            $this->greaterThan(0),
-            $this->anything(),
-            'allocation1',
-            'mock-experiment'
-        );
-
-        return $mockLogger;
     }
 
     private function loadTestCases(): array

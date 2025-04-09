@@ -3,13 +3,11 @@
 namespace Eppo\Tests;
 
 use DateTime;
-use Eppo\Bandits\IBanditEvaluator;
 use Eppo\Cache\DefaultCacheFactory;
 use Eppo\Config\ConfigurationLoader;
 use Eppo\DTO\Allocation;
 use Eppo\DTO\Bandit\AttributeSet;
 use Eppo\DTO\Bandit\Bandit;
-use Eppo\DTO\Bandit\BanditEvaluation;
 use Eppo\DTO\Bandit\BanditModelData;
 use Eppo\DTO\Bandit\BanditResult;
 use Eppo\DTO\Flag;
@@ -183,61 +181,18 @@ class BanditClientTest extends TestCase
 
     public function testBanditSelectionLogged(): void
     {
-        $flagKey = 'bandit_flag';
-        $actions = ['foo', 'bar', 'baz'];
-        $subjectKey = 'user123';
+        $flagKey = 'banner_bandit_flag';
+        $actions = ['nike', 'adidas', 'reebok'];
+        $subjectKey = 'alice';
         $subject = ['country' => 'USA', 'age' => 25];
-        $default = 'defaultVariation';
-        $banditKey = $default;
+        $default = 'default';
+        $banditKey = 'banner_bandit';
 
-        $bandit = new Bandit(
-            $banditKey,
-            'falcon',
-            new DateTime(),
-            'v123',
-            new BanditModelData(
-                1.0,
-                [],
-                0.1,
-                0.1
-            )
-        );
-
-        $evaluation = new BanditEvaluation(
-            $flagKey,
-            $subjectKey,
-            AttributeSet::fromArray($subject),
-            'banditAction',
-            AttributeSet::fromArray([]),
-            200,
-            0.5,
-            1.0,
-            50
-        );
-        $expectedResult = new BanditResult('defaultVariation', 'banditAction');
-
-
-        $config = $this->getMockBuilder(ConfigurationLoader::class)->disableOriginalConstructor()->getMock();
-
-        // We know the assignment will evaluate to the default so let's use that shortcut to give us a bandit.
-        $config->expects($this->once())
-            ->method('getBanditByVariation')
-            ->with($flagKey, $default)
-            ->willReturn($banditKey);
-        $config->expects($this->once())
-            ->method('getBandit')
-            ->with($banditKey)
-            ->willReturn($bandit);
-
-        $banditEvaluator = $this->getMockBuilder(IBanditEvaluator::class)->getMock();
-        $banditEvaluator->expects($this->once())
-            ->method('evaluateBandit')
-            ->willReturn($evaluation);
+        $expectedResult = new BanditResult('banner_bandit', 'nike');
 
         $mockLogger = $this->getMockBuilder(IBanditLogger::class)->getMock();
 
-        // EppoClient won't log this assignment as it's not computed, just returning the default.
-        $mockLogger->expects($this->never())->method('logAssignment');
+        $mockLogger->expects($this->once())->method('logAssignment');
 
         $mockLogger->expects($this->once())->method('logBanditAction')
             ->with(
@@ -245,16 +200,16 @@ class BanditClientTest extends TestCase
                     return $bee->banditKey == $banditKey &&
                         $bee->subjectKey == $subjectKey &&
                         $bee->flagKey == $flagKey &&
-                        $bee->action == 'banditAction';
+                        $bee->action == 'nike';
                 })
             );
 
-        $client = EppoClient::createTestClient(
-            $config,
-            poller: $this->getPollerMock(),
-            logger: $mockLogger,
-            banditEvaluator: $banditEvaluator
+        $client = EppoClient::init(
+            'dummy',
+            self::$mockServer->serverAddress,
+            assignmentLogger: $mockLogger,
         );
+
 
         $result = $client->getBanditAction($flagKey, $subjectKey, $subject, $actions, $default);
 

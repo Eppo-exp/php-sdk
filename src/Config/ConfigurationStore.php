@@ -14,7 +14,7 @@ use Eppo\Exception\InvalidConfigurationException;
 use Eppo\Validator;
 use Psr\SimpleCache\CacheInterface;
 
-class ConfigurationStore implements IConfigurationStore
+class ConfigurationStore
 {
     private CacheInterface $flagCache;
     private CacheInterface $banditCache;
