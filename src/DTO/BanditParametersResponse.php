@@ -22,4 +22,4 @@ class BanditParametersResponse
     {
         $this->bandits = $bandits;
     }
-} 
+}

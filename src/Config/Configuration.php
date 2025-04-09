@@ -3,22 +3,19 @@
 namespace Eppo\Config;
 
 use Eppo\DTO\Bandit\Bandit;
-use Eppo\DTO\BanditFlagVariation;
 use Eppo\DTO\BanditParametersResponse;
 use Eppo\DTO\BanditReference;
 use Eppo\DTO\ConfigResponse;
 use Eppo\DTO\ConfigurationWire;
 use Eppo\DTO\Flag;
 use Eppo\DTO\FlagConfigResponse;
-use Eppo\UFCParser;
 
 class Configuration
 {
     private array $parsedFlags = [];
 
     private function __construct(
-        private readonly UFCParser $parser,
-        private readonly FlagConfigResponse $config,
+        private readonly FlagConfigResponse $flagConfig,
         private readonly ?BanditParametersResponse $bandits = null,
         private readonly ?string $flagETag = null,
         private readonly ?string $fetchedAt = null,
@@ -31,12 +28,11 @@ class Configuration
         if (isset($this->parsedFlags[$key])) {
             return $this->parsedFlags[$key];
         }
-        $flagObj = $this->config->flags[$key] ?? null;
-        var_dump($flagObj);
+        $flagObj = $this->flagConfig->flags[$key] ?? null;
         if ($flagObj !== null) {
-            return $this->parser->parseFlag($flagObj);
+            return Flag::fromJson($flagObj);
         }
-        return $this->config->flags[$key] ?? null;
+        return $this->flagConfig->flags[$key] ?? null;
     }
 
     public function getBandit(string $banditKey): ?Bandit
@@ -46,10 +42,9 @@ class Configuration
 
     public function getBanditByVariation(string $flagKey, string $variation): ?string
     {
-        foreach ($this->config->banditReferences as $banditKey => $banditReferenceObj) {
+        foreach ($this->flagConfig->banditReferences as $banditKey => $banditReferenceObj) {
             $banditReference = BanditReference::fromJson($banditReferenceObj);
-            foreach ($banditReference->flagVariations as $flagVariationObj) {
-                $flagVariation = BanditFlagVariation::fromJson($flagVariationObj);
+            foreach ($banditReference->flagVariations as $flagVariation) {
                 if ($flagVariation->flagKey === $flagKey && $flagVariation->variationKey === $variation) {
                     return $banditKey;
                 }
@@ -66,7 +61,7 @@ class Configuration
                 [
                     "response" =>
                         json_encode(
-                            $this->config->toArray()
+                            $this->flagConfig->toArray()
                         ),
                     "eTag" => $this->flagETag,
                     "fetchedAt" => $this->fetchedAt
@@ -85,10 +80,23 @@ class Configuration
     public static function fromConfigurationWire(ConfigurationWire $configurationWire): self
     {
         $flags = FlagConfigResponse::create(json_decode($configurationWire->config->response, true));
-        $bandits = $configurationWire->bandits ? BanditParametersResponse::create(
-            json_decode($configurationWire->bandits->response, true)
-        ) : null;
+        $bandits = null;
 
-        return new self(new UFCParser(), $flags, $bandits);
+        if ($configurationWire->bandits) {
+            $banditData = json_decode($configurationWire->bandits->response, true);
+            if (isset($banditData['bandits'])) {
+                $bandits = new BanditParametersResponse($banditData['bandits']);
+            } else {
+                $bandits = new BanditParametersResponse([]);
+            }
+        }
+
+        return new self(
+            flagConfig: $flags,
+            bandits: $bandits,
+            flagETag: $configurationWire->config->eTag,
+            fetchedAt: $configurationWire->config->fetchedAt,
+            banditsETag: $configurationWire->bandits->eTag
+        );
     }
 }
