@@ -99,7 +99,7 @@ class ConfigurationLoader implements IFlags, IBandits
 
             // Store metadata for next time.
             $this->configurationStore->setMetadata(self::KEY_FLAG_TIMESTAMP, $this->millitime());
-            $this->configurationStore->setMetadata(self::KEY_FLAG_ETAG, $response->ETag);
+            $this->configurationStore->setMetadata(self::KEY_FLAG_ETAG, $response->eTag);
         }
     }
 

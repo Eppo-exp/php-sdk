@@ -11,7 +11,7 @@ use Eppo\Traits\ToArray;
  *
  * @property string $createdAt ISO formatted string
  * @property string $format
- * @property string $environment
+ * @property array $environment
  * @property array<string, Flag> $flags
  * @property array<string, BanditReference> $banditReferences
  */
@@ -22,10 +22,8 @@ class FlagConfigResponse
 
     public string $createdAt;
     public string $format;
-    public string $environment;
-    /**
-     * @var array<string, Flag>
-     */
+    public array $environment;
+
     public array $flags;
 
     /**

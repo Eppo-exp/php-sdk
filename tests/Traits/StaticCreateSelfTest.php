@@ -2,7 +2,7 @@
 
 namespace Eppo\Tests\Traits;
 
-use Eppo\DTO\ConfigResponse;
+use Eppo\DTO\ConfigurationWire\ConfigResponse;
 use PHPUnit\Framework\TestCase;
 
 class StaticCreateSelfTest extends TestCase

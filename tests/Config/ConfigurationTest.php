@@ -3,7 +3,7 @@
 namespace Eppo\Tests\Config;
 
 use Eppo\Config\Configuration;
-use Eppo\DTO\ConfigurationWire;
+use Eppo\DTO\ConfigurationWire\ConfigurationWire;
 use PHPUnit\Framework\TestCase;
 
 class ConfigurationTest extends TestCase
@@ -24,37 +24,7 @@ class ConfigurationTest extends TestCase
         $configData = json_decode($jsonData, true);
         $this->assertIsArray($configData, 'Failed to parse JSON data');
 
-        $configurationWire = new ConfigurationWire();
-        $configurationWire->version = $configData['version'];
-
-        $configResponse = new \Eppo\DTO\ConfigResponse();
-        $configResponse->response = $configData['config']['response'];
-        $configResponse->eTag = $configData['config']['eTag'] ?? null;
-        $configResponse->fetchedAt = $configData['config']['fetchedAt'] ?? null;
-        $configurationWire->config = $configResponse;
-
-        if (isset($configData['bandits'])) {
-            $banditsResponse = new \Eppo\DTO\ConfigResponse();
-            $banditsResponse->response = $configData['bandits']['response'];
-            $banditsResponse->eTag = $configData['bandits']['eTag'] ?? null;
-            $banditsResponse->fetchedAt = $configData['bandits']['fetchedAt'] ?? null;
-            $configurationWire->bandits = $banditsResponse;
-        }
-
-        $flagConfigData = json_decode($configurationWire->config->response, true);
-        if (isset($flagConfigData['environment']) && is_array($flagConfigData['environment'])) {
-            $flagConfigData['environment'] = $flagConfigData['environment']['name'] ?? 'Test';
-            $configurationWire->config->response = json_encode($flagConfigData);
-        }
-
-        if ($configurationWire->bandits) {
-            $banditData = json_decode($configurationWire->bandits->response, true);
-            if (!isset($banditData['bandits'])) {
-                $banditData = ['bandits' => $banditData];
-                $configurationWire->bandits->response = json_encode($banditData);
-            }
-        }
-
+        $configurationWire = ConfigurationWire::create($configData);
         $configuration = Configuration::fromConfigurationWire($configurationWire);
 
         $this->assertInstanceOf(Configuration::class, $configuration);

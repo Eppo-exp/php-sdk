@@ -2,6 +2,7 @@
 
 namespace Eppo\DTO;
 
+use Eppo\DTO\Bandit\Bandit;
 use Eppo\Traits\StaticCreateSelf;
 use Eppo\Traits\ToArray;
 
@@ -9,7 +10,7 @@ use Eppo\Traits\ToArray;
  * Class BanditParametersResponse
  * @package Eppo\DTO
  *
- * @property array<string, BanditParameters> $bandits
+ * @property array<string, Bandit> $bandits
  */
 class BanditParametersResponse
 {
@@ -18,7 +19,7 @@ class BanditParametersResponse
 
     public array $bandits;
 
-    public function __construct(array $bandits)
+    public function __construct(array $bandits = [])
     {
         $this->bandits = $bandits;
     }
