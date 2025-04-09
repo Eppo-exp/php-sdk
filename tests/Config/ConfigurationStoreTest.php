@@ -11,6 +11,7 @@ use Eppo\DTO\Bandit\BanditModelData;
 use Eppo\DTO\BanditFlagVariation;
 use Eppo\DTO\BanditReference;
 use Eppo\DTO\ConfigurationWire\ConfigResponse;
+use Eppo\DTO\ConfigurationWire\ConfigurationWire;
 use Eppo\DTO\Flag;
 use Eppo\DTO\VariationType;
 use PHPUnit\Framework\TestCase;
@@ -106,6 +107,90 @@ class ConfigurationStoreTest extends TestCase
 
         $this->assertEquals('banditKey', $banditOne->banditKey);
         $this->assertEquals('falcon', $banditOne->modelName);
+    }
+
+    public function testGetConfigurationFromCache(): void
+    {
+        $mockCache = new MockCache();
+        $configKey = "EPPO_configuration_v1";
+
+        $flag = new Flag('test_flag', true, [], VariationType::STRING, [], 10_000);
+        $flags = ['test_flag' => $flag];
+        $configuration = Configuration::fromFlags($flags);
+        $configWire = $configuration->toConfigurationWire();
+
+        $mockCache->set($configKey, json_encode($configWire->toArray()));
+
+        $configStore = new ConfigStore($mockCache);
+
+        $retrievedConfig = $configStore->getConfiguration();
+
+        $this->assertNotNull($retrievedConfig);
+        $this->assertNotNull($retrievedConfig->getFlag('test_flag'));
+        $this->assertEquals($flag, $retrievedConfig->getFlag('test_flag'));
+    }
+
+    public function testSetConfigurationToCache(): void
+    {
+        $mockCache = new MockCache();
+        $configStore = new ConfigStore($mockCache);
+
+        $flag = new Flag('test_flag', true, [], VariationType::STRING, [], 10_000);
+        $flags = ['test_flag' => $flag];
+        $configuration = Configuration::fromFlags($flags);
+
+        $configStore->setConfiguration($configuration);
+
+        $cacheData = $mockCache->getCache();
+        $this->assertArrayHasKey("EPPO_configuration_v1", $cacheData);
+
+        $cachedConfig = json_decode($cacheData["EPPO_configuration_v1"], true);
+        $this->assertIsArray($cachedConfig);
+
+        $configWire = ConfigurationWire::create($cachedConfig);
+        $reconstructedConfig = Configuration::fromConfigurationWire($configWire);
+
+        $this->assertNotNull($reconstructedConfig->getFlag('test_flag'));
+        $this->assertEquals($flag->key, $reconstructedConfig->getFlag('test_flag')->key);
+    }
+
+    public function testGetConfigurationWithEmptyCache(): void
+    {
+        $mockCache = new MockCache();
+        $configStore = new ConfigStore($mockCache);
+
+        $configuration = $configStore->getConfiguration();
+
+        $this->assertNotNull($configuration);
+        $this->assertNull($configuration->getFlag('any_flag'));
+    }
+
+    public function testGetConfigurationWithCacheException(): void
+    {
+        $mockCache = new MockCache(throwOnGet: true);
+        $configStore = new ConfigStore($mockCache);
+
+        $configuration = $configStore->getConfiguration();
+
+        $this->assertNotNull($configuration);
+        $this->assertNull($configuration->getFlag('any_flag'));
+    }
+
+    public function testSetConfigurationWithCacheException(): void
+    {
+        $mockCache = new MockCache(throwOnSet: true);
+        $configStore = new ConfigStore($mockCache);
+
+        $flag = new Flag('test_flag', true, [], VariationType::STRING, [], 10_000);
+        $flags = ['test_flag' => $flag];
+        $configuration = Configuration::fromFlags($flags);
+
+        try {
+            $configStore->setConfiguration($configuration);
+            $this->assertTrue(true); // If we get here, no exception was thrown
+        } catch (\Exception $e) {
+            $this->fail('setConfiguration should not throw exceptions from cache');
+        }
     }
 
     private function assertHasFlag(

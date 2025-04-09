@@ -47,6 +47,11 @@ class Configuration
         return new self($flagsConfig, $banditsConfig);
     }
 
+    public static function emptyConfig(): self
+    {
+        return self::fromFlags([]);
+    }
+
     public function getFlag(string $key): ?Flag
     {
         if (!isset($this->parsedFlags[$key])) {

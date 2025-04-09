@@ -9,7 +9,7 @@ use Psr\SimpleCache\InvalidArgumentException;
 class ConfigStore
 {
     private const CONFIG_KEY = "EPPO_configuration_v1";
-    private Configuration $configuration;
+    private ?Configuration $configuration = null;
 
     public function __construct(private readonly CacheInterface $cache)
     {
@@ -19,11 +19,21 @@ class ConfigStore
     {
         if ($this->configuration === null) {
             try {
-                $json = json_decode($this->cache->get(self::CONFIG_KEY), true);
-                $configurationWire = ConfigurationWire::create($json ?? []); // Blank config wired default.
+                $cachedConfig = $this->cache->get(self::CONFIG_KEY);
+                if (!$cachedConfig) {
+                    return Configuration::emptyConfig(); // Empty config
+                }
+
+                $json = json_decode($cachedConfig, true);
+                if ($json === null) {
+                    return Configuration::emptyConfig();
+                }
+
+                $configurationWire = ConfigurationWire::create($json);
                 $this->configuration = Configuration::fromConfigurationWire($configurationWire);
             } catch (InvalidArgumentException $e) {
                 // Safe to ignore as the const `CONFIG_KEY` contains no invalid characters
+                return Configuration::emptyConfig();
             }
         }
         return $this->configuration;
