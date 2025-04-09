@@ -74,6 +74,7 @@ class EppoClient
      * provided, EppoClient will use Discovery
      * @throws EppoClientInitializationException
      * @throws EppoClientException
+     * @throws InvalidConfigurationException
      */
     public static function init(
         string $apiKey,
@@ -140,7 +141,13 @@ class EppoClient
             }
         );
 
-        self::$instance = self::createAndInitClient($configLoader, $poller, $assignmentLogger, $isGracefulMode, throwOnFailedInit: $throwOnFailedInit);
+        self::$instance = self::createAndInitClient(
+            $configLoader,
+            $poller,
+            $assignmentLogger,
+            $isGracefulMode,
+            throwOnFailedInit: $throwOnFailedInit
+        );
 
         return self::$instance;
     }
@@ -579,14 +586,10 @@ class EppoClient
     /**
      * @throws EppoClientException
      */
-    public function fetchAndActivateConfiguration(bool $skipModifiedCheck = false): void
+    public function fetchAndActivateConfiguration(): void
     {
         try {
-            if ($skipModifiedCheck) {
-                $this->configurationLoader->fetchAndStoreConfigurations(null);
-            } else {
-                $this->configurationLoader->reloadConfiguration();
-            }
+            $this->configurationLoader->fetchAndStoreConfigurations(null);
         } catch (HttpRequestException | InvalidApiKeyException | InvalidConfigurationException $e) {
             if ($this->isGracefulMode) {
                 error_log('[Eppo SDK] Error fetching configuration ' . $e->getMessage());

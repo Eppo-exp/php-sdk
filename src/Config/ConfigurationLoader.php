@@ -30,14 +30,8 @@ class ConfigurationLoader implements IFlags, IBandits
     ) {
     }
 
-    /**
-     * @throws InvalidApiKeyException
-     * @throws HttpRequestException
-     * @throws InvalidConfigurationException
-     */
     public function getFlag(string $key): ?Flag
     {
-        $this->reloadConfigurationIfExpired();
         return $this->configurationStore->getFlag($key);
     }
 
@@ -45,13 +39,9 @@ class ConfigurationLoader implements IFlags, IBandits
      * @param string $flagKey
      * @param string $variation
      * @return string|null
-     * @throws HttpRequestException
-     * @throws InvalidApiKeyException
-     * @throws InvalidConfigurationException
      */
     public function getBanditByVariation(string $flagKey, string $variation): ?string
     {
-        $this->reloadConfigurationIfExpired();
         return $this->configurationStore->getBanditReferenceIndexer()->getBanditByVariation($flagKey, $variation);
     }
 

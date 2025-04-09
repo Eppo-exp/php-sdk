@@ -140,33 +140,6 @@ class ConfigurationLoaderTest extends TestCase
         $this->assertEquals($timestamp1, $configStore->getMetadata("flagTimestamp"));
     }
 
-    public function testLoadsOnGet(): void
-    {
-        // Arrange: Load some flag data to be returned by the APIRequestWrapper
-        // Load mock response data
-        $flagsRaw = file_get_contents(self::MOCK_RESPONSE_FILENAME);
-        $banditsRaw = '{"bandits": {}}';
-
-        $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->disableOriginalConstructor()->getMock();
-
-        $cache = DefaultCacheFactory::create();
-        // Act: Create a new FCL and retrieve a flag
-        $loader = new ConfigurationLoader($apiWrapper, new ConfigurationStore($cache));
-
-        // Mocks verify interaction of loader <--> API requests and loader <--> config store
-        $apiWrapper->expects($this->once())
-            ->method('getUFC')
-            ->willReturn(new APIResource($flagsRaw, true, "ETAG"));
-        $apiWrapper->expects($this->once())
-            ->method('getBandits')
-            ->willReturn(new APIResource($banditsRaw, true, "ETAG"));
-
-        $flag = $loader->getFlag(self::FLAG_KEY);
-
-        // Assert: non-null flag, api called only once via Mock `expects` above.
-        $this->assertNotNull($flag);
-    }
-
     public function testOnlyLoadsBanditsWhereNeeded(): void
     {
         // Set up mock response data.
@@ -293,37 +266,6 @@ class ConfigurationLoaderTest extends TestCase
         $this->assertEquals('v1', $bandit->modelVersion);
     }
 
-    public function testReloadsOnExpiredCache(): void
-    {
-        // Arrange: Load some flag data to be returned by the APIRequestWrapper
-        // Load mock response data
-        $flagsRaw = file_get_contents(self::MOCK_RESPONSE_FILENAME);
-        $flagsJson = json_decode($flagsRaw, true);
-        $banditsRaw = '{"bandits": {}}';
-
-        $apiWrapper = $this->getMockBuilder(APIRequestWrapper::class)->disableOriginalConstructor()->getMock();
-
-        $cache = DefaultCacheFactory::create();
-        // Act: Create a new FCL with a 0sec ttl and retrieve a flag
-        $loader = new ConfigurationLoader($apiWrapper, new ConfigurationStore($cache), cacheAgeLimitMillis: 0);
-
-        // Mocks verify interaction of loader <--> API requests and loader <--> config store
-        $apiWrapper->expects($this->exactly(2))
-            ->method('getUFC')
-            ->willReturn(new APIResource($flagsRaw, true, "ETAG"));
-        $apiWrapper->expects($this->exactly(2))
-            ->method('getBandits')
-            ->willReturn(new APIResource($banditsRaw, true, "ETAG"));
-
-        $flag = $loader->getFlag(self::FLAG_KEY);
-        $flagAgain = $loader->getFlag(self::FLAG_KEY);
-
-        // Assert: non-null flag, api called only once via Mock `expects` above.
-        $this->assertNotNull($flag);
-        $this->assertNotNull($flagAgain);
-        $this->assertEquals($flag, $flagAgain);
-    }
-
     public function testRunsWithoutBandits(): void
     {
         // Arrange: Load some flag data to be returned by the APIRequestWrapper
@@ -345,6 +287,7 @@ class ConfigurationLoaderTest extends TestCase
         // Act: Load a flag, expecting the Config loader not to throw and to successfully return the flag.
         $cache = DefaultCacheFactory::create();
         $loader = new ConfigurationLoader($apiWrapper, new ConfigurationStore($cache));
+        $loader->reloadConfiguration();
         $flag = $loader->getFlag(self::FLAG_KEY);
 
         // Assert.
