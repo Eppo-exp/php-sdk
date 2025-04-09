@@ -37,6 +37,16 @@ class Configuration
         return new self($configurationWire->config, $configurationWire->bandits);
     }
 
+    public static function fromFlags(array $flags, ?array $bandits = null)
+    {
+        $fcr = FlagConfigResponse::create(["flags" => $flags]);
+        $flagsConfig = new ConfigResponse(response: json_encode($fcr));
+        $banditsConfig = $bandits ? new ConfigResponse(
+            response: json_encode(BanditParametersResponse::create(["bandits" => $bandits]))
+        ) : null;
+        return new self($flagsConfig, $banditsConfig);
+    }
+
     public function getFlag(string $key): ?Flag
     {
         if (!isset($this->parsedFlags[$key])) {
@@ -50,6 +60,9 @@ class Configuration
 
     public function getBandit(string $banditKey): ?Bandit
     {
+        if (!isset($this->bandits->bandits[$banditKey])) {
+            return null;
+        }
         return Bandit::fromJson($this->bandits?->bandits[$banditKey]) ?? null;
     }
 

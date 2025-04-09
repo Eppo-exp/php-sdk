@@ -30,4 +30,10 @@ class FlagConfigResponse
      * @var array<string, BanditReference>
      */
     public array $banditReferences;
+
+    public function __construct()
+    {
+        $this->banditReferences = [];
+        $this->format = "SERVER";
+    }
 }
