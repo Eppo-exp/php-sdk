@@ -529,8 +529,7 @@ class EppoClient
             // TODO return a BanditResult with the default value here instead of going with the default.
         } catch (EppoException $e) {
             syslog(LOG_WARNING, "[Eppo SDK] Error computing experiment assignment: " . $e->getMessage());
-            $variation = $defaultValue;
-            // TODO return a BanditResult with the default value here instead of going with the default.
+            return new BanditResult($defaultValue);
         }
 
         $banditKey = $config->getBanditByVariation($flagKey, $variation);
@@ -569,7 +568,7 @@ class EppoClient
                         syslog(LOG_WARNING, "[Eppo SDK] Error in logging bandit action: " . $exception->getMessage());
                     }
                 }
-                return new BanditResult($variationKey, $result->selectedAction);
+                return new BanditResult($variation, $result->selectedAction);
             }
         }
         return new BanditResult($variation);

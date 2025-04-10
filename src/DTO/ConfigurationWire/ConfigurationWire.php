@@ -2,12 +2,8 @@
 
 namespace Eppo\DTO\ConfigurationWire;
 
-use Eppo\Traits\ToArray;
-
 class ConfigurationWire
 {
-    use ToArray;
-
     public int $version;
     public ?ConfigResponse $config;
     public ?ConfigResponse $bandits;
@@ -17,12 +13,28 @@ class ConfigurationWire
         $this->version = 1;
     }
 
+    public function toArray(): array
+    {
+        $arr = ['version' => $this->version];
+        if ($this->config) {
+            $arr['config'] = $this->config->toArray();
+        }
+        if ($this->bandits) {
+            $arr['bandits'] = $this->bandits->toArray();
+        }
+        return $arr;
+    }
+
     public static function create(array $json): self
     {
         $dto = new self();
         $dto->version = $json['version'] ?? 1;
-        $dto->config = isset($json['config']) ? ConfigResponse::create($json['config']) : null;
-        $dto->bandits = isset($json['bandits']) ? ConfigResponse::create($json['bandits']) : null;
+        if (isset($json['config'])) {
+            $dto->config = ConfigResponse::create($json['config']);
+        }
+        if (isset($json['bandits'])) {
+            $dto->bandits = ConfigResponse::create($json['bandits']);
+        }
         return $dto;
     }
 
@@ -33,5 +45,15 @@ class ConfigurationWire
         $dto->config = $flags;
         $dto->bandits = $bandits;
         return $dto;
+    }
+
+    public static function fromJsonString(string $jsonEncodedString): self
+    {
+        return ConfigurationWire::create(json_decode($jsonEncodedString, associative: true));
+    }
+
+    public function toJsonString(): string
+    {
+        return json_encode($this->toArray());
     }
 }

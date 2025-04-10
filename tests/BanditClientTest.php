@@ -3,10 +3,14 @@
 namespace Eppo\Tests;
 
 use Eppo\Cache\DefaultCacheFactory;
+use Eppo\Config\ConfigStore;
+use Eppo\Config\Configuration;
 use Eppo\Config\ConfigurationLoader;
 use Eppo\DTO\Allocation;
 use Eppo\DTO\Bandit\AttributeSet;
 use Eppo\DTO\Bandit\BanditResult;
+use Eppo\DTO\ConfigurationWire\ConfigResponse;
+use Eppo\DTO\ConfigurationWire\ConfigurationWire;
 use Eppo\DTO\Flag;
 use Eppo\DTO\Shard;
 use Eppo\DTO\ShardRange;
@@ -19,6 +23,7 @@ use Eppo\Exception\EppoException;
 use Eppo\Logger\BanditActionEvent;
 use Eppo\Logger\IBanditLogger;
 use Eppo\PollerInterface;
+use Eppo\Tests\Config\MockCache;
 use Eppo\Tests\WebServer\MockWebServer;
 use Exception;
 use PHPUnit\Framework\TestCase;
@@ -53,55 +58,98 @@ class BanditClientTest extends TestCase
 
     public function testBanditModelDoesNotExist(): void
     {
-        $flagKey = 'bandit';
-        $actions = ['foo', 'bar', 'baz'];
-        $subjectKey = 'user123';
-        $subject = ['country' => 'USA', 'age' => 25];
-        $default = 'defaultVariation';
+        $configurationWire = $this->getBanditConfigurationWire();
 
+        // In this config, banner_bandit_flag@Alice{age:25,country:US}={banner_bandit,nike}
+        // Load the config and nuke the banner_bandit Bandit in the response.
+        $bandits = json_decode($configurationWire->bandits->response, true)['bandits'];
 
-        $config = $this->getMockBuilder(ConfigurationLoader::class)->disableOriginalConstructor()->getMock();
+        unset($bandits['banner_bandit']);
+        $newConfig = ConfigurationWire::fromResponses(
+            1,
+            flags: $configurationWire->config,
+            bandits: new ConfigResponse(
+                response: json_encode($bandits)
+            )
+        );
 
-        $config->expects($this->once())
-            ->method('getBanditByVariation')
-            ->with($flagKey, $default)
-            ->willReturn('DNEBanditKey');
+        $configuration = Configuration::fromConfigurationWire($newConfig);
 
-        $client = EppoClient::createTestClient($config, poller: $this->getPollerMock());
+        $mockCache = new MockCache();
+        $configStore = new ConfigStore($mockCache);
+
+        $configStore->setConfiguration($configuration);
+
+        $configLoader = $this->getMockBuilder(ConfigurationLoader::class)->disableOriginalConstructor()->getMock();
+
+        $client = EppoClient::createTestClient(
+            $configStore,
+            $configLoader,
+            poller: $this->getPollerMock(),
+            isGracefulMode: false
+        );
+
 
         $this->expectException(EppoClientException::class);
         $this->expectExceptionCode(EppoException::BANDIT_EVALUATION_FAILED_BANDIT_MODEL_NOT_PRESENT);
 
-        $client->getBanditAction($flagKey, $subjectKey, $subject, $actions, $default);
+        $result = $client->getBanditAction(
+            "banner_bandit_flag",
+            "Alice",
+            ['country' => 'USA', 'age' => 25],
+            ['nike', 'adidas', 'reebok'],
+            'default'
+        );
+
+
+        $this->assertEquals('banner_bandit', $result->variation);
+        $this->assertNull($result->action);
     }
 
     public function testBanditModelDoesNotExistGracefulNoThrows(): void
     {
-        $flagKey = 'bandit';
-        $actions = ['foo', 'bar', 'baz'];
-        $subjectKey = 'user123';
-        $subject = ['country' => 'USA', 'age' => 25];
-        $default = 'defaultVariation';
-        $banditKeyVariation = 'banditKey';
+        $configurationWire = $this->getBanditConfigurationWire();
 
-        $config = $this->getMockBuilder(ConfigurationLoader::class)->disableOriginalConstructor()->getMock();
+        // In this config, banner_bandit_flag@Alice{age:25,country:US}={banner_bandit,nike}
+        // Load the config and nuke the banner_bandit Bandit in the response.
+        $bandits = json_decode($configurationWire->bandits->response, true)['bandits'];
 
-        $config->expects($this->once())
-            ->method('getBanditByVariation')
-            ->with($flagKey, $default)
-            ->willReturn($banditKeyVariation);
+        unset($bandits['banner_bandit']);
+        $newConfig = ConfigurationWire::fromResponses(
+            1,
+            flags: $configurationWire->config,
+            bandits: new ConfigResponse(
+                response: json_encode($bandits)
+            )
+        );
 
-        // This is what we're actually testing here.
-        $config->expects($this->once())
-            ->method('getBandit')
-            ->with($banditKeyVariation)
-            ->willReturn(null);
+        $configuration = Configuration::fromConfigurationWire($newConfig);
 
-        $client = EppoClient::createTestClient($config, poller: $this->getPollerMock(), isGracefulMode: true);
+        $mockCache = new MockCache();
+        $configStore = new ConfigStore($mockCache);
+
+        $configStore->setConfiguration($configuration);
+
+        $configLoader = $this->getMockBuilder(ConfigurationLoader::class)->disableOriginalConstructor()->getMock();
+
+        $client = EppoClient::createTestClient(
+            $configStore,
+            $configLoader,
+            poller: $this->getPollerMock(),
+            isGracefulMode: true
+        );
 
 
-        $result = $client->getBanditAction($flagKey, $subjectKey, $subject, $actions, $default);
-        $this->assertEquals($default, $result->variation);
+        $result = $client->getBanditAction(
+            "banner_bandit_flag",
+            "Alice",
+            ['country' => 'USA', 'age' => 25],
+            ['nike', 'adidas', 'reebok'],
+            'default'
+        );
+
+
+        $this->assertEquals('banner_bandit', $result->variation);
         $this->assertNull($result->action);
     }
 
@@ -221,5 +269,23 @@ class BanditClientTest extends TestCase
             $variationValue => new Variation($variationValue, $variationValue)
         ];
         return new Flag($flagKey, true, $allocations, VariationType::STRING, $variations, $totalShards);
+    }
+
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->testDataPath = dirname(__DIR__) . '/tests/data/configuration-wire/';
+    }
+
+    private function getBanditConfigurationWire(): ConfigurationWire
+    {
+        $jsonData = file_get_contents($this->testDataPath . 'bandit-flags-v1.json');
+        $this->assertNotFalse($jsonData, 'Failed to load test data file');
+
+        $configData = json_decode($jsonData, true);
+        $this->assertIsArray($configData, 'Failed to parse JSON data');
+
+        return ConfigurationWire::create($configData);
     }
 }
