@@ -38,10 +38,9 @@ class ConfigurationWire
         return $dto;
     }
 
-    public static function fromResponses(int $version, ConfigResponse $flags, ?ConfigResponse $bandits): self
+    public static function fromResponses(ConfigResponse $flags, ?ConfigResponse $bandits): self
     {
         $dto = new self();
-        $dto->version = $version;
         $dto->config = $flags;
         $dto->bandits = $bandits;
         return $dto;

@@ -34,7 +34,7 @@ class Configuration
 
     public static function fromConfigurationWire(ConfigurationWire $configurationWire): self
     {
-        return new self($configurationWire->config, $configurationWire->bandits);
+        return new self($configurationWire?->config ?? null, $configurationWire?->bandits ?? null);
     }
 
     public static function fromFlags(array $flags, ?array $bandits = null)
@@ -87,7 +87,6 @@ class Configuration
     public function toConfigurationWire(): ConfigurationWire
     {
         return ConfigurationWire::fromResponses(
-            version: 1,
             flags: $this->flagsConfig,
             bandits: $this->banditsConfig
         );
