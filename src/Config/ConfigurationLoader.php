@@ -12,7 +12,7 @@ class ConfigurationLoader
 {
     public function __construct(
         private readonly APIRequestWrapper $apiRequestWrapper,
-        public readonly ConfigStore $configurationStore,
+        public readonly ConfigurationStore $configurationStore,
         private readonly int $cacheAgeLimitMillis = 30 * 1000
     ) {
     }

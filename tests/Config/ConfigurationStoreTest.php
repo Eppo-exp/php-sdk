@@ -4,8 +4,8 @@ namespace Eppo\Tests\Config;
 
 use DateTime;
 use Eppo\Cache\DefaultCacheFactory;
-use Eppo\Config\ConfigStore;
 use Eppo\Config\Configuration;
+use Eppo\Config\ConfigurationStore;
 use Eppo\DTO\Bandit\Bandit;
 use Eppo\DTO\Bandit\BanditModelData;
 use Eppo\DTO\BanditFlagVariation;
@@ -32,7 +32,7 @@ class ConfigurationStoreTest extends TestCase
         $firstFlags = ['flag1' => $flag1, 'flag2' => $flag2];
         $secondFlags = ['flag1' => $flag1, 'flag3' => $flag3];
 
-        $configStore = new ConfigStore(DefaultCacheFactory::create());
+        $configStore = new ConfigurationStore(DefaultCacheFactory::create());
 
         $configuration = Configuration::fromFlags($firstFlags);
         $configStore->setConfiguration($configuration);
@@ -50,7 +50,7 @@ class ConfigurationStoreTest extends TestCase
 
     public function testStoresBanditVariations(): void
     {
-        $configStore = new ConfigStore(DefaultCacheFactory::create());
+        $configStore = new ConfigurationStore(DefaultCacheFactory::create());
 
         $banditReferences = [
             'bandit' => new BanditReference(
@@ -97,7 +97,7 @@ class ConfigurationStoreTest extends TestCase
             )
         ];
 
-        $configStore = new ConfigStore(DefaultCacheFactory::create());
+        $configStore = new ConfigurationStore(DefaultCacheFactory::create());
         $configStore->setConfiguration(Configuration::fromFlags([], $bandits));
 
         $banditOne = $configStore->getConfiguration()->getBandit('banditIndex');
@@ -121,7 +121,7 @@ class ConfigurationStoreTest extends TestCase
 
         $mockCache->set($configKey, json_encode($configWire->toArray()));
 
-        $configStore = new ConfigStore($mockCache);
+        $configStore = new ConfigurationStore($mockCache);
 
         $retrievedConfig = $configStore->getConfiguration();
 
@@ -133,7 +133,7 @@ class ConfigurationStoreTest extends TestCase
     public function testSetConfigurationToCache(): void
     {
         $mockCache = new MockCache();
-        $configStore = new ConfigStore($mockCache);
+        $configStore = new ConfigurationStore($mockCache);
 
         $flag = new Flag('test_flag', true, [], VariationType::STRING, [], 10_000);
         $flags = ['test_flag' => $flag];
@@ -157,7 +157,7 @@ class ConfigurationStoreTest extends TestCase
     public function testGetConfigurationWithEmptyCache(): void
     {
         $mockCache = new MockCache();
-        $configStore = new ConfigStore($mockCache);
+        $configStore = new ConfigurationStore($mockCache);
 
         $configuration = $configStore->getConfiguration();
 
@@ -168,7 +168,7 @@ class ConfigurationStoreTest extends TestCase
     public function testGetConfigurationWithCacheException(): void
     {
         $mockCache = new MockCache(throwOnGet: true);
-        $configStore = new ConfigStore($mockCache);
+        $configStore = new ConfigurationStore($mockCache);
 
         $configuration = $configStore->getConfiguration();
 
@@ -179,7 +179,7 @@ class ConfigurationStoreTest extends TestCase
     public function testSetConfigurationWithCacheException(): void
     {
         $mockCache = new MockCache(throwOnSet: true);
-        $configStore = new ConfigStore($mockCache);
+        $configStore = new ConfigurationStore($mockCache);
 
         $flag = new Flag('test_flag', true, [], VariationType::STRING, [], 10_000);
         $flags = ['test_flag' => $flag];
@@ -196,11 +196,11 @@ class ConfigurationStoreTest extends TestCase
     public function testConfigurationInAndOut(): void
     {
         $mockCache = new MockCache();
-        $configStore = new ConfigStore($mockCache);
+        $configStore = new ConfigurationStore($mockCache);
         $configuration = Configuration::fromConfigurationWire($this->getBanditConfigurationWire());
         $configStore->setConfiguration($configuration);
 
-        $newConfigStore = new ConfigStore($mockCache);
+        $newConfigStore = new ConfigurationStore($mockCache);
         $retrievedConfig = $newConfigStore->getConfiguration();
 
         $this->assertNotNull($retrievedConfig);
@@ -227,7 +227,7 @@ class ConfigurationStoreTest extends TestCase
     private function assertHasFlag(
         Flag $expected,
         string $flagKey,
-        ConfigStore $configStore,
+        ConfigurationStore $configStore,
         bool $hasFlag = true
     ): void {
         $config = $configStore->getConfiguration();

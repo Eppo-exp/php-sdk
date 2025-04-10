@@ -2,11 +2,11 @@
 
 namespace Eppo\Tests;
 
-use Eppo\Config\ConfigStore;
 use Eppo\Config\Configuration;
+use Eppo\Config\ConfigurationStore;
 use Eppo\Tests\Config\MockCache;
 
-class MockConfigStore extends ConfigStore
+class MockConfigurationStore extends ConfigurationStore
 {
     public function __construct(private Configuration $config)
     {

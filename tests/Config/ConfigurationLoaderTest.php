@@ -5,8 +5,8 @@ namespace Eppo\Tests\Config;
 use Eppo\API\APIRequestWrapper;
 use Eppo\API\APIResource;
 use Eppo\Cache\DefaultCacheFactory;
-use Eppo\Config\ConfigStore;
 use Eppo\Config\ConfigurationLoader;
+use Eppo\Config\ConfigurationStore;
 use Eppo\DTO\Bandit\Bandit;
 use Eppo\DTO\Flag;
 use Http\Discovery\Psr17Factory;
@@ -66,7 +66,7 @@ class ConfigurationLoaderTest extends TestCase
             ->method('getBandits')
             ->willReturn(new APIResource($banditsRaw, true, null));
 
-        $configStore = new ConfigStore(DefaultCacheFactory::create());
+        $configStore = new ConfigurationStore(DefaultCacheFactory::create());
 
         $loader = new ConfigurationLoader($apiWrapper, $configStore);
         $loader->fetchAndStoreConfiguration(null);
@@ -124,7 +124,7 @@ class ConfigurationLoaderTest extends TestCase
             ->method('getBandits')
             ->willReturn(new APIResource($banditsRaw, true, null));
 
-        $configStore = new ConfigStore(DefaultCacheFactory::create());
+        $configStore = new ConfigurationStore(DefaultCacheFactory::create());
 
         $loader = new ConfigurationLoader($apiWrapper, $configStore);
         $loader->fetchAndStoreConfiguration(null);
@@ -291,7 +291,7 @@ class ConfigurationLoaderTest extends TestCase
 
         // Act: Load a flag, expecting the Config loader not to throw and to successfully return the flag.
         $cache = DefaultCacheFactory::create();
-        $loader = new ConfigurationLoader($apiWrapper, new ConfigStore($cache));
+        $loader = new ConfigurationLoader($apiWrapper, new ConfigurationStore($cache));
         $loader->reloadConfiguration();
         $flag = $loader->configurationStore->getConfiguration()->getFlag(self::FLAG_KEY);
 

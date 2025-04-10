@@ -6,7 +6,7 @@ use Eppo\API\APIRequestWrapper;
 use Eppo\Bandits\BanditEvaluator;
 use Eppo\Bandits\IBanditEvaluator;
 use Eppo\Cache\DefaultCacheFactory;
-use Eppo\Config\ConfigStore;
+use Eppo\Config\ConfigurationStore;
 use Eppo\Config\Configuration;
 use Eppo\Config\ConfigurationLoader;
 use Eppo\Config\SDKData;
@@ -46,7 +46,7 @@ class EppoClient
     private IBanditEvaluator $banditEvaluator;
 
     /**
-     * @param ConfigStore $configurationStore
+     * @param ConfigurationStore $configurationStore
      * @param ConfigurationLoader $configurationLoader
      * @param PollerInterface $poller
      * @param LoggerInterface|null $eventLogger optional logger. Please @see LoggerInterface
@@ -54,7 +54,7 @@ class EppoClient
      * @param IBanditEvaluator|null $banditEvaluator
      */
     protected function __construct(
-        private readonly ConfigStore $configurationStore,
+        private readonly ConfigurationStore $configurationStore,
         private readonly ConfigurationLoader $configurationLoader,
         private readonly PollerInterface $poller,
         private readonly ?LoggerInterface $eventLogger = null,
@@ -100,7 +100,7 @@ class EppoClient
             $cache = (new DefaultCacheFactory())->create();
         }
 
-        $configStore = new ConfigStore($cache);
+        $configStore = new ConfigurationStore($cache);
 
         if (!$httpClient) {
             $httpClient = Psr18ClientDiscovery::find();
@@ -159,7 +159,7 @@ class EppoClient
      * @throws EppoClientInitializationException
      */
     private static function createAndInitClient(
-        ConfigStore $configStore,
+        ConfigurationStore $configStore,
         ConfigurationLoader $configLoader,
         PollerInterface $poller,
         ?LoggerInterface $assignmentLogger,
@@ -641,7 +641,7 @@ class EppoClient
      * Only used for unit-tests.
      * Do not use for production.
      *
-     * @param ConfigStore $configStore
+     * @param ConfigurationStore $configStore
      * @param ConfigurationLoader $configurationLoader
      * @param PollerInterface $poller
      * @param LoggerInterface|null $logger
@@ -652,7 +652,7 @@ class EppoClient
      * @throws EppoClientInitializationException
      */
     public static function createTestClient(
-        ConfigStore $configStore,
+        ConfigurationStore $configStore,
         ConfigurationLoader $configurationLoader,
         PollerInterface $poller,
         ?LoggerInterface $logger = null,

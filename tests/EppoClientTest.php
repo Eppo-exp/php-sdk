@@ -5,9 +5,9 @@ namespace Eppo\Tests;
 use Eppo\API\APIRequestWrapper;
 use Eppo\API\APIResource;
 use Eppo\Cache\DefaultCacheFactory;
-use Eppo\Config\ConfigStore;
 use Eppo\Config\Configuration;
 use Eppo\Config\ConfigurationLoader;
+use Eppo\Config\ConfigurationStore;
 use Eppo\Config\SDKData;
 use Eppo\DTO\VariationType;
 use Eppo\EppoClient;
@@ -63,7 +63,7 @@ class EppoClientTest extends TestCase
             ['', [], new Psr18Client(), new Psr17Factory()]
         )->getMock();
 
-        $configStore = $this->getMockBuilder(ConfigStore::class)->disableOriginalConstructor()->getMock();
+        $configStore = $this->getMockBuilder(ConfigurationStore::class)->disableOriginalConstructor()->getMock();
         $config = $this->getMockBuilder(Configuration::class)->disableOriginalConstructor()->getMock();
 
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
@@ -110,7 +110,7 @@ class EppoClientTest extends TestCase
             ['', [], new Psr18Client(), new Psr17Factory()]
         )->getMock();
 
-        $configStore = $this->getMockBuilder(ConfigStore::class)->disableOriginalConstructor()->getMock();
+        $configStore = $this->getMockBuilder(ConfigurationStore::class)->disableOriginalConstructor()->getMock();
         $config = $this->getMockBuilder(Configuration::class)->disableOriginalConstructor()->getMock();
 
         $mockLogger = $this->getMockBuilder(LoggerInterface::class)->getMock();
@@ -145,7 +145,7 @@ class EppoClientTest extends TestCase
             ->method('getUFC')
             ->willThrowException(new HttpRequestException());
 
-        $configStore = $this->getMockBuilder(ConfigStore::class)->disableOriginalConstructor()->getMock();
+        $configStore = $this->getMockBuilder(ConfigurationStore::class)->disableOriginalConstructor()->getMock();
         $configStore->expects($this->atLeastOnce())
             ->method('getConfiguration')
             ->willThrowException(new Exception("Expected Exception"));
@@ -175,7 +175,7 @@ class EppoClientTest extends TestCase
             ->method('getUFC')
             ->willThrowException(new HttpRequestException());
 
-        $configStore = $this->getMockBuilder(ConfigStore::class)->disableOriginalConstructor()->getMock();
+        $configStore = $this->getMockBuilder(ConfigurationStore::class)->disableOriginalConstructor()->getMock();
         $configStore->expects($this->atLeastOnce())
             ->method('getConfiguration')
             ->willThrowException(new Exception("Expected Exception"));
@@ -205,7 +205,7 @@ class EppoClientTest extends TestCase
             ->method('getUFC')
             ->willThrowException(new HttpRequestException());
 
-        $configStore = $this->getMockBuilder(ConfigStore::class)->disableOriginalConstructor()->getMock();
+        $configStore = $this->getMockBuilder(ConfigurationStore::class)->disableOriginalConstructor()->getMock();
         $configStore->expects($this->atLeastOnce())
             ->method('getConfiguration')
             ->willThrowException(new Exception("Expected Exception"));
@@ -320,7 +320,7 @@ class EppoClientTest extends TestCase
             ->method('getUFC')
             ->willReturn(new APIResource('', true, null));
 
-        $configStoreMock = $this->getMockBuilder(ConfigStore::class)->setConstructorArgs([$cache])->getMock();
+        $configStoreMock = $this->getMockBuilder(ConfigurationStore::class)->setConstructorArgs([$cache])->getMock();
 
         if ($mockedResponse) {
             $configStoreMock->expects($this->any())
