@@ -193,6 +193,37 @@ class ConfigurationStoreTest extends TestCase
         }
     }
 
+    public function testConfigurationInAndOut(): void
+    {
+        $mockCache = new MockCache();
+        $configStore = new ConfigStore($mockCache);
+        $configuration = Configuration::fromConfigurationWire($this->getBanditConfigurationWire());
+        $configStore->setConfiguration($configuration);
+
+        $newConfigStore = new ConfigStore($mockCache);
+        $retrievedConfig = $newConfigStore->getConfiguration();
+
+        $this->assertNotNull($retrievedConfig);
+        $this->assertNotNull($retrievedConfig->getFlag('banner_bandit_flag'));
+
+        $this->assertEquals(
+            $configuration->toConfigurationWire()->toArray(),
+            $retrievedConfig->toConfigurationWire()->toArray()
+        );
+    }
+
+
+    private function getBanditConfigurationWire(): ConfigurationWire
+    {
+        $jsonData = file_get_contents(dirname(__DIR__) . '/data/configuration-wire/bandit-flags-v1.json');
+        $this->assertNotFalse($jsonData, 'Failed to load test data file');
+
+        $configData = json_decode($jsonData, true);
+        $this->assertIsArray($configData, 'Failed to parse JSON data');
+
+        return ConfigurationWire::create($configData);
+    }
+
     private function assertHasFlag(
         Flag $expected,
         string $flagKey,
