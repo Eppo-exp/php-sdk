@@ -24,7 +24,7 @@ class ConfigurationTest extends TestCase
         $configData = json_decode($jsonData, true);
         $this->assertIsArray($configData, 'Failed to parse JSON data');
 
-        $configurationWire = ConfigurationWire::create($configData);
+        $configurationWire = ConfigurationWire::fromJson($configData);
         $configuration = Configuration::fromConfigurationWire($configurationWire);
 
         $this->assertInstanceOf(Configuration::class, $configuration);

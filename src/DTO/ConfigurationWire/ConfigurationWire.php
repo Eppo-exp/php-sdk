@@ -25,7 +25,7 @@ class ConfigurationWire
         return $arr;
     }
 
-    public static function create(array $json): self
+    public static function fromJson(array $json): self
     {
         $dto = new self();
         $dto->version = $json['version'] ?? 1;
@@ -48,7 +48,7 @@ class ConfigurationWire
 
     public static function fromJsonString(string $jsonEncodedString): self
     {
-        return ConfigurationWire::create(json_decode($jsonEncodedString, associative: true));
+        return ConfigurationWire::fromJson(json_decode($jsonEncodedString, associative: true));
     }
 
     public function toJsonString(): string

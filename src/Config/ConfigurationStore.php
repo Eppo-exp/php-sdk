@@ -29,7 +29,7 @@ class ConfigurationStore
                     return Configuration::emptyConfig();
                 }
 
-                $configurationWire = ConfigurationWire::create($json);
+                $configurationWire = ConfigurationWire::fromJson($json);
                 $this->configuration = Configuration::fromConfigurationWire($configurationWire);
             } catch (InvalidArgumentException $e) {
                 // Safe to ignore as the const `CONFIG_KEY` contains no invalid characters

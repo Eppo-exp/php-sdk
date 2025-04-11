@@ -50,6 +50,7 @@ class ConfigurationLoader
             }
             $fcr = FlagConfigResponse::fromJson($responseData);
             $banditResponse = null;
+            // TODO: Also check current bandit models loaded for optimized bandit loading.
             if (count($fcr->banditReferences) > 0) {
                 $bandits = $this->apiRequestWrapper->getBandits();
                 $banditResponse = new ConfigResponse($bandits->body, date('c'), $bandits->eTag);
