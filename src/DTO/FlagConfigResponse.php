@@ -2,7 +2,7 @@
 
 namespace Eppo\DTO;
 
-use Eppo\Traits\StaticCreateSelf;
+use Eppo\Traits\StaticFromJson;
 use Eppo\Traits\ToArray;
 
 /**
@@ -17,7 +17,7 @@ use Eppo\Traits\ToArray;
  */
 class FlagConfigResponse
 {
-    use StaticCreateSelf;
+    use StaticFromJson;
     use ToArray;
 
     public string $createdAt;

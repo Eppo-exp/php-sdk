@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Eppo\Traits;
 
-trait StaticCreateSelf
+trait StaticFromJson
 {
-    public static function create(array $values): self
+    public static function fromJson(array $values): self
     {
         $dto = new self();
 

@@ -16,7 +16,7 @@ class StaticCreateSelfTest extends TestCase
         ];
 
         // Leverage a class that uses the StaticCreateSelf trait.
-        $configResponse = ConfigResponse::create($data);
+        $configResponse = ConfigResponse::fromJson($data);
 
         $this->assertInstanceOf(ConfigResponse::class, $configResponse);
         $this->assertEquals('{"key": "value"}', $configResponse->response);

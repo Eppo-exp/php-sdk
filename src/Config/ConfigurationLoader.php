@@ -48,7 +48,7 @@ class ConfigurationLoader
                 syslog(LOG_WARNING, "[Eppo SDK] Empty or invalid response from the configuration server.");
                 return;
             }
-            $fcr = FlagConfigResponse::create($responseData);
+            $fcr = FlagConfigResponse::fromJson($responseData);
             $banditResponse = null;
             if (count($fcr->banditReferences) > 0) {
                 $bandits = $this->apiRequestWrapper->getBandits();

@@ -30,10 +30,10 @@ class ConfigurationWire
         $dto = new self();
         $dto->version = $json['version'] ?? 1;
         if (isset($json['config'])) {
-            $dto->config = ConfigResponse::create($json['config']);
+            $dto->config = ConfigResponse::fromJson($json['config']);
         }
         if (isset($json['bandits'])) {
-            $dto->bandits = ConfigResponse::create($json['bandits']);
+            $dto->bandits = ConfigResponse::fromJson($json['bandits']);
         }
         return $dto;
     }

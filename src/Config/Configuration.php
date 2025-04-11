@@ -23,8 +23,8 @@ class Configuration
     ) {
         $flagJson = json_decode($this->flagsConfig->response, true);
         $banditsJson = json_decode($this->banditsConfig?->response ?? "", true);
-        $this->flags = FlagConfigResponse::create($flagJson ?? []);
-        $this->bandits = BanditParametersResponse::create($banditsJson ?? []);
+        $this->flags = FlagConfigResponse::fromJson($flagJson ?? []);
+        $this->bandits = BanditParametersResponse::fromJson($banditsJson ?? []);
     }
 
     public static function fromUfcResponses(ConfigResponse $flagsConfig, ?ConfigResponse $banditsConfig): Configuration
@@ -39,10 +39,10 @@ class Configuration
 
     public static function fromFlags(array $flags, ?array $bandits = null)
     {
-        $fcr = FlagConfigResponse::create(["flags" => $flags]);
+        $fcr = FlagConfigResponse::fromJson(["flags" => $flags]);
         $flagsConfig = new ConfigResponse(response: json_encode($fcr));
         $banditsConfig = $bandits ? new ConfigResponse(
-            response: json_encode(BanditParametersResponse::create(["bandits" => $bandits]))
+            response: json_encode(BanditParametersResponse::fromJson(["bandits" => $bandits]))
         ) : null;
         return new self($flagsConfig, $banditsConfig);
     }

@@ -3,7 +3,7 @@
 namespace Eppo\DTO;
 
 use Eppo\DTO\Bandit\Bandit;
-use Eppo\Traits\StaticCreateSelf;
+use Eppo\Traits\StaticFromJson;
 use Eppo\Traits\ToArray;
 
 /**
@@ -14,7 +14,7 @@ use Eppo\Traits\ToArray;
  */
 class BanditParametersResponse
 {
-    use StaticCreateSelf;
+    use StaticFromJson;
     use ToArray;
 
     public array $bandits;
