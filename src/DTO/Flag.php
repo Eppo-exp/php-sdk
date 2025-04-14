@@ -63,16 +63,19 @@ class Flag
     private static function parseAllocations(array $allocations): array
     {
         return array_map(function ($allocationConfig) {
-            $rules = array_key_exists('rules', $allocationConfig) ? array_map(function ($ruleConfig) {
-                $conditions = array_map(function ($conditionConfig) {
-                    return new Condition(
-                        $conditionConfig['attribute'],
-                        $conditionConfig['operator'],
-                        $conditionConfig['value']
-                    );
-                }, $ruleConfig['conditions']);
-                return new Rule($conditions);
-            }, $allocationConfig['rules']) : null;
+            $rules =
+                !array_key_exists('rules', $allocationConfig) ?
+                    null :
+                    array_map(function ($ruleConfig) {
+                        $conditions = array_map(function ($conditionConfig) {
+                            return new Condition(
+                                $conditionConfig['attribute'],
+                                $conditionConfig['operator'],
+                                $conditionConfig['value']
+                            );
+                        }, $ruleConfig['conditions']);
+                        return new Rule($conditions);
+                    }, $allocationConfig['rules']);
 
             $splits = array_map(function ($splitConfig) {
                 $shards = array_map(function ($shardConfig) {
