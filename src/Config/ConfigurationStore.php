@@ -17,26 +17,28 @@ class ConfigurationStore
 
     public function getConfiguration(): Configuration
     {
-        if ($this->configuration === null) {
-            try {
-                $cachedConfig = $this->cache->get(self::CONFIG_KEY);
-                if (!$cachedConfig) {
-                    return Configuration::emptyConfig(); // Empty config
-                }
+        if ($this->configuration !== null) {
+            return $this->configuration;
+        }
+        try {
+            $cachedConfig = $this->cache->get(self::CONFIG_KEY);
+            if (!$cachedConfig) {
+                return Configuration::emptyConfig(); // Empty config
+            }
 
-                $json = json_decode($cachedConfig, true);
-                if ($json === null) {
-                    return Configuration::emptyConfig();
-                }
-
-                $configurationWire = ConfigurationWire::fromJson($json);
-                $this->configuration = Configuration::fromConfigurationWire($configurationWire);
-            } catch (InvalidArgumentException $e) {
-                // Safe to ignore as the const `CONFIG_KEY` contains no invalid characters
+            $arr = json_decode($cachedConfig, true);
+            if ($arr === null) {
                 return Configuration::emptyConfig();
             }
+
+            $configurationWire = ConfigurationWire::fromArray($arr);
+            $this->configuration = Configuration::fromConfigurationWire($configurationWire);
+
+            return $this->configuration;
+        } catch (InvalidArgumentException $e) {
+            // Safe to ignore as the const `CONFIG_KEY` contains no invalid characters
+            return Configuration::emptyConfig();
         }
-        return $this->configuration;
     }
 
     public function setConfiguration(Configuration $configuration): void

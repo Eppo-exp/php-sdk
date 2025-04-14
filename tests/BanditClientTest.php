@@ -249,6 +249,6 @@ class BanditClientTest extends TestCase
         $configData = json_decode($jsonData, true);
         $this->assertIsArray($configData, 'Failed to parse JSON data');
 
-        return ConfigurationWire::fromJson($configData);
+        return ConfigurationWire::fromArray($configData);
     }
 }

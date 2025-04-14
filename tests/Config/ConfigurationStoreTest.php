@@ -147,7 +147,7 @@ class ConfigurationStoreTest extends TestCase
         $cachedConfig = json_decode($cacheData["EPPO_configuration_v1"], true);
         $this->assertIsArray($cachedConfig);
 
-        $configWire = ConfigurationWire::fromJson($cachedConfig);
+        $configWire = ConfigurationWire::fromArray($cachedConfig);
         $reconstructedConfig = Configuration::fromConfigurationWire($configWire);
 
         $this->assertNotNull($reconstructedConfig->getFlag('test_flag'));
@@ -221,7 +221,7 @@ class ConfigurationStoreTest extends TestCase
         $configData = json_decode($jsonData, true);
         $this->assertIsArray($configData, 'Failed to parse JSON data');
 
-        return ConfigurationWire::fromJson($configData);
+        return ConfigurationWire::fromArray($configData);
     }
 
     private function assertHasFlag(

@@ -25,15 +25,15 @@ class ConfigurationWire
         return $arr;
     }
 
-    public static function fromJson(array $json): self
+    public static function fromArray(array $arr): self
     {
         $dto = new self();
-        $dto->version = $json['version'] ?? 1;
-        if (isset($json['config'])) {
-            $dto->config = ConfigResponse::fromJson($json['config']);
+        $dto->version = $arr['version'] ?? 1;
+        if (isset($arr['config'])) {
+            $dto->config = ConfigResponse::fromJson($arr['config']);
         }
-        if (isset($json['bandits'])) {
-            $dto->bandits = ConfigResponse::fromJson($json['bandits']);
+        if (isset($arr['bandits'])) {
+            $dto->bandits = ConfigResponse::fromJson($arr['bandits']);
         }
         return $dto;
     }
@@ -48,7 +48,7 @@ class ConfigurationWire
 
     public static function fromJsonString(string $jsonEncodedString): self
     {
-        return ConfigurationWire::fromJson(json_decode($jsonEncodedString, associative: true));
+        return ConfigurationWire::fromArray(json_decode($jsonEncodedString, associative: true));
     }
 
     public function toJsonString(): string
