@@ -1,10 +1,8 @@
 name: Publish Release
 
 on:
-  push:
-    branches: [ tp/* ]
-#  release:
-#    types: [created]
+  release:
+    types: [ published ]
 
 jobs:
   # unit tests
@@ -36,23 +34,13 @@ jobs:
   publish:
     needs: test
     runs-on: ubuntu-latest
-    if: github.event.release.draft
 
     steps:
       - name: Update release (dry run)
-        #        uses: actions/github-script@v6
-        #        with:
-        #          script: |
-        #            github.rest.repos.updateRelease({
-        #              owner: context.repo.owner,
-        #              repo: context.repo.repo,
-        #              release_id: context.payload.release.id,
-        #              draft: false
-        #            });
         run: |
-          echo "github.rest.repos.updateRelease({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            release_id: context.payload.release.id,
-            draft: false
-          });"
+          echo "github.rest.git.createRef({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      ref: 'refs/tags/${{github.event.release.release_id}}',
+                      sha: context.sha
+                    })"
