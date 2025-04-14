@@ -362,12 +362,12 @@ class EppoClientTest extends TestCase
      * @throws EppoClientInitializationException
      * @throws EppoClientException
      */
-    public function skipTestInitWithPollingOptions(): void
+    public function testCacheExpiring(): void
     {
         $apiKey = 'dummy-api-key';
 
         $pollingOptions = new PollingOptions(
-            cacheAgeLimitMillis: 50,
+            cacheAgeLimitMillis: 1000,
             pollingIntervalMillis: 10000,
             pollingJitterMillis: 2000
         );
@@ -413,7 +413,7 @@ class EppoClientTest extends TestCase
         );
 
         // Wait a little bit for the cache to age out and the mock server to spin up.
-        usleep(75 * 1000);
+        usleep(1000 * 1000);
 
         $client3 = EppoClient::init(
             $apiKey,
