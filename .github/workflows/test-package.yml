@@ -2,7 +2,7 @@ name: Package Integration Testing
 
 on:
   push:
-    branches: [ main, tp/* ]
+    branches: [ main ]
   create:
     tags:
       - v*
