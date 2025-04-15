@@ -4,7 +4,7 @@ namespace Eppo\Config;
 
 use Eppo\DTO\ConfigurationWire\ConfigurationWire;
 use Psr\SimpleCache\CacheInterface;
-use Psr\SimpleCache\InvalidArgumentException;
+use Throwable;
 
 class ConfigurationStore
 {
@@ -35,8 +35,9 @@ class ConfigurationStore
             $this->configuration = Configuration::fromConfigurationWire($configurationWire);
 
             return $this->configuration;
-        } catch (InvalidArgumentException $e) {
+        } catch (Throwable $e) {
             // Safe to ignore as the const `CONFIG_KEY` contains no invalid characters
+            syslog(LOG_ERR, "[Eppo SDK] Error loading config from cache " . $e->getMessage());
             return Configuration::emptyConfig();
         }
     }
@@ -46,8 +47,9 @@ class ConfigurationStore
         $this->configuration = $configuration;
         try {
             $this->cache->set(self::CONFIG_KEY, json_encode($configuration->toConfigurationWire()->toArray()));
-        } catch (InvalidArgumentException $e) {
+        } catch (Throwable $e) {
             // Safe to ignore as the const `CONFIG_KEY` contains no invalid characters
+            syslog(LOG_ERR, "[Eppo SDK] Error loading config from cache " . $e->getMessage());
         }
     }
 }
