@@ -525,8 +525,10 @@ class EppoClient
                 $subject->toArray(),
                 VariationType::STRING,
                 $config
-            )?->key ?? $defaultValue;
-            // TODO return a BanditResult with the default value here instead of going with the default.
+            )?->key;
+            if ($variation === null) {
+                return new BanditResult($defaultValue);
+            }
         } catch (EppoException $e) {
             syslog(LOG_WARNING, "[Eppo SDK] Error computing experiment assignment: " . $e->getMessage());
             return new BanditResult($defaultValue);
