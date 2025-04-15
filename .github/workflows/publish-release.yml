@@ -9,11 +9,7 @@ jobs:
 
   # package test
   test:
-    runs-on: ${{ matrix.platform == 'linux' && 'ubuntu-latest' || matrix.platform == 'macos' && 'macos-13' || matrix.platform == 'windows' && 'windows-latest' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: [ 'linux' ]
+    runs-on: 'ubuntu-latest'
 
     steps:
       - name: Display Testing Details
@@ -23,7 +19,7 @@ jobs:
 
       - uses: Eppo-exp/sdk-test-data/.github/actions/test-server-package@main
         with:
-          platform: ${{ matrix.platform }}
+          platform: 'linux'
           sdk_name: 'eppo/php-sdk'
           sdk_ref: ${{ github.ref_name }}
           sdk_relay_dir: 'php-sdk-relay'
