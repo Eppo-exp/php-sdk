@@ -22,9 +22,18 @@ class Bandit
     public static function fromJson(array $json): Bandit
     {
         try {
-            $updatedAt = new DateTime($json['updatedAt']);
+            if (!isset($json['updatedAt'])) {
+                $updatedAt = new DateTime();
+            } elseif (is_array($json['updatedAt'])) {// serialized datetime
+                $updatedAt = new DateTime($json['updatedAt']['date']);
+            } else {
+                $updatedAt = new DateTime($json['updatedAt']);
+            }
         } catch (\Exception $e) {
-            syslog(LOG_WARNING, "[Eppo SDK] invalid timestamp for bandit model ${json['updatedAt']}");
+            syslog(
+                LOG_WARNING,
+                "[Eppo SDK] invalid timestamp for bandit model ${json['updatedAt']}: " . $e->getMessage()
+            );
             $updatedAt = new DateTime();
         } finally {
             return new Bandit(

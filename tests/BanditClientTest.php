@@ -2,35 +2,36 @@
 
 namespace Eppo\Tests;
 
-use DateTime;
-use Eppo\Bandits\IBanditEvaluator;
 use Eppo\Cache\DefaultCacheFactory;
+use Eppo\Config\Configuration;
 use Eppo\Config\ConfigurationLoader;
-use Eppo\DTO\Allocation;
+use Eppo\Config\ConfigurationStore;
 use Eppo\DTO\Bandit\AttributeSet;
-use Eppo\DTO\Bandit\Bandit;
-use Eppo\DTO\Bandit\BanditEvaluation;
-use Eppo\DTO\Bandit\BanditModelData;
 use Eppo\DTO\Bandit\BanditResult;
-use Eppo\DTO\Flag;
-use Eppo\DTO\Shard;
-use Eppo\DTO\ShardRange;
-use Eppo\DTO\Split;
-use Eppo\DTO\Variation;
-use Eppo\DTO\VariationType;
+use Eppo\DTO\ConfigurationWire\ConfigResponse;
+use Eppo\DTO\ConfigurationWire\ConfigurationWire;
 use Eppo\EppoClient;
 use Eppo\Exception\EppoClientException;
 use Eppo\Exception\EppoException;
 use Eppo\Logger\BanditActionEvent;
 use Eppo\Logger\IBanditLogger;
 use Eppo\PollerInterface;
+use Eppo\Tests\Config\MockCache;
 use Eppo\Tests\WebServer\MockWebServer;
 use Exception;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class BanditClientTest extends TestCase
 {
     private const TEST_DATA_PATH = __DIR__ . '/data/ufc/bandit-tests';
+    private const CONFIG_DATA_PATH = __DIR__ . '/data/configuration-wire/';
+    private const DEFAULT_FLAG_KEY = 'banner_bandit_flag';
+    private const DEFAULT_SUBJECT_KEY = 'Alice';
+    private const DEFAULT_SUBJECT_ATTRIBUTES = ['country' => 'USA', 'age' => 25];
+    private const DEFAULT_ACTIONS = ['nike', 'adidas', 'reebok'];
+    private const DEFAULT_VALUE = 'default';
+    private const BANDIT_KEY = 'banner_bandit';
 
     private static ?EppoClient $client;
     private static MockWebServer $mockServer;
@@ -56,188 +57,66 @@ class BanditClientTest extends TestCase
         DefaultCacheFactory::clearCache();
     }
 
-    public function testBanditWithEmptyActions(): void
-    {
-        $flagKey = 'bandit';
-        $actions = [];
-        $subjectKey = 'user123';
-        $subject = ['country' => 'USA', 'age' => 25];
-        $default = 'defaultVariation';
-
-
-        $config = $this->getMockBuilder(ConfigurationLoader::class)->disableOriginalConstructor()->getMock();
-
-        $banditKeyAndVariationValue = 'banditVariation';
-        $bandit = new Bandit(
-            $banditKeyAndVariationValue,
-            'falcon',
-            new DateTime(),
-            'v123',
-            new BanditModelData(
-                1.0,
-                [],
-                0.1,
-                0.1
-            )
-        );
-
-        $config->expects($this->once())
-            ->method('getBanditByVariation')
-            ->with($flagKey, $banditKeyAndVariationValue)
-            ->willReturn($banditKeyAndVariationValue);
-        $config->expects($this->never()) // Should not get to loading the bandit.
-        ->method('getBandit')
-            ->with($banditKeyAndVariationValue)
-            ->willReturn($bandit);
-
-        $config->expects($this->once())
-            ->method('getFlag')->with($flagKey)->willReturn(
-                $this->makeFlagThatMapsAllTo($flagKey, $banditKeyAndVariationValue)
-            );
-
-        $client = EppoClient::createTestClient($config, poller: $this->getPollerMock());
-
-
-        $result = $client->getBanditAction($flagKey, $subjectKey, $subject, $actions, $default);
-
-        $this->assertEquals($banditKeyAndVariationValue, $result->variation);
-        $this->assertNull($result->action);
-    }
-
-    public function testNonBandit(): void
-    {
-        $flagKey = 'non_bandit';
-        $actions = [];
-        $subjectKey = 'user123';
-        $subject = ['country' => 'USA', 'age' => 25];
-        $default = 'defaultVariation';
-
-
-        $config = $this->getMockBuilder(ConfigurationLoader::class)->disableOriginalConstructor()->getMock();
-
-        $config->expects($this->once())
-            ->method('getBanditByVariation')
-            ->with($flagKey, $default)
-            ->willReturn(null);
-
-        $client = EppoClient::createTestClient($config, poller: $this->getPollerMock());
-
-        $result = $client->getBanditAction($flagKey, $subjectKey, $subject, $actions, $default);
-        $this->assertEquals($default, $result->variation);
-        $this->assertEquals(null, $result->action);
-    }
-
     public function testBanditModelDoesNotExist(): void
     {
-        $flagKey = 'bandit';
-        $actions = ['foo', 'bar', 'baz'];
-        $subjectKey = 'user123';
-        $subject = ['country' => 'USA', 'age' => 25];
-        $default = 'defaultVariation';
+        // Remove the bandit model from the configuration wire
+        $configurationWire = $this->getBanditConfigurationWire();
+        $bandits = json_decode($configurationWire->bandits->response, true)['bandits'];
+        unset($bandits[self::BANDIT_KEY]);
 
-
-        $config = $this->getMockBuilder(ConfigurationLoader::class)->disableOriginalConstructor()->getMock();
-
-        $config->expects($this->once())
-            ->method('getBanditByVariation')
-            ->with($flagKey, $default)
-            ->willReturn('DNEBanditKey');
-
-        $client = EppoClient::createTestClient($config, poller: $this->getPollerMock());
+        $client = $this->createTestClientWithModifiedBandits($bandits, false);
 
         $this->expectException(EppoClientException::class);
         $this->expectExceptionCode(EppoException::BANDIT_EVALUATION_FAILED_BANDIT_MODEL_NOT_PRESENT);
 
-        $client->getBanditAction($flagKey, $subjectKey, $subject, $actions, $default);
+        $result = $client->getBanditAction(
+            self::DEFAULT_FLAG_KEY,
+            self::DEFAULT_SUBJECT_KEY,
+            self::DEFAULT_SUBJECT_ATTRIBUTES,
+            self::DEFAULT_ACTIONS,
+            self::DEFAULT_VALUE
+        );
+
+        $this->assertEquals(self::BANDIT_KEY, $result->variation);
+        $this->assertNull($result->action);
     }
+
 
     public function testBanditModelDoesNotExistGracefulNoThrows(): void
     {
-        $flagKey = 'bandit';
-        $actions = ['foo', 'bar', 'baz'];
-        $subjectKey = 'user123';
-        $subject = ['country' => 'USA', 'age' => 25];
-        $default = 'defaultVariation';
-        $banditKeyVariation = 'banditKey';
+        // Remove the bandit model from the configuration wire
+        $configurationWire = $this->getBanditConfigurationWire();
+        $bandits = json_decode($configurationWire->bandits->response, true)['bandits'];
+        unset($bandits[self::BANDIT_KEY]);
 
-        $config = $this->getMockBuilder(ConfigurationLoader::class)->disableOriginalConstructor()->getMock();
+        $client = $this->createTestClientWithModifiedBandits($bandits, isGracefulMode: true);
 
-        $config->expects($this->once())
-            ->method('getBanditByVariation')
-            ->with($flagKey, $default)
-            ->willReturn($banditKeyVariation);
+        $result = $client->getBanditAction(
+            self::DEFAULT_FLAG_KEY,
+            self::DEFAULT_SUBJECT_KEY,
+            self::DEFAULT_SUBJECT_ATTRIBUTES,
+            self::DEFAULT_ACTIONS,
+            self::DEFAULT_VALUE
+        );
 
-        // This is what we're actually testing here.
-        $config->expects($this->once())
-            ->method('getBandit')
-            ->with($banditKeyVariation)
-            ->willReturn(null);
-
-        $client = EppoClient::createTestClient($config, poller: $this->getPollerMock(), isGracefulMode: true);
-
-
-        $result = $client->getBanditAction($flagKey, $subjectKey, $subject, $actions, $default);
-        $this->assertEquals($default, $result->variation);
+        $this->assertEquals(self::BANDIT_KEY, $result->variation);
         $this->assertNull($result->action);
     }
 
     public function testBanditSelectionLogged(): void
     {
-        $flagKey = 'bandit_flag';
-        $actions = ['foo', 'bar', 'baz'];
-        $subjectKey = 'user123';
-        $subject = ['country' => 'USA', 'age' => 25];
-        $default = 'defaultVariation';
-        $banditKey = $default;
+        $flagKey = self::DEFAULT_FLAG_KEY;
+        $actions = self::DEFAULT_ACTIONS;
+        $subjectKey = strtolower(self::DEFAULT_SUBJECT_KEY);
+        $subject = self::DEFAULT_SUBJECT_ATTRIBUTES;
+        $default = self::DEFAULT_VALUE;
+        $banditKey = self::BANDIT_KEY;
 
-        $bandit = new Bandit(
-            $banditKey,
-            'falcon',
-            new DateTime(),
-            'v123',
-            new BanditModelData(
-                1.0,
-                [],
-                0.1,
-                0.1
-            )
-        );
-
-        $evaluation = new BanditEvaluation(
-            $flagKey,
-            $subjectKey,
-            AttributeSet::fromArray($subject),
-            'banditAction',
-            AttributeSet::fromArray([]),
-            200,
-            0.5,
-            1.0,
-            50
-        );
-        $expectedResult = new BanditResult('defaultVariation', 'banditAction');
-
-
-        $config = $this->getMockBuilder(ConfigurationLoader::class)->disableOriginalConstructor()->getMock();
-
-        // We know the assignment will evaluate to the default so let's use that shortcut to give us a bandit.
-        $config->expects($this->once())
-            ->method('getBanditByVariation')
-            ->with($flagKey, $default)
-            ->willReturn($banditKey);
-        $config->expects($this->once())
-            ->method('getBandit')
-            ->with($banditKey)
-            ->willReturn($bandit);
-
-        $banditEvaluator = $this->getMockBuilder(IBanditEvaluator::class)->getMock();
-        $banditEvaluator->expects($this->once())
-            ->method('evaluateBandit')
-            ->willReturn($evaluation);
+        $expectedResult = new BanditResult(self::BANDIT_KEY, 'nike');
 
         $mockLogger = $this->getMockBuilder(IBanditLogger::class)->getMock();
 
-        // EppoClient won't log this assignment as it's not computed, just returning the default.
-        $mockLogger->expects($this->never())->method('logAssignment');
+        $mockLogger->expects($this->once())->method('logAssignment');
 
         $mockLogger->expects($this->once())->method('logBanditAction')
             ->with(
@@ -245,23 +124,24 @@ class BanditClientTest extends TestCase
                     return $bee->banditKey == $banditKey &&
                         $bee->subjectKey == $subjectKey &&
                         $bee->flagKey == $flagKey &&
-                        $bee->action == 'banditAction';
+                        $bee->action == 'nike';
                 })
             );
 
-        $client = EppoClient::createTestClient(
-            $config,
-            poller: $this->getPollerMock(),
-            logger: $mockLogger,
-            banditEvaluator: $banditEvaluator
+        $client = EppoClient::init(
+            'dummy',
+            self::$mockServer->serverAddress,
+            assignmentLogger: $mockLogger,
         );
 
         $result = $client->getBanditAction($flagKey, $subjectKey, $subject, $actions, $default);
 
-
         $this->assertEquals($expectedResult, $result);
     }
 
+    /**
+     * Test all bandit test cases from the repository
+     */
     public function testRepoTestCases(): void
     {
         // Load all the test cases.
@@ -295,15 +175,56 @@ class BanditClientTest extends TestCase
                 $this->assertEquals(
                     $subject['assignment']['variation'],
                     $result->variation,
-                    "Test failure for {$subject['subjectKey']} in $testFile"
+                    'Test failure for ' . $subject['subjectKey'] . ' in ' . $testFile
                 );
                 $this->assertEquals(
                     $subject['assignment']['action'],
                     $result->action,
-                    "Test failure {$subject['subjectKey']} in $testFile"
+                    'Test failure ' . $subject['subjectKey'] . ' in ' . $testFile
                 );
             }
         }
+    }
+
+
+    /**
+     * Create a test client with a modified bandit configuration
+     *
+     * @param array $bandits The modified bandits configuration to use
+     * @param bool $isGracefulMode Whether to run in graceful mode
+     * @return EppoClient The configured test client
+     */
+    private function createTestClientWithModifiedBandits(array $bandits, bool $isGracefulMode = false): EppoClient
+    {
+        $configurationWire = $this->getBanditConfigurationWire();
+
+        $newConfig = ConfigurationWire::fromResponses(
+            flags: $configurationWire->config,
+            bandits: new ConfigResponse(
+                response: json_encode(['bandits' => $bandits])
+            )
+        );
+
+        $configuration = Configuration::fromConfigurationWire($newConfig);
+
+        $mockCache = new MockCache();
+        $configStore = new ConfigurationStore($mockCache);
+
+        $configStore->setConfiguration($configuration);
+
+        $configLoader = $this->getMockBuilder(ConfigurationLoader::class)->disableOriginalConstructor()->getMock();
+
+        return EppoClient::createTestClient(
+            $configStore,
+            $configLoader,
+            poller: $this->getPollerMock(),
+            isGracefulMode: $isGracefulMode
+        );
+    }
+
+    private function getPollerMock(): MockObject
+    {
+        return $this->getMockBuilder(PollerInterface::class)->getMock();
     }
 
     private function loadTestCases(): array
@@ -320,25 +241,14 @@ class BanditClientTest extends TestCase
         return $tests;
     }
 
-    private function getPollerMock()
+    private function getBanditConfigurationWire(): ConfigurationWire
     {
-        return $this->getMockBuilder(PollerInterface::class)->getMock();
-    }
+        $jsonData = file_get_contents(self::CONFIG_DATA_PATH . 'bandit-flags-v1.json');
+        $this->assertNotFalse($jsonData, 'Failed to load test data file');
 
-    private function makeFlagThatMapsAllTo(string $flagKey, string $variationValue)
-    {
-        $totalShards = 10_000;
-        $allocations = [
-            new Allocation(
-                'defaultAllocation',
-                [],
-                [new Split($variationValue, [new Shard("na", [new ShardRange(0, $totalShards)])], [])],
-                false
-            )
-        ];
-        $variations = [
-            $variationValue => new Variation($variationValue, $variationValue)
-        ];
-        return new Flag($flagKey, true, $allocations, VariationType::STRING, $variations, $totalShards);
+        $configData = json_decode($jsonData, true);
+        $this->assertIsArray($configData, 'Failed to parse JSON data');
+
+        return ConfigurationWire::fromArray($configData);
     }
 }

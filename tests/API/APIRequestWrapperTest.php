@@ -49,7 +49,7 @@ class APIRequestWrapperTest extends TestCase
         $result = $api->getUFC();
         $this->assertNotNull($result);
         $this->assertTrue($result->isModified);
-        $this->assertEquals($ETag, $result->ETag);
+        $this->assertEquals($ETag, $result->eTag);
         $this->assertEquals($body, $result->body);
     }
 
@@ -273,7 +273,7 @@ class APIRequestWrapperTest extends TestCase
 
         $this->assertNotNull($result);
         $this->assertTrue($result->isModified);
-        $this->assertEquals($ETag, $result->ETag);
+        $this->assertEquals($ETag, $result->eTag);
         $this->assertEquals($body, $result->body);
 
         // Second requests uses the ETag from the first.
@@ -281,7 +281,7 @@ class APIRequestWrapperTest extends TestCase
 
         $this->assertNotNull($result);
         $this->assertFalse($result->isModified);
-        $this->assertEquals($ETag, $result->ETag);
+        $this->assertEquals($ETag, $result->eTag);
         $this->assertNull($result->body);
     }
 }
