@@ -35,6 +35,7 @@ class ConfigurationLoader
      */
     public function fetchAndStoreConfiguration(?string $flagETag): void
     {
+        $currentConfig = $this->configurationStore->getConfiguration();
         $response = $this->apiRequestWrapper->getUFC($flagETag);
         if ($response->isModified) {
             $configResponse = new ConfigResponse(
@@ -50,10 +51,32 @@ class ConfigurationLoader
             }
             $fcr = FlagConfigResponse::fromJson($responseData);
             $banditResponse = null;
-            // TODO: Also check current bandit models loaded for optimized bandit loading.
             if (count($fcr->banditReferences) > 0) {
-                $bandits = $this->apiRequestWrapper->getBandits();
-                $banditResponse = new ConfigResponse($bandits->body, date('c'), $bandits->eTag);
+                $canReuseBandits = true;
+                $currentBandits = $currentConfig->getBanditModels();
+
+                foreach ($fcr->banditReferences as $banditKey => $banditReference) {
+                    if (
+                        !array_key_exists(
+                            $banditKey,
+                            $currentBandits
+                        ) || $banditReference->modelVersion !== $currentBandits[$banditKey]
+                    ) {
+                        $canReuseBandits = false;
+                        break;
+                    }
+                }
+
+                if ($canReuseBandits) {
+                    $banditResponse = $currentConfig->toConfigurationWire()->bandits;
+                } else {
+                    $banditResource = $this->apiRequestWrapper->getBandits();
+                    if (!$banditResource?->body) {
+                        syslog(E_ERROR, "[Eppo SDK] Empty or invalid bandit response from the configuration server.");
+                    } else {
+                        $banditResponse = new ConfigResponse($banditResource->body, date('c'), $banditResource->eTag);
+                    }
+                }
             }
 
             $configuration = Configuration::fromUfcResponses($configResponse, $banditResponse);
