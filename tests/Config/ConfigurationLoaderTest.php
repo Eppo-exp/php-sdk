@@ -38,7 +38,7 @@ class ConfigurationLoaderTest extends TestCase
             "ETAG"
         );
         $flagsJson = json_decode($flagsRaw, true);
-        $flags = array_map(fn($flag) => (Flag::fromJson($flag)), $flagsJson['flags']);
+        $flags = array_map(fn($flag) => (Flag::fromArray($flag)), $flagsJson['flags']);
         $banditsRaw = '{
             "bandits": {
                 "cold_start_bandit": {

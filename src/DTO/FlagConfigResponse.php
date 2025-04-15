@@ -2,12 +2,12 @@
 
 namespace Eppo\DTO;
 
-use Eppo\Traits\StaticFromJson;
+use Eppo\Traits\StaticFromArray;
 use Eppo\Traits\ToArray;
 
 class FlagConfigResponse
 {
-    use StaticFromJson;
+    use StaticFromArray;
     use ToArray;
 
     public string $createdAt;
@@ -21,7 +21,7 @@ class FlagConfigResponse
      */
     public array $banditReferences;
 
-    public static function fromJson(array $arr): self
+    public static function fromArray(array $arr): self
     {
         $dto = new self();
         $dto->format = $arr['format'] ?? 'SERVER';
@@ -30,12 +30,12 @@ class FlagConfigResponse
         }
         if (isset($arr['flags'])) {
             $dto->flags = array_map(function ($flag) {
-                return Flag::fromJson($flag);
+                return Flag::fromArray($flag);
             }, $arr['flags']);
         }
         if (isset($arr['banditReferences'])) {
             $dto->banditReferences = array_map(function ($banditReference) {
-                return BanditReference::fromJson($banditReference);
+                return BanditReference::fromArray($banditReference);
             }, $arr['banditReferences']);
         }
         return $dto;

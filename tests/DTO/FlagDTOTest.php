@@ -17,7 +17,7 @@ class FlagDTOTest extends TestCase
     {
         $ufcPayload = json_decode(file_get_contents(self::MOCK_DATA_FILENAME), true);
         $flags = $ufcPayload['flags'];
-        $flag = Flag::fromJson($flags[self::FLAG_KEY]);
+        $flag = Flag::fromArray($flags[self::FLAG_KEY]);
 
         $this->assertInstanceOf(Flag::class, $flag);
 

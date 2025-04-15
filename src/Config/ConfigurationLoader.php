@@ -49,7 +49,7 @@ class ConfigurationLoader
                 syslog(LOG_WARNING, "[Eppo SDK] Empty or invalid response from the configuration server.");
                 return;
             }
-            $fcr = FlagConfigResponse::fromJson($responseData);
+            $fcr = FlagConfigResponse::fromArray($responseData);
             $banditResponse = null;
             if (count($fcr->banditReferences) > 0) {
                 $canReuseBandits = true;

@@ -13,14 +13,14 @@ class BanditFlagVariation
     ) {
     }
 
-    public static function fromJson($json): BanditFlagVariation
+    public static function fromArray($arr): BanditFlagVariation
     {
         return new self(
-            $json['key'],
-            $json['flagKey'],
-            $json['allocationKey'],
-            $json['variationKey'],
-            $json['variationValue']
+            $arr['key'],
+            $arr['flagKey'],
+            $arr['allocationKey'],
+            $arr['variationKey'],
+            $arr['variationValue']
         );
     }
 

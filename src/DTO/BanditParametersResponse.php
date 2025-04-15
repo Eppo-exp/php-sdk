@@ -2,12 +2,12 @@
 
 namespace Eppo\DTO;
 
-use Eppo\Traits\StaticFromJson;
+use Eppo\Traits\StaticFromArray;
 use Eppo\Traits\ToArray;
 
 class BanditParametersResponse
 {
-    use StaticFromJson;
+    use StaticFromArray;
     use ToArray;
 
     public array $bandits;

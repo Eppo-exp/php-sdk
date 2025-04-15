@@ -22,19 +22,19 @@ class Flag
     ) {
     }
 
-    public static function fromJson(array $json): Flag
+    public static function fromArray(array $arr): Flag
     {
-        $variationType = VariationType::from($json['variationType']);
-        $variations = self::parseVariations($json['variations'], $variationType);
-        $allocations = self::parseAllocations($json['allocations']);
+        $variationType = VariationType::from($arr['variationType']);
+        $variations = self::parseVariations($arr['variations'], $variationType);
+        $allocations = self::parseAllocations($arr['allocations']);
 
         return new Flag(
-            $json['key'],
-            $json['enabled'],
+            $arr['key'],
+            $arr['enabled'],
             $allocations,
             $variationType,
             $variations,
-            $json['totalShards']
+            $arr['totalShards']
         );
     }
 

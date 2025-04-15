@@ -17,20 +17,20 @@ class CategoricalAttributeCoefficient
     }
 
     /**
-     * @param array $json
+     * @param array $arr
      * @return CategoricalAttributeCoefficient
      */
-    public static function fromJson(array $json): CategoricalAttributeCoefficient
+    public static function fromArray(array $arr): CategoricalAttributeCoefficient
     {
-        return new self($json['attributeKey'], $json['missingValueCoefficient'], $json['valueCoefficients']);
+        return new self($arr['attributeKey'], $arr['missingValueCoefficient'], $arr['valueCoefficients']);
     }
 
     /**
      * @param array $categoricalCoefficients
      * @return CategoricalAttributeCoefficient[]
      */
-    public static function arrayFromJson(array $categoricalCoefficients): array
+    public static function parseArray(array $categoricalCoefficients): array
     {
-        return array_map(fn($item) => self::fromJson($item), $categoricalCoefficients);
+        return array_map(fn($item) => self::fromArray($item), $categoricalCoefficients);
     }
 }

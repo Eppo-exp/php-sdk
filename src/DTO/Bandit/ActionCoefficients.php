@@ -47,29 +47,29 @@ class ActionCoefficients
      * @return array
      * @throws InvalidArgumentException
      */
-    public static function arrayFromJson(array $coefficients): array
+    public static function parseArray(array $coefficients): array
     {
         $res = [];
         foreach ($coefficients as $key => $coefficient) {
-            $res[$key] = ActionCoefficients::fromJson($coefficient);
+            $res[$key] = ActionCoefficients::fromArray($coefficient);
         }
         return $res;
     }
 
     /**
-     * @param array $json
+     * @param array $arr
      * @return ActionCoefficients
      * @throws InvalidArgumentException
      */
-    public static function fromJson(array $json): ActionCoefficients
+    public static function fromArray(array $arr): ActionCoefficients
     {
         return new ActionCoefficients(
-            $json['actionKey'],
-            $json['intercept'],
-            NumericAttributeCoefficient::arrayFromJson($json['subjectNumericCoefficients']),
-            CategoricalAttributeCoefficient::arrayFromJson($json['subjectCategoricalCoefficients']),
-            NumericAttributeCoefficient::arrayFromJson($json['actionNumericCoefficients']),
-            CategoricalAttributeCoefficient::arrayFromJson($json['actionCategoricalCoefficients'])
+            $arr['actionKey'],
+            $arr['intercept'],
+            NumericAttributeCoefficient::parseArray($arr['subjectNumericCoefficients']),
+            CategoricalAttributeCoefficient::parseArray($arr['subjectCategoricalCoefficients']),
+            NumericAttributeCoefficient::parseArray($arr['actionNumericCoefficients']),
+            CategoricalAttributeCoefficient::parseArray($arr['actionCategoricalCoefficients'])
         );
     }
 }

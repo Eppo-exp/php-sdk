@@ -26,8 +26,8 @@ class BanditResult
         return $this->action ?? $this->variation;
     }
 
-    public static function fromJson($json): self
+    public static function fromArray($arr): self
     {
-        return new self($json['Variation'], $json['Action'] ?? null);
+        return new self($arr['Variation'], $arr['Action'] ?? null);
     }
 }

@@ -21,8 +21,8 @@ class Configuration
     ) {
         $flagJson = json_decode($this->flagsConfig->response, true);
         $banditsJson = json_decode($this->banditsConfig?->response ?? "", true);
-        $this->flags = FlagConfigResponse::fromJson($flagJson ?? []);
-        $this->bandits = BanditParametersResponse::fromJson($banditsJson ?? []);
+        $this->flags = FlagConfigResponse::fromArray($flagJson ?? []);
+        $this->bandits = BanditParametersResponse::fromArray($banditsJson ?? []);
     }
 
     public static function fromUfcResponses(ConfigResponse $flagsConfig, ?ConfigResponse $banditsConfig): Configuration
@@ -39,7 +39,7 @@ class Configuration
     {
         $flagsConfig = new ConfigResponse(response: json_encode(["flags" => $flags]));
         $banditsConfig = $bandits ? new ConfigResponse(
-            response: json_encode(BanditParametersResponse::fromJson(["bandits" => $bandits]))
+            response: json_encode(BanditParametersResponse::fromArray(["bandits" => $bandits]))
         ) : null;
         return new self($flagsConfig, $banditsConfig);
     }
@@ -59,7 +59,7 @@ class Configuration
         if (!isset($this->bandits->bandits[$banditKey])) {
             return null;
         }
-        return Bandit::fromJson($this->bandits?->bandits[$banditKey]) ?? null;
+        return Bandit::fromArray($this->bandits?->bandits[$banditKey]) ?? null;
     }
 
     public function getBanditByVariation(string $flagKey, string $variation): ?string
@@ -96,7 +96,7 @@ class Configuration
     {
         $models = [];
         foreach ($this->bandits->bandits as $key => $banditArr) {
-            $bandit = Bandit::fromJson($banditArr);
+            $bandit = Bandit::fromArray($banditArr);
             $models[$key] = $bandit->modelVersion;
         }
         return $models;
