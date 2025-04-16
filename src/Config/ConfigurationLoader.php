@@ -55,7 +55,7 @@ class ConfigurationLoader
             if (count($fcr->banditReferences) > 0) {
                 // Assume we can reuse bandits.
                 $canReuseBandits = true;
-                $currentBandits = $currentConfig->getBanditModels();
+                $currentBandits = $currentConfig->getBanditModelVersions();
 
                 // Check each referenced bandit model (what we need) against the current bandits (what we have).
                 foreach ($fcr->banditReferences as $banditKey => $banditReference) {
@@ -65,7 +65,7 @@ class ConfigurationLoader
                             $currentBandits
                         ) || $banditReference->modelVersion !== $currentBandits[$banditKey]
                     ) {
-                        // We don't have a bandit for this key or the model versions don't match.
+                        // We don't have a bandit model at all for this key, or the model versions don't match.
                         $canReuseBandits = false;
                         break;
                     }

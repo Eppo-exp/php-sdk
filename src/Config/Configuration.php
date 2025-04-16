@@ -92,7 +92,7 @@ class Configuration
         return $this->flagsConfig?->eTag ?? null;
     }
 
-    public function getBanditModels(): array
+    public function getBanditModelVersions(): array
     {
         $models = [];
         foreach ($this->bandits->bandits as $key => $banditArr) {
