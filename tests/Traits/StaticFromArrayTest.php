@@ -5,7 +5,7 @@ namespace Eppo\Tests\Traits;
 use Eppo\DTO\ConfigurationWire\ConfigResponse;
 use PHPUnit\Framework\TestCase;
 
-class StaticCreateSelfTest extends TestCase
+class StaticFromArrayTest extends TestCase
 {
     public function testCreateCreatesObjectFromArray(): void
     {
@@ -16,7 +16,7 @@ class StaticCreateSelfTest extends TestCase
         ];
 
         // Leverage a class that uses the StaticCreateSelf trait.
-        $configResponse = ConfigResponse::fromJson($data);
+        $configResponse = ConfigResponse::fromArray($data);
 
         $this->assertInstanceOf(ConfigResponse::class, $configResponse);
         $this->assertEquals('{"key": "value"}', $configResponse->response);

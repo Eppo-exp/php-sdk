@@ -113,7 +113,7 @@ class BanditDTOTest extends TestCase
     public function testParsesFromJson(): void
     {
         $json = json_decode(self::BANDIT_JSON, true);
-        $bandit = Bandit::fromJson($json);
+        $bandit = Bandit::fromArray($json);
 
         $this->assertNotNull($bandit);
 

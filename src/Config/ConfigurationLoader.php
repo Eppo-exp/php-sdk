@@ -35,6 +35,7 @@ class ConfigurationLoader
      */
     public function fetchAndStoreConfiguration(?string $flagETag): void
     {
+        $currentConfig = $this->configurationStore->getConfiguration();
         $response = $this->apiRequestWrapper->getUFC($flagETag);
         if ($response->isModified) {
             $configResponse = new ConfigResponse(
@@ -48,12 +49,41 @@ class ConfigurationLoader
                 syslog(LOG_WARNING, "[Eppo SDK] Empty or invalid response from the configuration server.");
                 return;
             }
-            $fcr = FlagConfigResponse::fromJson($responseData);
+            $fcr = FlagConfigResponse::fromArray($responseData);
             $banditResponse = null;
-            // TODO: Also check current bandit models loaded for optimized bandit loading.
+            // If the flags reference Bandits, load bandits from the API, or reuse models already downloaded.
             if (count($fcr->banditReferences) > 0) {
-                $bandits = $this->apiRequestWrapper->getBandits();
-                $banditResponse = new ConfigResponse($bandits->body, date('c'), $bandits->eTag);
+                // Assume we can reuse bandits.
+                $canReuseBandits = true;
+                $currentBandits = $currentConfig->getBanditModelVersions();
+
+                // Check each referenced bandit model (what we need) against the current bandits (what we have).
+                foreach ($fcr->banditReferences as $banditKey => $banditReference) {
+                    if (
+                        !array_key_exists(
+                            $banditKey,
+                            $currentBandits
+                        ) || $banditReference->modelVersion !== $currentBandits[$banditKey]
+                    ) {
+                        // We don't have a bandit model at all for this key, or the model versions don't match.
+                        $canReuseBandits = false;
+                        break;
+                    }
+                }
+
+                if ($canReuseBandits) {
+                    // Get the bandit ConfigResponse from the most recent configuration.
+                    $banditResponse = $currentConfig->toConfigurationWire()->bandits;
+                } else {
+                    // Fetch the bandits from the API and build a ConfigResponse to populate the new
+                    // Configuration object.
+                    $banditResource = $this->apiRequestWrapper->getBandits();
+                    if (!$banditResource?->body) {
+                        syslog(E_ERROR, "[Eppo SDK] Empty or invalid bandit response from the configuration server.");
+                    } else {
+                        $banditResponse = new ConfigResponse($banditResource->body, date('c'), $banditResource->eTag);
+                    }
+                }
             }
 
             $configuration = Configuration::fromUfcResponses($configResponse, $banditResponse);

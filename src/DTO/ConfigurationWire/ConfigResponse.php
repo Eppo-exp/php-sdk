@@ -2,13 +2,13 @@
 
 namespace Eppo\DTO\ConfigurationWire;
 
-use Eppo\Traits\StaticFromJson;
+use Eppo\Traits\StaticFromArray;
 use Eppo\Traits\ToArray;
 
 class ConfigResponse
 {
     use ToArray;
-    use StaticFromJson;
+    use StaticFromArray;
 
     public function __construct(
         public string $response = "",

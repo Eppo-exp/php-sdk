@@ -14,17 +14,17 @@ class BanditReference
     ) {
     }
 
-    public static function fromJson(mixed $json): BanditReference
+    public static function fromArray(mixed $arr): BanditReference
     {
         $flagVariations = [];
-        if (isset($json['flagVariations']) && is_array($json['flagVariations'])) {
-            foreach ($json['flagVariations'] as $variation) {
-                $flagVariations[] = BanditFlagVariation::fromJson($variation);
+        if (isset($arr['flagVariations']) && is_array($arr['flagVariations'])) {
+            foreach ($arr['flagVariations'] as $variation) {
+                $flagVariations[] = BanditFlagVariation::fromArray($variation);
             }
         }
 
         return new BanditReference(
-            modelVersion: $json['modelVersion'],
+            modelVersion: $arr['modelVersion'],
             flagVariations: $flagVariations
         );
     }

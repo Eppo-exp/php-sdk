@@ -18,13 +18,13 @@ class BanditModelData
     ) {
     }
 
-    public static function fromJson($json): BanditModelData
+    public static function fromArray($arr): BanditModelData
     {
         return new BanditModelData(
-            $json['gamma'],
-            ActionCoefficients::arrayFromJson($json['coefficients']),
-            $json['defaultActionScore'],
-            $json['actionProbabilityFloor']
+            $arr['gamma'],
+            ActionCoefficients::parseArray($arr['coefficients']),
+            $arr['defaultActionScore'],
+            $arr['actionProbabilityFloor']
         );
     }
 }
