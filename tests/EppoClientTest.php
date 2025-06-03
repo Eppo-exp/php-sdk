@@ -362,6 +362,48 @@ class EppoClientTest extends TestCase
      * @throws EppoClientInitializationException
      * @throws EppoClientException
      */
+    public function testGetConfiguration(): void
+    {
+        // Use the existing mock web server that serves flags-v1.json
+        $client = EppoClient::init(
+            'dummy',
+            self::$mockServer->serverAddress,
+            isGracefulMode: false,
+            throwOnFailedInit: true
+        );
+
+        // Get the configuration
+        $config = $client->getConfiguration();
+        $this->assertInstanceOf(Configuration::class, $config);
+
+        // Test getting an existing flag
+        $numericFlag = $config->getFlag('numeric_flag');
+        $this->assertNotNull($numericFlag, 'numeric_flag should exist in configuration');
+        $this->assertEquals('numeric_flag', $numericFlag->key);
+        $this->assertTrue($numericFlag->enabled);
+        $this->assertEquals('NUMERIC', $numericFlag->variationType->value);
+
+        // Test getting a non-existent flag
+        $nonExistentFlag = $config->getFlag('non_existent_flag');
+        $this->assertNull($nonExistentFlag, 'non_existent_flag should return null');
+
+        // Test getting a disabled flag
+        $disabledFlag = $config->getFlag('disabled_flag');
+        $this->assertNotNull($disabledFlag, 'disabled_flag should exist in configuration');
+        $this->assertEquals('disabled_flag', $disabledFlag->key);
+        $this->assertFalse($disabledFlag->enabled);
+
+        // Test getting an empty flag
+        $emptyFlag = $config->getFlag('empty_flag');
+        $this->assertNotNull($emptyFlag, 'empty_flag should exist in configuration');
+        $this->assertEquals('empty_flag', $emptyFlag->key);
+        $this->assertTrue($emptyFlag->enabled);
+    }
+
+    /**
+     * @throws EppoClientInitializationException
+     * @throws EppoClientException
+     */
     public function testCacheExpiring(): void
     {
         $apiKey = 'dummy-api-key';
