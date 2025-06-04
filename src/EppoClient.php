@@ -672,4 +672,14 @@ class EppoClient
             throwOnFailedInit: $throwOnFailedInit
         );
     }
+
+    /**
+     * Gets the current configuration.
+     *
+     * @return Configuration the current configuration
+     */
+    public function getConfiguration(): Configuration
+    {
+        return $this->configurationStore->getConfiguration();
+    }
 }
