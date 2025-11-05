@@ -359,7 +359,7 @@ class EppoClient
         $flag = $config->getFlag($flagKey);
 
         if (!$flag) {
-            syslog(LOG_WARNING, "[EPPO SDK] No assigned variation; flag not found ${flagKey}");
+            syslog(LOG_WARNING, "[EPPO SDK] No assigned variation; flag not found {$flagKey}");
             return null;
         }
 
@@ -376,7 +376,7 @@ class EppoClient
         ) {
             $actualType = gettype($computedVariation->value);
             $eVarType = $expectedVariationType->value;
-            syslog(LOG_ERR, "[EPPO SDK] Variation does not have the expected type, ${eVarType}; found ${actualType}");
+            syslog(LOG_ERR, "[EPPO SDK] Variation does not have the expected type, {$eVarType}; found {$actualType}");
             return null;
         }
 
