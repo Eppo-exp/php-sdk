@@ -31,6 +31,9 @@ use Http\Discovery\Psr17Factory;
 use Http\Discovery\Psr18ClientDiscovery;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerInterface as PsrLoggerInterface;
+use Psr\Log\NullLogger;
 use Psr\SimpleCache\CacheInterface;
 
 class EppoClient
@@ -44,6 +47,7 @@ class EppoClient
     private static ?EppoClient $instance = null;
     private RuleEvaluator $evaluator;
     private IBanditEvaluator $banditEvaluator;
+    private PsrLoggerInterface $logger;
 
     /**
      * @param ConfigurationStore $configurationStore
@@ -60,9 +64,11 @@ class EppoClient
         private readonly ?LoggerInterface $eventLogger = null,
         private readonly ?bool $isGracefulMode = true,
         IBanditEvaluator $banditEvaluator = null,
+        ?PsrLoggerInterface $logger = null,
     ) {
         $this->evaluator = new RuleEvaluator();
         $this->banditEvaluator = $banditEvaluator ?? new BanditEvaluator();
+        $this->logger = $logger ?? new NullLogger();
     }
 
     /**
@@ -75,6 +81,7 @@ class EppoClient
      * use Discovery to locate a suitable implementation in the project.
      * @param RequestFactoryInterface|null $requestFactory optional PSR-17 Request Factory implementation. If none is
      * provided, EppoClient will use Discovery
+     * @param PsrLoggerInterface|null $logger optional PSR-3 logger for SDK diagnostics.
      * @throws EppoClientInitializationException
      * @throws EppoClientException
      */
@@ -88,6 +95,7 @@ class EppoClient
         ?bool $isGracefulMode = true,
         ?PollingOptions $pollingOptions = null,
         ?bool $throwOnFailedInit = false,
+        ?PsrLoggerInterface $logger = null,
     ): EppoClient {
         // Get SDK metadata to pass as params in the http client.
         $sdkData = new SDKData();
@@ -100,7 +108,10 @@ class EppoClient
             $cache = (new DefaultCacheFactory())->create();
         }
 
+        $psrLogger = $logger ?? new NullLogger();
+
         $configStore = new ConfigurationStore($cache);
+        $configStore->setLogger($psrLogger);
 
         if (!$httpClient) {
             $httpClient = Psr18ClientDiscovery::find();
@@ -134,6 +145,7 @@ class EppoClient
         }
 
         $configLoader = new ConfigurationLoader($apiWrapper, $configStore, $cacheAgeLimit);
+        $configLoader->setLogger($psrLogger);
 
         $poller = new Poller(
             $interval,
@@ -142,6 +154,7 @@ class EppoClient
                 $configLoader->reloadConfiguration();
             }
         );
+        $poller->setLogger($psrLogger);
 
         self::$instance = self::createAndInitClient(
             $configStore,
@@ -149,7 +162,8 @@ class EppoClient
             $poller,
             $assignmentLogger,
             $isGracefulMode,
-            throwOnFailedInit: $throwOnFailedInit
+            throwOnFailedInit: $throwOnFailedInit,
+            logger: $psrLogger,
         );
 
         return self::$instance;
@@ -166,7 +180,10 @@ class EppoClient
         ?bool $isGracefulMode,
         ?IBanditEvaluator $banditEvaluator = null,
         ?bool $throwOnFailedInit = false,
+        ?PsrLoggerInterface $logger = null,
     ): EppoClient {
+        $psrLogger = $logger ?? new NullLogger();
+
         try {
             $configLoader->reloadConfigurationIfExpired();
         } catch (Exception | HttpRequestException | InvalidApiKeyException $e) {
@@ -176,10 +193,18 @@ class EppoClient
                     $message
                 );
             } else {
-                syslog(LOG_INFO, "[Eppo SDK] " . $message);
+                $psrLogger->info('[Eppo SDK] ' . $message, ['exception' => $e]);
             }
         }
-        return new self($configStore, $configLoader, $poller, $assignmentLogger, $isGracefulMode, $banditEvaluator);
+        return new self(
+            $configStore,
+            $configLoader,
+            $poller,
+            $assignmentLogger,
+            $isGracefulMode,
+            $banditEvaluator,
+            $psrLogger,
+        );
     }
 
     /**
@@ -359,7 +384,7 @@ class EppoClient
         $flag = $config->getFlag($flagKey);
 
         if (!$flag) {
-            syslog(LOG_WARNING, "[EPPO SDK] No assigned variation; flag not found {$flagKey}");
+            $this->logger->warning("[EPPO SDK] No assigned variation; flag not found {$flagKey}");
             return null;
         }
 
@@ -376,12 +401,14 @@ class EppoClient
         ) {
             $actualType = gettype($computedVariation->value);
             $eVarType = $expectedVariationType->value;
-            syslog(LOG_ERR, "[EPPO SDK] Variation does not have the expected type, {$eVarType}; found {$actualType}");
+            $this->logger->error(
+                "[EPPO SDK] Variation does not have the expected type, {$eVarType}; found {$actualType}"
+            );
             return null;
         }
 
         if (!$flag->enabled) {
-            syslog(LOG_INFO, '[EPPO SDK] No assigned variation; flag is disabled.');
+            $this->logger->info('[EPPO SDK] No assigned variation; flag is disabled.');
             return null;
         }
 
@@ -405,7 +432,10 @@ class EppoClient
                     )
                 );
             } catch (Exception $exception) {
-                error_log('[Eppo SDK] Error logging assignment event: ' . $exception->getMessage());
+                $this->logger->error(
+                    '[Eppo SDK] Error logging assignment event: ' . $exception->getMessage(),
+                    ['exception' => $exception]
+                );
             }
         }
 
@@ -487,7 +517,10 @@ class EppoClient
             return $this->getBanditDetail($flagKey, $subjectKey, $subject, $actionContexts, $defaultValue);
         } catch (EppoException $e) {
             if ($this->isGracefulMode) {
-                error_log('[Eppo SDK] Error selecting bandit action: ' . $e->getMessage());
+                $this->logger->error(
+                    '[Eppo SDK] Error selecting bandit action: ' . $e->getMessage(),
+                    ['exception' => $e]
+                );
                 return new BanditResult($defaultValue);
             } else {
                 throw EppoClientException::from($e);
@@ -530,7 +563,10 @@ class EppoClient
                 return new BanditResult($defaultValue);
             }
         } catch (EppoException $e) {
-            syslog(LOG_WARNING, "[Eppo SDK] Error computing experiment assignment: " . $e->getMessage());
+            $this->logger->warning(
+                '[Eppo SDK] Error computing experiment assignment: ' . $e->getMessage(),
+                ['exception' => $e]
+            );
             return new BanditResult($defaultValue);
         }
 
@@ -567,7 +603,10 @@ class EppoClient
                     try {
                         $this->eventLogger->logBanditAction($banditActionLog);
                     } catch (Exception $exception) {
-                        syslog(LOG_WARNING, "[Eppo SDK] Error in logging bandit action: " . $exception->getMessage());
+                        $this->logger->warning(
+                            '[Eppo SDK] Error in logging bandit action: ' . $exception->getMessage(),
+                            ['exception' => $e]
+                        );
                     }
                 }
                 return new BanditResult($variation, $result->selectedAction);
@@ -601,7 +640,10 @@ class EppoClient
             $this->configurationLoader->fetchAndStoreConfiguration(null);
         } catch (HttpRequestException | InvalidApiKeyException | InvalidConfigurationException $e) {
             if ($this->isGracefulMode) {
-                error_log('[Eppo SDK] Error fetching configuration ' . $e->getMessage());
+                $this->logger->error(
+                    '[Eppo SDK] Error fetching configuration ' . $e->getMessage(),
+                    ['exception' => $e]
+                );
             } else {
                 throw EppoClientException::from($e);
             }
@@ -633,7 +675,10 @@ class EppoClient
         array|bool|float|int|string|null $defaultValue
     ): array|bool|float|int|string|null {
         if ($this->isGracefulMode) {
-            error_log('[Eppo SDK] Error getting assignment: ' . $exception->getMessage());
+            $this->logger->error(
+                '[Eppo SDK] Error getting assignment: ' . $exception->getMessage(),
+                ['exception' => $exception]
+            );
             return $defaultValue;
         }
         throw EppoClientException::from($exception);
@@ -650,6 +695,7 @@ class EppoClient
      * @param bool|null $isGracefulMode
      * @param IBanditEvaluator|null $banditEvaluator
      * @param bool|null $throwOnFailedInit
+     * @param PsrLoggerInterface|null $psrLogger
      * @return EppoClient
      * @throws EppoClientInitializationException
      */
@@ -661,7 +707,16 @@ class EppoClient
         ?bool $isGracefulMode = false,
         ?IBanditEvaluator $banditEvaluator = null,
         ?bool $throwOnFailedInit = true,
+        ?PsrLoggerInterface $psrLogger = null,
     ): EppoClient {
+        $psrLogger = $psrLogger ?? new NullLogger();
+
+        $configStore->setLogger($psrLogger);
+        $configurationLoader->setLogger($psrLogger);
+        if ($poller instanceof LoggerAwareInterface) {
+            $poller->setLogger($psrLogger);
+        }
+
         return self::createAndInitClient(
             $configStore,
             $configurationLoader,
@@ -669,7 +724,8 @@ class EppoClient
             $logger,
             $isGracefulMode,
             $banditEvaluator,
-            throwOnFailedInit: $throwOnFailedInit
+            throwOnFailedInit: $throwOnFailedInit,
+            logger: $psrLogger
         );
     }
 
