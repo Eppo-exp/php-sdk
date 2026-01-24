@@ -193,7 +193,7 @@ class EppoClient
                     $message
                 );
             } else {
-                $psrLogger->info('[Eppo SDK] ' . $message, ['exception' => $e]);
+                $psrLogger->warning('[Eppo SDK] ' . $message, ['exception' => $e]);
             }
         }
         return new self(
@@ -384,7 +384,7 @@ class EppoClient
         $flag = $config->getFlag($flagKey);
 
         if (!$flag) {
-            $this->logger->warning("[EPPO SDK] No assigned variation; flag not found {$flagKey}");
+            $this->logger->warning("[Eppo SDK] No assigned variation; flag not found {$flagKey}");
             return null;
         }
 
@@ -402,7 +402,7 @@ class EppoClient
             $actualType = gettype($computedVariation->value);
             $eVarType = $expectedVariationType->value;
             $this->logger->error(
-                "[EPPO SDK] Variation does not have the expected type, {$eVarType}; found {$actualType}"
+                "[Eppo SDK] Variation does not have the expected type, {$eVarType}; found {$actualType}"
             );
             return null;
         }
@@ -605,7 +605,7 @@ class EppoClient
                     } catch (Exception $exception) {
                         $this->logger->warning(
                             '[Eppo SDK] Error in logging bandit action: ' . $exception->getMessage(),
-                            ['exception' => $e]
+                            ['exception' => $exception]
                         );
                     }
                 }

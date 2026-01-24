@@ -59,7 +59,7 @@ class ConfigurationStore implements LoggerAwareInterface
         } catch (Throwable $e) {
             // Safe to ignore as the const `CONFIG_KEY` contains no invalid characters
             $this->logger->error(
-                '[Eppo SDK] Error loading config from cache ' . $e->getMessage(),
+                '[Eppo SDK] Error saving config to cache ' . $e->getMessage(),
                 ['exception' => $e]
             );
         }
