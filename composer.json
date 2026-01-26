@@ -25,6 +25,7 @@
     "php": "^8.1",
     "ext-json": "*",
     "psr/simple-cache": "3.*",
+    "psr/log": "^2.0|^3.0",
     "shrikeh/teapot": "^2.3",
     "composer/semver": "^3.4",
     "php-http/discovery": "^1.17",

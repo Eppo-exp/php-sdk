@@ -44,6 +44,7 @@ $eppoClient = EppoClient::init(
    $cache // optional, must be an instance of PSR-16 SimpleCache\CacheInterface. If not passed, FileSystem cache will be used
    $httpClient // optional, must be an instance of PSR-18 ClientInterface. If not passed, Discovery will be used to find a suitable implementation
    $requestFactory // optional, must be an instance of PSR-17 Factory. If not passed, Discovery will be used to find a suitable implementation
+   $logger // optional, must be an instance of PSR-3 LoggerInterface for SDK logs
 );
 ```
 
@@ -131,6 +132,9 @@ The `init` function accepts the following optional configuration arguments.
 | **`assignmentLogger`** | AssignmentLogger/IBanditLogger     | Logs assignment events back to data warehoouse                                                      | `null`  |
 | **`httpClient`**       | ClientInterface                    | For making HTTP requests. If not passed, Discovery will attempt to autoload an applicable pacakge   | `null`  |
 | **`requestFactory`**   | RequestFactoryInterface            | Instance of PSR-17 Factory. If not passed, Discovery will be used to find a suitable implementation | null    |
+| **`logger`**           | PSR-3 LoggerInterface              | Logs SDK warnings/errors (replaces `syslog`/`error_log`)                                             | `null`  |
+
+To preserve the previous syslog behavior, pass a PSR-3 logger configured for syslog, such as Monolog with a SyslogHandler.
 
 ## Assignment logger
 
@@ -216,6 +220,7 @@ $eppoClient = EppoClient::init(
    $cache // optional, must be an instance of PSR-16 SimpleInterface. If not passed, FileSystem cache will be used
    $httpClient // optional, must be an instance of PSR-18 ClientInterface. If not passed, Discovery will be used to find a suitable implementation
    $requestFactory // optional, must be an instance of PSR-17 Factory. If not passed, Discovery will be used to find a suitable implementation
+   $logger // optional, must be an instance of PSR-3 LoggerInterface for SDK logs
 );
 
 $eppoClient->startPolling();

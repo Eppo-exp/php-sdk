@@ -32,11 +32,6 @@ class AttributeSet
         foreach ($numericAttributes as $key => $value) {
             if (self::isNumberType($value)) {
                 $numeric[$key] = $value;
-            } else {
-                syslog(
-                    LOG_WARNING,
-                    "[Eppo SDK] non-numeric attribute passed in `\$numericAttributes` for key $key"
-                );
             }
         }
         $this->numericAttributes = $numeric;
@@ -51,8 +46,6 @@ class AttributeSet
                 $numericAttributes[$key] = $value;
             } elseif (self::isCategoricalType($value)) {
                 $categoricalAttributes[$key] = $value;
-            } else {
-                syslog(LOG_WARNING, "[Eppo SDK] Unsupported attribute type: " . gettype($value));
             }
         }
         return new self($numericAttributes, $categoricalAttributes);

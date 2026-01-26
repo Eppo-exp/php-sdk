@@ -3,9 +3,14 @@
 namespace Eppo;
 
 use Eppo\Exception\HttpRequestException;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
+use Psr\Log\NullLogger;
 
-class Poller implements PollerInterface
+class Poller implements PollerInterface, LoggerAwareInterface
 {
+    use LoggerAwareTrait;
+
     /** @var bool */
     private $stopped = false;
 
@@ -28,6 +33,7 @@ class Poller implements PollerInterface
         $this->interval = $interval;
         $this->jitterMillis = $jitterMillis;
         $this->callback = $callback;
+        $this->setLogger(new NullLogger());
     }
 
     public function start(): void
@@ -53,7 +59,10 @@ class Poller implements PollerInterface
             if (!$error->isRecoverable) {
                 $this->stop();
             }
-            error_log("[Eppo SDK] Error polling configurations: " . $error->getMessage());
+            $this->logger->error(
+                '[Eppo SDK] Error polling configurations: ' . $error->getMessage(),
+                ['exception' => $error]
+            );
         }
 
         $intervalWithJitter = $this->interval - mt_rand(0, $this->jitterMillis);

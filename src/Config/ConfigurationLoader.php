@@ -7,14 +7,20 @@ use Eppo\DTO\ConfigurationWire\ConfigResponse;
 use Eppo\DTO\FlagConfigResponse;
 use Eppo\Exception\HttpRequestException;
 use Eppo\Exception\InvalidApiKeyException;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
+use Psr\Log\NullLogger;
 
-class ConfigurationLoader
+class ConfigurationLoader implements LoggerAwareInterface
 {
+    use LoggerAwareTrait;
+
     public function __construct(
         private readonly APIRequestWrapper $apiRequestWrapper,
         public readonly ConfigurationStore $configurationStore,
         private readonly int $cacheAgeLimitMillis = 30 * 1000
     ) {
+        $this->setLogger(new NullLogger());
     }
 
     /**
@@ -46,7 +52,9 @@ class ConfigurationLoader
             $responseData = json_decode($response->body, true);
 
             if ($responseData === null) {
-                syslog(LOG_WARNING, "[Eppo SDK] Empty or invalid response from the configuration server.");
+                $this->logger->warning(
+                    '[Eppo SDK] Empty or invalid response from the configuration server.'
+                );
                 return;
             }
             $fcr = FlagConfigResponse::fromArray($responseData);
@@ -79,7 +87,9 @@ class ConfigurationLoader
                     // Configuration object.
                     $banditResource = $this->apiRequestWrapper->getBandits();
                     if (!$banditResource?->body) {
-                        syslog(E_ERROR, "[Eppo SDK] Empty or invalid bandit response from the configuration server.");
+                        $this->logger->error(
+                            '[Eppo SDK] Empty or invalid bandit response from the configuration server.'
+                        );
                     } else {
                         $banditResponse = new ConfigResponse($banditResource->body, date('c'), $banditResource->eTag);
                     }

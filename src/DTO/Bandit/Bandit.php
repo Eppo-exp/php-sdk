@@ -30,10 +30,6 @@ class Bandit
                 $updatedAt = new DateTime($arr['updatedAt']);
             }
         } catch (\Exception $e) {
-            syslog(
-                LOG_WARNING,
-                "[Eppo SDK] invalid timestamp for bandit model {$arr['updatedAt']}: " . $e->getMessage()
-            );
             $updatedAt = new DateTime();
         } finally {
             return new Bandit(
