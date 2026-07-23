@@ -4,3 +4,4 @@ tests/data
 .phpunit.result.cache
 .vscode
 cache
+composer.lock

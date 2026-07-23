@@ -14,8 +14,6 @@ use PsrMock\Psr7\Collections\Headers;
 use PsrMock\Psr7\Entities\Header;
 use PsrMock\Psr7\Response;
 use PsrMock\Psr7\Stream;
-use Teapot\StatusCode\RFC\RFC7231;
-use Teapot\StatusCode\RFC\RFC7235;
 
 class APIRequestWrapperTest extends TestCase
 {
@@ -56,7 +54,7 @@ class APIRequestWrapperTest extends TestCase
 
     public function testUnauthorizedClient(): void
     {
-        $http = $this->getHttpClientMock(RFC7235::UNAUTHORIZED, '');
+        $http = $this->getHttpClientMock(401, '');
         $api = new APIRequestWrapper(
             '',
             [],
@@ -73,7 +71,7 @@ class APIRequestWrapperTest extends TestCase
 
     public function testThrowsHttpError(): void
     {
-        $http = $this->getHttpClientMock(RFC7231::INTERNAL_SERVER_ERROR, '');
+        $http = $this->getHttpClientMock(500, '');
         $api = new APIRequestWrapper(
             '',
             [],
@@ -82,28 +80,28 @@ class APIRequestWrapperTest extends TestCase
         );
 
         $this->expectException(HttpRequestException::class);
-        $this->expectExceptionCode(RFC7231::INTERNAL_SERVER_ERROR);
+        $this->expectExceptionCode(500);
 
         $api->getUFC();
     }
 
     public function testRecoverableHttpError(): void
     {
-        $this->assertStatusRecoverable(true, RFC7231::CONFLICT);
-        $this->assertStatusRecoverable(true, RFC7231::REQUEST_TIMEOUT);
-        $this->assertStatusRecoverable(true, RFC7231::BAD_GATEWAY);
-        $this->assertStatusRecoverable(true, RFC7231::INTERNAL_SERVER_ERROR);
+        $this->assertStatusRecoverable(true, 409);
+        $this->assertStatusRecoverable(true, 408);
+        $this->assertStatusRecoverable(true, 502);
+        $this->assertStatusRecoverable(true, 500);
     }
 
     public function testUnrecoverableHttpError(): void
     {
-        $this->assertStatusRecoverable(false, RFC7235::UNAUTHORIZED);
-        $this->assertStatusRecoverable(false, RFC7231::NOT_FOUND);
+        $this->assertStatusRecoverable(false, 401);
+        $this->assertStatusRecoverable(false, 404);
     }
 
     public function testResourceFetching(): void
     {
-        $http = $this->getRespondingHttpClientMock(RFC7231::OK, '');
+        $http = $this->getRespondingHttpClientMock(200, '');
         $api = new APIRequestWrapper(
             '',
             [],
@@ -203,7 +201,7 @@ class APIRequestWrapperTest extends TestCase
         $redirectHeaders = new Headers();
         $redirectHeaders->setHeader(new Header('Location', $redirectLocation));
 
-        $redirectResponse = new Response(statusCode: RFC7231::MOVED_PERMANENTLY, headers: $redirectHeaders);
+        $redirectResponse = new Response(statusCode: 308, headers: $redirectHeaders);
         $resourceUri = 'https://fscdn.eppo.cloud/api/flag-config/v1/config?apiKey=APIKEY';
 
         $httpClientMock->expects($this->exactly(2))
@@ -222,7 +220,7 @@ class APIRequestWrapperTest extends TestCase
             )
             ->willReturnCallback(function ($request) use ($resourceUri, $redirectResponse) {
                 $mockResponse = new Response(
-                    statusCode: RFC7231::OK,
+                    statusCode: 200,
                 );
                 $uri = $request->getUri()->__toString();
                 return ($uri == $resourceUri ? $redirectResponse : $mockResponse);
