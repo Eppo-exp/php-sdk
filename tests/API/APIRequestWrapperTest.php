@@ -201,7 +201,8 @@ class APIRequestWrapperTest extends TestCase
         $redirectHeaders = new Headers();
         $redirectHeaders->setHeader(new Header('Location', $redirectLocation));
 
-        $redirectResponse = new Response(statusCode: 308, headers: $redirectHeaders);
+        // 301 and 308 take different paths in the decorator.
+        $redirectResponse = new Response(statusCode: 301, headers: $redirectHeaders);
         $resourceUri = 'https://fscdn.eppo.cloud/api/flag-config/v1/config?apiKey=APIKEY';
 
         $httpClientMock->expects($this->exactly(2))
