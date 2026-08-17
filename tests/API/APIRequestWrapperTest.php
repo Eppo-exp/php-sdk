@@ -101,7 +101,7 @@ class APIRequestWrapperTest extends TestCase
 
     public function testResourceFetching(): void
     {
-        $http = $this->getRespondingHttpClientMock(200, '');
+        $http = $this->getRespondingHttpClientMock(200);
         $api = new APIRequestWrapper(
             '',
             [],
