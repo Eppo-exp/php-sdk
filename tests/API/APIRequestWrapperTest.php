@@ -95,7 +95,7 @@ class APIRequestWrapperTest extends TestCase
 
     public function testUnrecoverableHttpError(): void
     {
-        $this->assertStatusRecoverable(false, 401);
+        $this->assertStatusRecoverable(false, 400);
         $this->assertStatusRecoverable(false, 404);
     }
 

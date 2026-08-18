@@ -62,6 +62,8 @@ jobs:
       with:
         repository: ${{ github.event.pull_request.head.repo.full_name || 'Eppo-exp/php-sdk' }}
         ref: ${{ env.SDK_BRANCH_NAME }}
+        # No step needs git auth. make test clones test data from a public repo.
+        persist-credentials: false
 
     - name: Set up PHP
       uses: shivammathur/setup-php@v2
