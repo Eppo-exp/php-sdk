@@ -7,7 +7,6 @@ use Eppo\Exception\InvalidApiKeyException;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
-use Teapot\StatusCode\RFC\RFC7231;
 use Webclient\Extension\Redirect\RedirectClientDecorator;
 
 /**
@@ -137,8 +136,8 @@ class APIRequestWrapper
      */
     private function isHttpErrorRecoverable(int $status): bool
     {
-        if ($status >= RFC7231::BAD_REQUEST && $status < RFC7231::INTERNAL_SERVER_ERROR) {
-            return $status === RFC7231::CONFLICT || $status === RFC7231::REQUEST_TIMEOUT;
+        if ($status >= 400 && $status < 500) {
+            return $status === 409 || $status === 408;
         }
         return true;
     }
