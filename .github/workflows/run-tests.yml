@@ -62,7 +62,9 @@ jobs:
 
     - uses: actions/checkout@v5
       with:
-        repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+        # A called workflow sees the caller's github context, so github.repository
+        # is the caller's repo. Name this repo to stay correct on both paths.
+        repository: ${{ github.repository == 'Eppo-exp/php-sdk' && github.event.pull_request.head.repo.full_name || 'Eppo-exp/php-sdk' }}
         ref: ${{ env.SDK_BRANCH_NAME }}
         # No step needs git auth. make test clones test data from a public repo.
         persist-credentials: false
