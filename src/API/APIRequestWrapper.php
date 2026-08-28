@@ -76,10 +76,11 @@ class APIRequestWrapper
 
             $response = $this->httpClient->sendRequest($request);
         } catch (ClientExceptionInterface $e) {
-            throw new HttpRequestException($e, 0, false);
+            // Keep the chain. The message alone loses the client exception.
+            throw new HttpRequestException($e->getMessage(), 0, false, $e);
         }
         if ($response->getStatusCode() >= self::HTTP_BAD_REQUEST) {
-            $this->handleHttpError($response->getStatusCode(), $response->getBody());
+            $this->handleHttpError($response->getStatusCode(), (string)$response->getBody());
         }
 
         if ($response->getStatusCode() == self::HTTP_NOT_MODIFIED) {
