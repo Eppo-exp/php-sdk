@@ -8,6 +8,9 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    # This is a library. Widen the declared range, and keep the old versions
+    # that consumers still resolve.
+    versioning-strategy: widen
     # Let the ecosystem vet a release before we take it. Security updates ignore
     # cooldown, so an advisory fix still arrives at once.
     cooldown:
