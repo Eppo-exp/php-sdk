@@ -39,9 +39,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # One leg per branch of the symfony/cache constraint. Each Symfony major
-          # raises its PHP floor, so the runner PHP selects the branch:
-          # 8.1 resolves ^6.4, 8.3 resolves ^7.0, 8.4 resolves ^8.0.
+          # The locked legs install what composer.lock pins. The lowest and
+          # highest legs resolve, and each Symfony major raises its PHP floor,
+          # so the runner PHP picks the branch of the symfony/cache constraint:
+          # 8.1 takes ^6.4, 8.3 takes ^7.0, 8.4 takes ^8.0.
           - { php: '8.1', deps: locked }
           - { php: '8.3', deps: locked }
           - { php: '8.1', deps: lowest }
@@ -61,7 +62,7 @@ jobs:
 
     - uses: actions/checkout@v5
       with:
-        repository: ${{ github.event.pull_request.head.repo.full_name || 'Eppo-exp/php-sdk' }}
+        repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
         ref: ${{ env.SDK_BRANCH_NAME }}
         # No step needs git auth. make test clones test data from a public repo.
         persist-credentials: false
