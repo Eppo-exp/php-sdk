@@ -45,6 +45,7 @@ final class RuleEvaluatorTest extends TestCase
      */
     private array $nonMatchingSplits;
     private Rule $ruleWithPreciseMatchesCondition;
+    private Rule $ruleWithNotMatchesConditionCondition;
 
     /**
      * @param string|null $name

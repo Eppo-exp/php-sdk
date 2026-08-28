@@ -271,7 +271,7 @@ class EppoClientTest extends TestCase
                     $subject['subjectAttributes'],
                     $test['defaultValue']
                 );
-                $this->assertEquals($subject['assignment'], $result, "$testFile ${test['flag']}");
+                $this->assertEquals($subject['assignment'], $result, "$testFile {$test['flag']}");
             }
         }
     }

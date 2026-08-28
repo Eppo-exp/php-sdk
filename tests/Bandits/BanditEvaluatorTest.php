@@ -13,6 +13,8 @@ use PHPUnit\Framework\TestCase;
 
 class BanditEvaluatorTest extends TestCase
 {
+    private BanditEvaluator $evaluator;
+
     public function setUp(): void
     {
         $this->evaluator = new BanditEvaluator();
