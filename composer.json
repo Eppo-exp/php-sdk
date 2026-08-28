@@ -38,7 +38,8 @@
     "ext-pcntl": "*",
     "psr-mock/http": "^1.0",
     "squizlabs/php_codesniffer": "^3.10",
-    "ext-sockets": "*"
+    "ext-sockets": "*",
+    "teapot/status-code": "^2.1"
   },
   "config": {
     "allow-plugins": {

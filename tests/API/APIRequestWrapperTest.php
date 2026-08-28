@@ -14,6 +14,9 @@ use PsrMock\Psr7\Collections\Headers;
 use PsrMock\Psr7\Entities\Header;
 use PsrMock\Psr7\Response;
 use PsrMock\Psr7\Stream;
+use Teapot\StatusCode\RFC\RFC7231;
+use Teapot\StatusCode\RFC\RFC7232;
+use Teapot\StatusCode\RFC\RFC7235;
 
 class APIRequestWrapperTest extends TestCase
 {
@@ -37,7 +40,7 @@ class APIRequestWrapperTest extends TestCase
         $body = "RESPONSE BODY";
         $ETag = "00FF22EEFF";
 
-        $http = $this->getHttpClientMock(200, $body, ["ETag" => $ETag]);
+        $http = $this->getHttpClientMock(RFC7231::OK, $body, ["ETag" => $ETag]);
         $api = new APIRequestWrapper(
             'APIKEY',
             [],
@@ -54,7 +57,7 @@ class APIRequestWrapperTest extends TestCase
 
     public function testUnauthorizedClient(): void
     {
-        $http = $this->getHttpClientMock(401, '');
+        $http = $this->getHttpClientMock(RFC7235::UNAUTHORIZED, '');
         $api = new APIRequestWrapper(
             '',
             [],
@@ -71,7 +74,7 @@ class APIRequestWrapperTest extends TestCase
 
     public function testThrowsHttpError(): void
     {
-        $http = $this->getHttpClientMock(500, '');
+        $http = $this->getHttpClientMock(RFC7231::INTERNAL_SERVER_ERROR, '');
         $api = new APIRequestWrapper(
             '',
             [],
@@ -80,28 +83,28 @@ class APIRequestWrapperTest extends TestCase
         );
 
         $this->expectException(HttpRequestException::class);
-        $this->expectExceptionCode(500);
+        $this->expectExceptionCode(RFC7231::INTERNAL_SERVER_ERROR);
 
         $api->getUFC();
     }
 
     public function testRecoverableHttpError(): void
     {
-        $this->assertStatusRecoverable(true, 409);
-        $this->assertStatusRecoverable(true, 408);
-        $this->assertStatusRecoverable(true, 502);
-        $this->assertStatusRecoverable(true, 500);
+        $this->assertStatusRecoverable(true, RFC7231::CONFLICT);
+        $this->assertStatusRecoverable(true, RFC7231::REQUEST_TIMEOUT);
+        $this->assertStatusRecoverable(true, RFC7231::BAD_GATEWAY);
+        $this->assertStatusRecoverable(true, RFC7231::INTERNAL_SERVER_ERROR);
     }
 
     public function testUnrecoverableHttpError(): void
     {
-        $this->assertStatusRecoverable(false, 400);
-        $this->assertStatusRecoverable(false, 404);
+        $this->assertStatusRecoverable(false, RFC7231::BAD_REQUEST);
+        $this->assertStatusRecoverable(false, RFC7231::NOT_FOUND);
     }
 
     public function testResourceFetching(): void
     {
-        $http = $this->getRespondingHttpClientMock(200);
+        $http = $this->getRespondingHttpClientMock(RFC7231::OK);
         $api = new APIRequestWrapper(
             '',
             [],
@@ -200,7 +203,7 @@ class APIRequestWrapperTest extends TestCase
         $redirectHeaders->setHeader(new Header('Location', $redirectLocation));
 
         // 301 and 308 take different paths in the decorator.
-        $redirectResponse = new Response(statusCode: 301, headers: $redirectHeaders);
+        $redirectResponse = new Response(statusCode: RFC7231::MOVED_PERMANENTLY, headers: $redirectHeaders);
         $resourceUri = 'https://fscdn.eppo.cloud/api/flag-config/v1/config?apiKey=APIKEY';
 
         $httpClientMock->expects($this->exactly(2))
@@ -219,7 +222,7 @@ class APIRequestWrapperTest extends TestCase
             )
             ->willReturnCallback(function ($request) use ($resourceUri, $redirectResponse) {
                 $mockResponse = new Response(
-                    statusCode: 200,
+                    statusCode: RFC7231::OK,
                 );
                 $uri = $request->getUri()->__toString();
                 return ($uri == $resourceUri ? $redirectResponse : $mockResponse);
@@ -240,11 +243,11 @@ class APIRequestWrapperTest extends TestCase
         $stream = new Stream($body);
 
         $mockNewResponse = (new Response(
-            statusCode: 200,
+            statusCode: RFC7231::OK,
             stream: $stream
         ))->withAddedHeader('ETag', $ETag);
         $mockSameResponse = (new Response(
-            statusCode: 304,
+            statusCode: RFC7232::NOT_MODIFIED,
             stream: null
         ))->withAddedHeader('ETag', $ETag);
 
