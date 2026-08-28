@@ -23,7 +23,7 @@ class APIRequestWrapper
     private const BANDIT_ENDPOINT = '/flag-config/v1/bandits';
     private const CONFIG_BASE = 'https://fscdn.eppo.cloud/api';
 
-    /** HTTP status codes, named per RFC 7231 and RFC 7235. */
+    /** HTTP status codes, named per RFC 7231, RFC 7232, and RFC 7235. */
     private const HTTP_NOT_MODIFIED = 304;
     private const HTTP_BAD_REQUEST = 400;
     private const HTTP_UNAUTHORIZED = 401;
