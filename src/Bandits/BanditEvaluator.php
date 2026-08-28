@@ -6,6 +6,7 @@ use Eppo\DTO\Bandit\ActionCoefficients;
 use Eppo\DTO\Bandit\AttributeSet;
 use Eppo\DTO\Bandit\BanditEvaluation;
 use Eppo\DTO\Bandit\BanditModelData;
+use Eppo\DTO\Bandit\CategoricalAttributeCoefficient;
 use Eppo\DTO\Bandit\NumericAttributeCoefficient;
 use Eppo\Exception\BanditEvaluationException;
 use Eppo\Exception\InvalidArgumentException;
@@ -221,19 +222,21 @@ class BanditEvaluator implements IBanditEvaluator
         return $score;
     }
 
+    /**
+     * @param array<CategoricalAttributeCoefficient> $coefficients
+     * @param array<string, mixed> $attributes
+     * @return float
+     */
     public static function scoreCategoricalAttributes(array $coefficients, array $attributes): float
     {
         $score = 0.0;
         foreach ($coefficients as $coefficient) {
             $attributeKey = $coefficient->attributeKey;
             $valueCoefficients = $coefficient->valueCoefficients;
-            if (
-                array_key_exists($attributeKey, $attributes) && array_key_exists(
-                    $attributes[$attributeKey],
-                    $valueCoefficients
-                )
-            ) {
-                $score += $valueCoefficients[$attributes[$attributeKey]];
+            $attributeValue = $attributes[$attributeKey] ?? null;
+            // A null value scores as missing, like a numeric attribute does.
+            if ($attributeValue !== null && array_key_exists($attributeValue, $valueCoefficients)) {
+                $score += $valueCoefficients[$attributeValue];
             } else {
                 $score += $coefficient->missingValueCoefficient;
             }
