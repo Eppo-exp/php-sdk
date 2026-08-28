@@ -23,6 +23,14 @@ class APIRequestWrapper
     private const BANDIT_ENDPOINT = '/flag-config/v1/bandits';
     private const CONFIG_BASE = 'https://fscdn.eppo.cloud/api';
 
+    /** HTTP status codes, named per RFC 7231 and RFC 7235. */
+    private const HTTP_NOT_MODIFIED = 304;
+    private const HTTP_BAD_REQUEST = 400;
+    private const HTTP_UNAUTHORIZED = 401;
+    private const HTTP_REQUEST_TIMEOUT = 408;
+    private const HTTP_CONFLICT = 409;
+    private const HTTP_INTERNAL_SERVER_ERROR = 500;
+
     private string $baseUrl;
 
     public bool $isUnauthorized = false;
@@ -70,11 +78,11 @@ class APIRequestWrapper
         } catch (ClientExceptionInterface $e) {
             throw new HttpRequestException($e, 0, false);
         }
-        if ($response->getStatusCode() >= 400) {
+        if ($response->getStatusCode() >= self::HTTP_BAD_REQUEST) {
             $this->handleHttpError($response->getStatusCode(), $response->getBody());
         }
 
-        if ($response->getStatusCode() == 304) { // Not modified
+        if ($response->getStatusCode() == self::HTTP_NOT_MODIFIED) {
             // Quick Return
             return new APIResource(null, false, $lastETag);
         }
@@ -120,7 +128,7 @@ class APIRequestWrapper
      */
     private function handleHttpError(int $status, string $error)
     {
-        $this->isUnauthorized = $status === 401;
+        $this->isUnauthorized = $status === self::HTTP_UNAUTHORIZED;
         $isRecoverable = $this->isHttpErrorRecoverable($status);
         if ($this->isUnauthorized) {
             throw new InvalidApiKeyException();
@@ -136,8 +144,8 @@ class APIRequestWrapper
      */
     private function isHttpErrorRecoverable(int $status): bool
     {
-        if ($status >= 400 && $status < 500) {
-            return $status === 409 || $status === 408;
+        if ($status >= self::HTTP_BAD_REQUEST && $status < self::HTTP_INTERNAL_SERVER_ERROR) {
+            return $status === self::HTTP_CONFLICT || $status === self::HTTP_REQUEST_TIMEOUT;
         }
         return true;
     }

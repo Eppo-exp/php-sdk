@@ -8,6 +8,13 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    # Let the ecosystem vet a release before we take it. Security updates ignore
+    # cooldown, so an advisory fix still arrives at once.
+    cooldown:
+      default-days: 7
+      semver-patch-days: 5
+      semver-minor-days: 14
+      semver-major-days: 30
     groups:
       # One PR for all open advisories, prod and dev.
       composer-security:
@@ -30,6 +37,9 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    # The GitHub Actions ecosystem supports default-days only.
+    cooldown:
+      default-days: 7
     groups:
       github-actions:
         applies-to: version-updates
