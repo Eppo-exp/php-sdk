@@ -44,4 +44,4 @@ test-data:
 
 .PHONY: test
 test: test-data
-	./vendor/phpunit/phpunit/phpunit tests
+	./vendor/bin/phpunit tests

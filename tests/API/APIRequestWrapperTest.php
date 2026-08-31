@@ -15,6 +15,7 @@ use PsrMock\Psr7\Entities\Header;
 use PsrMock\Psr7\Response;
 use PsrMock\Psr7\Stream;
 use Teapot\StatusCode\RFC\RFC7231;
+use Teapot\StatusCode\RFC\RFC7232;
 use Teapot\StatusCode\RFC\RFC7235;
 
 class APIRequestWrapperTest extends TestCase
@@ -39,7 +40,7 @@ class APIRequestWrapperTest extends TestCase
         $body = "RESPONSE BODY";
         $ETag = "00FF22EEFF";
 
-        $http = $this->getHttpClientMock(200, $body, ["ETag" => $ETag]);
+        $http = $this->getHttpClientMock(RFC7231::OK, $body, ["ETag" => $ETag]);
         $api = new APIRequestWrapper(
             'APIKEY',
             [],
@@ -97,13 +98,13 @@ class APIRequestWrapperTest extends TestCase
 
     public function testUnrecoverableHttpError(): void
     {
-        $this->assertStatusRecoverable(false, RFC7235::UNAUTHORIZED);
+        $this->assertStatusRecoverable(false, RFC7231::BAD_REQUEST);
         $this->assertStatusRecoverable(false, RFC7231::NOT_FOUND);
     }
 
     public function testResourceFetching(): void
     {
-        $http = $this->getRespondingHttpClientMock(RFC7231::OK, '');
+        $http = $this->getRespondingHttpClientMock(RFC7231::OK);
         $api = new APIRequestWrapper(
             '',
             [],
@@ -132,8 +133,6 @@ class APIRequestWrapperTest extends TestCase
             $this->fail('Exception not thrown');
         } catch (HttpRequestException $e) {
             $this->assertEquals($recoverable, $e->isRecoverable);
-        } catch (InvalidApiKeyException $e) {
-            $this->assertEquals('Invalid API Key', $e->getMessage());
         }
     }
 
@@ -203,6 +202,7 @@ class APIRequestWrapperTest extends TestCase
         $redirectHeaders = new Headers();
         $redirectHeaders->setHeader(new Header('Location', $redirectLocation));
 
+        // 301 and 308 take different paths in the decorator.
         $redirectResponse = new Response(statusCode: RFC7231::MOVED_PERMANENTLY, headers: $redirectHeaders);
         $resourceUri = 'https://fscdn.eppo.cloud/api/flag-config/v1/config?apiKey=APIKEY';
 
@@ -243,11 +243,11 @@ class APIRequestWrapperTest extends TestCase
         $stream = new Stream($body);
 
         $mockNewResponse = (new Response(
-            statusCode: 200,
+            statusCode: RFC7231::OK,
             stream: $stream
         ))->withAddedHeader('ETag', $ETag);
         $mockSameResponse = (new Response(
-            statusCode: 304,
+            statusCode: RFC7232::NOT_MODIFIED,
             stream: null
         ))->withAddedHeader('ETag', $ETag);
 

@@ -7,7 +7,6 @@ use Eppo\Exception\InvalidApiKeyException;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
-use Teapot\StatusCode\RFC\RFC7231;
 use Webclient\Extension\Redirect\RedirectClientDecorator;
 
 /**
@@ -23,6 +22,14 @@ class APIRequestWrapper
     private const UFC_ENDPOINT = '/flag-config/v1/config';
     private const BANDIT_ENDPOINT = '/flag-config/v1/bandits';
     private const CONFIG_BASE = 'https://fscdn.eppo.cloud/api';
+
+    /** HTTP status codes, named per RFC 7231, RFC 7232, and RFC 7235. */
+    private const HTTP_NOT_MODIFIED = 304;
+    private const HTTP_BAD_REQUEST = 400;
+    private const HTTP_UNAUTHORIZED = 401;
+    private const HTTP_REQUEST_TIMEOUT = 408;
+    private const HTTP_CONFLICT = 409;
+    private const HTTP_INTERNAL_SERVER_ERROR = 500;
 
     private string $baseUrl;
 
@@ -69,13 +76,14 @@ class APIRequestWrapper
 
             $response = $this->httpClient->sendRequest($request);
         } catch (ClientExceptionInterface $e) {
-            throw new HttpRequestException($e, 0, false);
+            // Keep the chain. The message alone loses the client exception.
+            throw new HttpRequestException($e->getMessage(), 0, false, $e);
         }
-        if ($response->getStatusCode() >= 400) {
-            $this->handleHttpError($response->getStatusCode(), $response->getBody());
+        if ($response->getStatusCode() >= self::HTTP_BAD_REQUEST) {
+            $this->handleHttpError($response->getStatusCode(), (string)$response->getBody());
         }
 
-        if ($response->getStatusCode() == 304) { // Not modified
+        if ($response->getStatusCode() == self::HTTP_NOT_MODIFIED) {
             // Quick Return
             return new APIResource(null, false, $lastETag);
         }
@@ -121,7 +129,7 @@ class APIRequestWrapper
      */
     private function handleHttpError(int $status, string $error)
     {
-        $this->isUnauthorized = $status === 401;
+        $this->isUnauthorized = $status === self::HTTP_UNAUTHORIZED;
         $isRecoverable = $this->isHttpErrorRecoverable($status);
         if ($this->isUnauthorized) {
             throw new InvalidApiKeyException();
@@ -137,8 +145,8 @@ class APIRequestWrapper
      */
     private function isHttpErrorRecoverable(int $status): bool
     {
-        if ($status >= RFC7231::BAD_REQUEST && $status < RFC7231::INTERNAL_SERVER_ERROR) {
-            return $status === RFC7231::CONFLICT || $status === RFC7231::REQUEST_TIMEOUT;
+        if ($status >= self::HTTP_BAD_REQUEST && $status < self::HTTP_INTERNAL_SERVER_ERROR) {
+            return $status === self::HTTP_CONFLICT || $status === self::HTTP_REQUEST_TIMEOUT;
         }
         return true;
     }

@@ -26,11 +26,10 @@
     "ext-json": "*",
     "psr/simple-cache": "3.*",
     "psr/log": "^2.0|^3.0",
-    "shrikeh/teapot": "^2.3",
     "composer/semver": "^3.4",
     "php-http/discovery": "^1.17",
     "webclient/ext-redirect": "^2.0",
-    "symfony/cache": "^6.4|^7.0"
+    "symfony/cache": "^6.4|^7.0|^8.0"
   },
   "require-dev": {
     "phpunit/phpunit": "^9.6",
@@ -39,7 +38,8 @@
     "ext-pcntl": "*",
     "psr-mock/http": "^1.0",
     "squizlabs/php_codesniffer": "^3.10",
-    "ext-sockets": "*"
+    "ext-sockets": "*",
+    "teapot/status-code": "^2.1"
   },
   "config": {
     "allow-plugins": {

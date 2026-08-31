@@ -63,7 +63,7 @@ class EppoClient
         private readonly PollerInterface $poller,
         private readonly ?LoggerInterface $eventLogger = null,
         private readonly ?bool $isGracefulMode = true,
-        IBanditEvaluator $banditEvaluator = null,
+        ?IBanditEvaluator $banditEvaluator = null,
         ?PsrLoggerInterface $logger = null,
     ) {
         $this->evaluator = new RuleEvaluator();
@@ -88,10 +88,10 @@ class EppoClient
     public static function init(
         string $apiKey,
         ?string $baseUrl = null,
-        LoggerInterface $assignmentLogger = null,
-        CacheInterface $cache = null,
-        ClientInterface $httpClient = null,
-        RequestFactoryInterface $requestFactory = null,
+        ?LoggerInterface $assignmentLogger = null,
+        ?CacheInterface $cache = null,
+        ?ClientInterface $httpClient = null,
+        ?RequestFactoryInterface $requestFactory = null,
         ?bool $isGracefulMode = true,
         ?PollingOptions $pollingOptions = null,
         ?bool $throwOnFailedInit = false,
@@ -371,7 +371,7 @@ class EppoClient
         string $flagKey,
         string $subjectKey,
         array $subjectAttributes = [],
-        VariationType $expectedVariationType = null,
+        ?VariationType $expectedVariationType = null,
         ?Configuration $config = null,
     ): ?Variation {
         Validator::validateNotBlank($subjectKey, 'Invalid argument: subjectKey cannot be blank');

@@ -10,6 +10,10 @@ on:
 
   pull_request:
 
+  # Catches upstream releases that break our declared ranges.
+  schedule:
+    - cron: '17 6 * * 1'
+
   workflow_dispatch:
 
   workflow_call:
@@ -28,9 +32,25 @@ permissions:
   contents: read
 
 jobs:
-  build-and-test:
+  test-matrix:
 
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The locked legs install what composer.lock pins. The lowest and
+          # highest legs resolve, and each Symfony major raises its PHP floor,
+          # so the runner PHP picks the branch of the symfony/cache constraint:
+          # 8.1 takes ^6.4, 8.3 takes ^7.0, 8.4 takes ^8.0.
+          - { php: '8.1', deps: locked }
+          - { php: '8.3', deps: locked }
+          - { php: '8.1', deps: lowest }
+          - { php: '8.1', deps: highest }
+          - { php: '8.3', deps: highest }
+          - { php: '8.4', deps: highest }
+
+    name: PHP ${{ matrix.php }}, ${{ matrix.deps }}
 
     steps:
     - name: Display Testing Details
@@ -38,26 +58,59 @@ jobs:
         echo "Running SDK Test using"
         echo "Test Data: sdk-test-data@${TEST_DATA_BRANCH_NAME}"
         echo "SDK Branch: php-sdk@${SDK_BRANCH_NAME}"
+        echo "PHP: ${{ matrix.php }}, dependencies: ${{ matrix.deps }}"
 
     - uses: actions/checkout@v5
       with:
-        repository: ${{ github.event.pull_request.head.repo.full_name || 'Eppo-exp/php-sdk' }}
+        # A called workflow sees the caller's github context, so github.repository
+        # is the caller's repo. Name this repo to stay correct on both paths.
+        repository: ${{ github.repository == 'Eppo-exp/php-sdk' && github.event.pull_request.head.repo.full_name || 'Eppo-exp/php-sdk' }}
         ref: ${{ env.SDK_BRANCH_NAME }}
+        # No step needs git auth. make test clones test data from a public repo.
+        persist-credentials: false
 
+    - name: Set up PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php }}
+        extensions: json, pcntl, posix, sockets
+        coverage: none
+
+    # Must run before any resolution, or --strict cannot check lock sync.
     - name: Validate composer.json and composer.lock
       run: composer validate --strict
 
-    - name: Cache Composer packages
-      id: composer-cache
-      uses: actions/cache@v4
-      with:
-        path: vendor
-        key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-php-
+    # config.platform.php guards composer.lock. It must not cap a throwaway
+    # resolution, or symfony/cache ^8 stays unreachable.
+    - name: Target the runner's PHP for highest-version resolution
+      if: matrix.deps == 'highest'
+      run: composer config --unset platform.php
 
     - name: Install dependencies
-      run: composer install --prefer-dist --no-progress
+      uses: ramsey/composer-install@4.0.0
+      with:
+        dependency-versions: ${{ matrix.deps }}
+        composer-options: --prefer-dist
+
+    - name: Show resolved direct dependencies
+      run: composer show --direct
+
+    # --no-dev: a dev-only advisory reaches nobody who installs the SDK.
+    - name: Audit production dependencies
+      if: matrix.deps == 'locked'
+      run: composer audit --no-dev
 
     - name: Run tests
       run: make test branchName=${{env.TEST_DATA_BRANCH_NAME}}
+
+  # One stable check for every leg. Branch protection keeps the name
+  # build-and-test, whatever the matrix holds.
+  build-and-test:
+    if: always()
+    needs: test-matrix
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check the matrix result
+      run: |
+        echo "Matrix result: ${{ needs.test-matrix.result }}"
+        [ "${{ needs.test-matrix.result }}" = "success" ]
