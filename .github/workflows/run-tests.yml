@@ -60,7 +60,7 @@ jobs:
         echo "SDK Branch: php-sdk@${SDK_BRANCH_NAME}"
         echo "PHP: ${{ matrix.php }}, dependencies: ${{ matrix.deps }}"
 
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
       with:
         # A called workflow sees the caller's github context, so github.repository
         # is the caller's repo. Name this repo to stay correct on both paths.
